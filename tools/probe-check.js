@@ -213,5 +213,36 @@ const pickerSb2 = vm.createContext({ document, console, ROUTE_KEY: 'chuanxi' });
 vm.runInContext(manifestSrc + '\n' + pickerSrc, pickerSb2);
 ok('线路页 picker 安全 no-op（不抢渲染）', created.filter(el => el.id === 'pickerRoot').length === 0, '');
 
+/* ---------- 体验修复 1/2：编辑模式 × 双出发地 + 途经点引导 ---------- */
+console.log('\n【5】编辑模式 × 双出发地（反馈 1）与途经点引导（反馈 2）');
+const qh2 = bootRoute('qinghai-gansu');
+const S = qh2.sandbox;
+S.Edit.enter();
+const lzB2 = created.filter(el => el.id === 'dyn:button' && el.onclick && el.textContent === S.STARTS[1].name)[0];
+lzB2.onclick();
+ok('非主出发地视角可进入编辑模式（不再被静默跳回）',
+    S.Edit.isOn() === true && S.start === S.STARTS[1].id,
+    '当前视角=' + S.start);
+S.Edit.setDayField(5, 'title', '兰州视角改的标题');
+ok('非主出发地视角改标题生效', S.DAYS.filter(d => d.id === 5)[0].title === '兰州视角改的标题', '');
+ok('非主出发地视角分段编辑被显式拒绝（不静默、数据不变）',
+    S.Edit.setSeg(5, 100, 200) === false && S.DAYS.filter(d => d.id === 5)[0].altKm[0] !== 100,
+    '');
+ok('视角受限提示文案数据驱动（含两个出发地名）',
+    (function () { const h = S.Edit.segViewHint(); return h.indexOf(S.STARTS[1].name) >= 0 && h.indexOf(S.STARTS[0].name) >= 0; })(),
+    S.Edit.segViewHint());
+ok('切回主视角后分段编辑恢复可用', (function () {
+    const xnB = created.filter(el => el.id === 'dyn:button' && el.onclick && el.textContent === S.STARTS[0].name)[0];
+    xnB.onclick();
+    return S.Edit.setSeg(5, 800, 900) === true && S.DAYS.filter(d => d.id === 5)[0].altKm[0] === 800;
+})(), 'D5 → [800,900]');
+let wpOk = false;
+try { wpOk = Object.keys(JSON.parse(S.Edit.waypointsExportText())).length >= 20; } catch (e) {}
+ok('途经点清单可复制导出（JSON 可解析、含全部途经点）', wpOk, '');
+ok('引导含按当前线路生成的确切构建命令',
+    S.Edit.waypointGuideText().indexOf('node tools/build-route.js ' + S.ROUTE_META.key) >= 0 &&
+    S.Edit.waypointGuideText().indexOf('ROUTE_BUILD.waypoints') >= 0,
+    S.ROUTE_META.key);
+
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

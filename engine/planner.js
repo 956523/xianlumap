@@ -282,6 +282,8 @@
         fuel: icon('<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38"><circle cx="19" cy="19" r="16.5" fill="#dc2626" stroke="#ea580c" stroke-width="3.5"/><rect x="12" y="10.5" width="8.5" height="16" rx="1.8" fill="#fff"/><rect x="14" y="13" width="4.4" height="4" rx="0.7" fill="#dc2626"/></svg>')
     };
     var dimEvM = null, dimFuelM = null, planM = null, planLb = null;
+    var dimLabelEv = null, dimLabelFuel = null;   // 站点近景文字层（体验修复 3）
+    var NEAR_LABEL_Z = 10;   // 站名文字从此 zoom 开始出现：与 S0 的 near 档（z≥9）协同，不另起一套
     var dimDataEv = [], dimDataFuel = [], planData = [];
 
     function clearLayer(l) { if (l) l.setMap(null); return null; }
@@ -305,6 +307,8 @@
         dimFuelM = clearLayer(dimFuelM);
         planM = clearLayer(planM);
         planLb = clearLayer(planLb);
+        dimLabelEv = clearLayer(dimLabelEv);
+        dimLabelFuel = clearLayer(dimLabelFuel);
         if (!STATION_DATA) return;
         // 图层开关由 layerOn 状态决定（开关不再持有 marker 引用，见 route-engine 开关段）
         var onEv = (typeof layerOn === 'undefined') || layerOn.ev;
@@ -384,6 +388,28 @@
                 return { id: 'pl' + i, position: LL(p.st.lat, p.st.lng), content: '▲ ' + (isF ? '加满' : '充至 ' + Math.round(p.target * 100) + '%') };
             })
         });
+
+        /* 标签层级（体验修复 3）第三级：站点图标是主表达，站名文字只在近景出现。
+           缩放变化会触发本函数重建（S0 的防抖重绘），不需要额外监听。
+           站名截断到 10 字 + 省略号，白字描边压底图，跟随各自图层开关。 */
+        if (z >= NEAR_LABEL_Z) {
+            dimLabelEv = createLabelLayer({
+                map: onEv ? map : null,
+                zIndex: 110,
+                styles: { default: ({ color: '#15803d', size: 10, halo: true, offset: { x: 0, y: 13 } }) },
+                geometries: dimDataEv.map(function (s, i) {
+                    return { id: 'el' + i, position: LL(s.lat, s.lng), content: s.t.length > 10 ? s.t.slice(0, 10) + '…' : s.t };
+                })
+            });
+            dimLabelFuel = createLabelLayer({
+                map: onFuel ? map : null,
+                zIndex: 110,
+                styles: { default: ({ color: '#b91c1c', size: 10, halo: true, offset: { x: 0, y: 13 } }) },
+                geometries: dimDataFuel.map(function (s, i) {
+                    return { id: 'fl' + i, position: LL(s.lat, s.lng), content: s.t.length > 10 ? s.t.slice(0, 10) + '…' : s.t };
+                })
+            });
+        }
 
         renderPlanPanel(plan);
     }

@@ -50,24 +50,39 @@
         return layer;
     }
 
-    /* --- 文字标注层（AMap.Text，强制透明底） ---
-       opts: { map, styles: {p: {color, size, offset:{x,y}}}, geometries: [{id, position, content}] } */
+    /* --- 文字标注层（AMap.Text，默认白底需显式剥掉；支持层级样式） ---
+       opts: { map, zIndex, styles: {default: {color, size, offset, bold, halo, badge}},
+               geometries: [{id, position, content}] }
+       层级样式（体验修复 3）：
+       - bold/halo：粗字 + 白色描边（站点近景标签，压得住底图）
+       - badge：白底圆角小胶囊（景点最高层级） */
     function createLabelLayer(opts) {
         var texts = (opts.geometries || []).map(function (g) {
             var st = opts.styles[(g.styleId || opts.defaultStyleId || 'default')] || {};
             var off = st.offset || { x: 0, y: 0 };
+            var style = {
+                color: st.color || '#1f2937',
+                'font-size': (st.size || 12) + 'px',
+                'background-color': 'transparent',
+                'border-width': '0',
+                padding: '0',
+                'white-space': 'nowrap'
+            };
+            if (st.bold) style['font-weight'] = '600';
+            if (st.halo) style['text-shadow'] = '0 0 3px #fff, 0 0 4px #fff, 0 0 5px #fff';
+            if (st.badge) {
+                style['background-color'] = 'rgba(255,255,255,.88)';
+                style['border'] = '1px solid ' + (st.badgeBorder || '#ddd6fe');
+                style['border-radius'] = '7px';
+                style['padding'] = '1px 6px';
+                style['box-shadow'] = '0 1px 4px rgba(15,23,42,.15)';
+            }
             var t = new AMap.Text({
                 text: g.content,
                 position: ll(g.position),
                 offset: new AMap.Pixel(off.x, off.y),
-                style: {
-                    color: st.color || '#1f2937',
-                    fontSize: (st.size || 12) + 'px',
-                    'background-color': 'transparent',   // 高德 Text 默认白底+边框，必须显式剥掉
-                    'border-width': '0',
-                    padding: '0'
-                },
-                zIndex: 120
+                style: style,
+                zIndex: opts.zIndex || 120
             });
             t.__lid = g.id;
             return t;

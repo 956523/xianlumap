@@ -257,7 +257,13 @@ function runRoute(routeId) {
         cbEl.style.height = chartH + 'px';
         return cbH === '192px';
     })(), cbH);
-    ok('高度下限保护（90px 起）', Math.max(90, 190 - 108) === 90, '最低 90px');
+    ok('标签层级（体验修复 3）：景点默认显示 + 全览无站点站名文字',
+        calls.labels.some(function (l) { return ((l.opts && l.opts.text) || l.text) === (pkg.SPOTS[0] || {}).n; }) &&
+        !calls.labels.some(function (l) {
+            const t = (l.opts && l.opts.text) || l.text || '';
+            return t.charAt(0) !== '▲' && t.indexOf('km') !== 0 && /充电|加油/.test(t);
+        }),
+        '景点「' + (pkg.SPOTS[0] || {}).n + '」在标注层内；站名文字层未出现（z=7.3）');
     ok('拖拽手柄元素存在', !!elCache['elevGrip'], elCache['elevGrip'] ? 'elevGrip' : '缺失');
     ok('收起按钮存在', !!elCache['elevClose'], 'elevClose');
     elCache['chartBox'].children.length = 0;

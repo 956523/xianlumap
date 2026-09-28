@@ -15,6 +15,7 @@
         --z-drawer:      1200;   /* 底部抽屉（剖面） */
         --z-collapse:    1250;   /* 侧栏收起按钮（要在抽屉之上） */
         --z-tip:         1300;   /* 悬浮提示 */
+        --z-guide:       1400;   /* 编辑引导弹层（在提示之上） */
     }
     html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f1f5f9; }
     /* 地图容器高度 = 视口 − 底部抽屉占用高度（--elev-occupy）。
@@ -293,6 +294,22 @@
     .edit-mini:hover { background: #0d9488; }
     .day-seg { display: block; margin-top: 2px; }
     .day-seg-sel { font-size: 10.5px; max-width: 96px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; color: #475569; }
+    .day-seg-hint { display: block; margin-top: 2px; font-size: 10px; color: #94a3b8; }
+    /* 途经点增删引导（体验修复 2） */
+    #wpGuide {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        z-index: var(--z-guide); width: min(560px, calc(100vw - 40px));
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+        box-shadow: 0 16px 48px rgba(15,23,42,.22); padding: 18px 20px;
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    #wpGuide .wp-title { display: block; font-size: 15px; color: #0f172a; margin-bottom: 10px; }
+    #wpGuide .wp-body {
+        margin: 0 0 12px; padding: 10px 12px; background: #f8fafc; border-radius: 8px;
+        font-size: 11.5px; line-height: 1.7; color: #475569; white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 220px; overflow: auto;
+    }
+    #wpGuide .wp-row { display: flex; gap: 8px; }
 </style>
 <script>
     /* ============ 地图 Key 预检（S9：高德 JS API） ============

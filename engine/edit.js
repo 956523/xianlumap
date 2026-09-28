@@ -109,8 +109,10 @@
         /* —— 进入/退出编辑模式 —— */
         enter: function () {
             if (this.on) return;
-            // 分段编辑基于主出发地行程基准（环线里程 0 点）：切回主视角，避免双口径
-            if (STARTS.length > 1 && start !== STARTS[0].id) setStart(STARTS[0].id);
+            /* 体验修复 1：不再静默切回主出发地视角（用户感知为「坏了」）。
+               文字类编辑（标题/备注/住宿/地名/副标题）在任意出发地视角都可用；
+               分段编辑受接入段拼接天的 km 基准限制，仅在主出发地视角开放——
+               其他视角下界面给明确提示、API 显式拒绝（见 refreshDayControls/setSeg）。 */
             this.on = true;
             document.body.classList.add('editing');
             if (editBar) editBar.style.display = '';
@@ -128,6 +130,9 @@
             if (['title', 'note', 'stay'].indexOf(field) < 0 || value == null) return;
             var f = {}; f[field] = value;
             applyDayFields(id, f);
+            // 当前视角的 DAYS 可能是 buildDays 的拼接副本（接入段出发地）——同步改活副本，立即生效
+            var live = (typeof DAYS !== 'undefined' ? DAYS : []).filter(function (d) { return d.id === id; })[0];
+            if (live) Object.keys(f).forEach(function (k) { live[k] = f[k]; });
             this.overlay.days = this.overlay.days || {};
             this.overlay.days[id] = this.overlay.days[id] || {};
             this.overlay.days[id][field] = String(value);
@@ -135,12 +140,87 @@
             this.updateDayRow(id);
         },
         setSeg: function (id, fromKm, toKm) {
-            if (!applySeg(id, fromKm, toKm)) return;
+            // 分段编辑仅在主出发地视角开放（环线里程 0 点基准）；其他视角显式拒绝
+            if (STARTS.length > 1 && start !== STARTS[0].id) {
+                editNotice(Edit.segViewHint());
+                return false;
+            }
+            if (!applySeg(id, fromKm, toKm)) return false;
             this.overlay.seg = this.overlay.seg || {};
             this.overlay.seg[id] = { fromKm: +fromKm.toFixed(1), toKm: +toKm.toFixed(1) };
             editSave();
             renderAll();              // 分段影响剖面/站点/盲区，整图重建
             this.refreshDayControls();
+            return true;
+        },
+        /* 视角受限提示（界面与 API 共用一份文案，数据驱动，不写死出发地名） */
+        segViewHint: function () {
+            var cur = (typeof curStart === 'function') ? curStart() : { name: '' };
+            var base = STARTS[0] || { name: '' };
+            return cur.name + '视角下不可调整分段，请切回' + base.name + '视角';
+        },
+
+        /* —— 途经点增删引导（体验修复 2：改几何=重建，但操作路径一步不错） —— */
+        waypointsExportText: function () {
+            // 当前途经点清单（ROUTE_BUILD.waypoints 原样导出，可直接粘回包内）
+            return (typeof ROUTE_BUILD !== 'undefined' && ROUTE_BUILD && ROUTE_BUILD.waypoints)
+                ? JSON.stringify(ROUTE_BUILD.waypoints, null, 2) : '';
+        },
+        waypointGuideText: function () {
+            var key = ROUTE_META.key;
+            return '途经点清单在 route-defs/' + key + '.js 的 ROUTE_BUILD.waypoints 里（名字/坐标/海拔/简介）。\n' +
+                '改动流程：\n' +
+                '1) 点下方「复制当前途经点清单」，粘到包里的 waypoints（增删点、或改 legs 的 from/to/via）\n' +
+                '2) 运行：node tools/build-route.js ' + key + '   （轨迹/高程重抓）\n' +
+                '3) 若途经点变了，站点也要重抓：node tools/build-stations.js ' + key + ' && node tools/validate.js ' + key + ' --fix\n' +
+                '（改几何必须重新构建是产品铁律：页面里的轨迹是构建产物，不是实时算的）';
+        },
+        showWaypointGuide: function () {
+            var old = document.getElementById('wpGuide');
+            if (old) { old.remove(); return; }   // 再点一次 = 关闭
+            var box = document.createElement('div');
+            box.id = 'wpGuide';
+            var title = document.createElement('b');
+            title.className = 'wp-title';
+            title.textContent = '新增/删除途经点需要重新构建';
+            var body = document.createElement('pre');
+            body.className = 'wp-body';
+            body.textContent = Edit.waypointGuideText();
+            var row = document.createElement('div');
+            row.className = 'wp-row';
+            var copy = document.createElement('button');
+            copy.className = 'edit-mini';
+            copy.textContent = '① 复制当前途经点清单';
+            copy.onclick = function () {
+                var text = Edit.waypointsExportText();
+                var okFlag = false;
+                try {
+                    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text); okFlag = true;
+                    }
+                } catch (e) {}
+                if (!okFlag) {
+                    try {
+                        var ta = document.createElement('textarea');
+                        ta.value = text;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        okFlag = typeof document.execCommand === 'function' ? document.execCommand('copy') : false;
+                        ta.remove();
+                    } catch (e) {}
+                }
+                editNotice(okFlag ? '途经点清单已复制，粘进 ROUTE_BUILD.waypoints 后改。' : '复制失败：请手动打开包内 ROUTE_BUILD 复制 waypoints。');
+            };
+            var close = document.createElement('button');
+            close.className = 'edit-mini';
+            close.textContent = '关闭';
+            close.onclick = function () { box.remove(); };
+            row.appendChild(copy);
+            row.appendChild(close);
+            box.appendChild(title);
+            box.appendChild(body);
+            box.appendChild(row);
+            document.body.appendChild(box);
         },
         setMarkName: function (origName, name) {
             if (!name) return;
@@ -241,11 +321,12 @@
         refreshDayControls: function () {
             var listEl = document.getElementById('dayList');
             if (!listEl) return;
+            var segLocked = STARTS.length > 1 && start !== STARTS[0].id;   // 非主出发地视角：分段只读
             Array.prototype.forEach.call(listEl.children, function (li, i) {
                 var day = DAYS[i];
                 if (!day) return;
                 // 移除旧控件
-                Array.prototype.forEach.call(li.querySelectorAll('.day-stay, .day-seg'), function (n) { n.remove(); });
+                Array.prototype.forEach.call(li.querySelectorAll('.day-stay, .day-seg, .day-seg-hint'), function (n) { n.remove(); });
                 if (!Edit.on) return;
                 // 住宿点编辑入口
                 var meta = li.querySelector('.day-meta') || li;
@@ -253,14 +334,21 @@
                 stay.className = 'day-stay';
                 stay.textContent = day.stay ? '住：' + day.stay + ' ✎' : '＋住宿 ✎';
                 meta.appendChild(stay);
-                // 分段下拉（休整日无区间）
+                // 分段控件：休整日无区间；非主出发地视角给明确提示（不静默、不假装可改）
                 if (day.path && day.altKm) {
-                    var seg = document.createElement('span');
-                    seg.className = 'day-seg';
-                    seg.appendChild(Edit.makeBoundarySelect(day, 0));
-                    seg.appendChild(document.createTextNode(' → '));
-                    seg.appendChild(Edit.makeBoundarySelect(day, 1));
-                    meta.appendChild(seg);
+                    if (segLocked) {
+                        var hint = document.createElement('span');
+                        hint.className = 'day-seg-hint';
+                        hint.textContent = Edit.segViewHint();
+                        meta.appendChild(hint);
+                    } else {
+                        var seg = document.createElement('span');
+                        seg.className = 'day-seg';
+                        seg.appendChild(Edit.makeBoundarySelect(day, 0));
+                        seg.appendChild(document.createTextNode(' → '));
+                        seg.appendChild(Edit.makeBoundarySelect(day, 1));
+                        meta.appendChild(seg);
+                    }
                 }
             });
         },
@@ -280,7 +368,7 @@
             sel.appendChild(more);
             sel.onchange = function () {
                 if (sel.value === '__more__') {
-                    editNotice('新增/删除途经点属于「改几何」，需要重新构建：\n请编辑 ROUTE_BUILD 后运行 node tools/build-route.js ' + ROUTE_META.key);
+                    Edit.showWaypointGuide();   // 体验修复 2：三步引导（说明/复制清单/确切命令）
                     Edit.refreshDayControls();   // 还原选择
                     return;
                 }

@@ -88,4 +88,8 @@
         if (activeIdx < 0) fitAll(false);
     }
     setTimeout(forceMapResize, 260);
+    /* 调试钩子：?z=11 在启动后强制缩放到指定级别（层级截图/验收用；
+       站点分级重绘由既有的 zoomchange 防抖链自动跟随） */
+    var dbgZ = (typeof location !== 'undefined' && (location.search.match(/[?&]z=([\d.]+)/) || [])[1]) || '';
+    if (dbgZ) setTimeout(function () { try { map.setZoom(+dbgZ); } catch (e) {} }, 900);
     window.addEventListener('load', function () { setTimeout(forceMapResize, 120); });

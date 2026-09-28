@@ -165,7 +165,10 @@
        手打示例站变量也已于 S2 从数据包移除；真实站点统一走 planner.js 的
        renderStations()（dimEvM/dimFuelM/planM）。 */
 
-    /* --- 地名标注层 --- */
+    /* --- 地名标注层（体验修复 3：标签分三级） ---
+       ① 景点 SPOTS = 最高层级：更大字号 + 白底胶囊 + 最高 zIndex，默认显示
+       ② 城镇 CITIES = 中层级：标准标注
+       ③ 站点 = 图标即主表达，站名文字只在近景出现（planner.js 的 z>=10 标签层） */
     function labelGeos(arr) {
         return arr.map(function (it, i) {
             return { id: 'l' + i, position: LL(it.p[0], it.p[1]), content: it.n };
@@ -173,15 +176,16 @@
     }
     var cityLabels = createLabelLayer({
         map: map,
+        zIndex: 120,
         styles: { default: ({ color: '#1f2937', size: 12, offset: { x: 0, y: 20 } }) },
         geometries: labelGeos(CITIES)
     });
     var spotLabels = createLabelLayer({
         map: map,
-        styles: { default: ({ color: '#6d28d9', size: 11, offset: { x: 0, y: 20 } }) },
+        zIndex: 130,   // 景点优先避让权：压在城镇与站点标签之上
+        styles: { default: ({ color: '#6d28d9', size: 13, bold: true, badge: true, offset: { x: 0, y: 22 } }) },
         geometries: labelGeos(SPOTS)
     });
-    spotLabels.setMap(null);
 
     /* --- 经典支线（虚线；图例文案随数据包 CLASSIC.label） ---
        数据包可给空 CLASSIC（无支线概念的线路），此时不建图层并隐藏图例行 */
@@ -524,6 +528,8 @@
         var subEl = document.querySelector('#panel .sub');
         if (subEl && cur.sub) subEl.textContent = cur.sub;
         renderAll();
+        // 编辑模式开着时切换出发地：分段控件的可用性随视角变化，需要重建（编辑层注入）
+        if (typeof Edit !== 'undefined' && Edit.isOn && Edit.isOn()) Edit.refreshDayControls();
     }
     renderStartButtons();
 
