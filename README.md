@@ -12,14 +12,49 @@
 
 ## 打开看看
 
-直接双击 `index.html` 即可（需联网加载腾讯地图底图）。
+> ⚠️ **需要先配一个自己的腾讯地图 Key**（见下方「配置地图 Key」）。
+> 地图底图由腾讯位置服务提供，**必须带 key 才能显示**。
 
-或在仓库根目录起一个静态服务：
+在仓库根目录起一个静态服务（**不能直接双击打开** —— 腾讯 GL JS 已不支持 `file://` 协议）：
 
 ```bash
 python -m http.server 8000
 # 然后浏览器打开 http://127.0.0.1:8000/index.html
 ```
+
+**注意**：路线、海拔、补能点等数据**全部已内联在 `index.html` 里**，
+页面运行时**不调用任何 WebService 接口** —— 它只依赖腾讯底图瓦片。
+所以只要底图能出来，整个页面就是完整可用的。
+
+### 配置地图 Key
+
+1. 到 [腾讯位置服务控制台](https://lbs.qq.com/dev/console/application/mine) 注册并创建 Key
+   - 应用类型选 **浏览器端**
+   - 勾选 **JavaScript API**（WebService 不需要，本页面运行时不用）
+   - **域名白名单**：本地调试填 `localhost` 或 `127.0.0.1`；部署后填你的域名
+2. 打开 `index.html`，把顶部的加载地址补上 key：
+
+```html
+<script src="https://map.qq.com/api/gljs?v=1.exp&libraries=service&key=你的KEY"></script>
+```
+
+3. 把上面那个代理配置块**整段删掉**（它是本地调试用的，见下方说明）
+
+### 关于原先的密钥代理配置
+
+`index.html` 顶部有一段：
+
+```javascript
+window._TMapSecurityConfig = {
+    serviceHost: 'http://127.0.0.1:__WB_HTTP_PORT__/_TMapService/_wbt/__WB_TMAP_SECRET__',
+};
+```
+
+这是**开发环境（WorkBuddy 客户端）的密钥代理**，两个 `__WB_*__` 占位符在客户端预览时才会被替换。
+**它指向 `127.0.0.1`，也就是"打开者自己的电脑"** —— 换到任何其他环境都不成立。
+
+所以如果你在 GitHub Pages 或其他地方部署，**必须按上面的步骤换成自己的 Key**。
+（保留这段是为了本地开发时不用往代码里写真实密钥；真要部署请删除。）
 
 ---
 

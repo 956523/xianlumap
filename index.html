@@ -277,9 +277,82 @@
 </style>
 <script>
     // WorkBuddy 腾讯地图密钥代理（运行时自动替换占位符，前端零密钥）
+    // ⚠️ 这是【本地开发环境】专用的密钥代理。指向 127.0.0.1 = 打开者自己的电脑，
+    //    换到 GitHub Pages / 任何其他环境都不成立。
+    //    部署时请删除本段，并在下面的 gljs 地址里补上自己的 key=。
     window._TMapSecurityConfig = {
         serviceHost: 'http://127.0.0.1:__WB_HTTP_PORT__/_TMapService/_wbt/__WB_TMAP_SECRET__',
     };
+</script>
+<script>
+    /* ============ 地图 Key 预检 ============
+       腾讯 GL JS 必须带 key 才能渲染底图。缺 key 时表现为「灰屏 / 空白」，
+       且控制台只有一句模糊的报错，很容易被当成代码 bug。
+       这里主动检测并给出明确指引，而不是让人对着灰屏猜。 */
+    (function () {
+        // 直接按 src 找 gljs 的 script 标签，拿它的 URL 判断有没有 key
+        var tags = document.getElementsByTagName('script');
+        var url = '';
+        for (var i = 0; i < tags.length; i++) {
+            var s = tags[i].getAttribute('src') || '';
+            if (s.indexOf('map.qq.com/api/gljs') >= 0) { url = s; break; }
+        }
+        var hasKey = /[?&]key=[^&#\s]+/.test(url);
+        var isFile = (location.protocol === 'file:');
+        var problems = [];
+
+        if (isFile) {
+            problems.push({
+                t: '用了 file:// 直接打开',
+                d: '腾讯 GL JS 已不支持 file:// 协议。请起一个本地服务：<code>python -m http.server 8000</code>，' +
+                   '然后访问 <code>http://localhost:8000/index.html</code>。'
+            });
+        }
+        if (!hasKey) {
+            problems.push({
+                t: '地图 Key 缺失',
+                d: '本页面的底图由腾讯位置服务提供，必须带 key。<br>' +
+                   '去 <a href="https://lbs.qq.com/dev/console/application/mine" target="_blank" rel="noopener">' +
+                   '腾讯位置服务控制台</a> 建一个「浏览器端」Key（勾选 JavaScript API，域名白名单填你的域名），' +
+                   '然后把加载地址改成：<br>' +
+                   '<code>https://map.qq.com/api/gljs?v=1.exp&libraries=service&amp;key=你的KEY</code>'
+            });
+        }
+        if (!problems.length) return;
+
+        window.__tmapKeyProblem = problems;
+
+        function show() {
+            if (document.getElementById('__keyHint')) return;
+            var box = document.createElement('div');
+            box.id = '__keyHint';
+            box.setAttribute('style',
+                'position:fixed;inset:0;z-index:var(--z-tip);display:flex;align-items:center;justify-content:center;' +
+                'background:linear-gradient(160deg,#f8fafc,#e2e8f0);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;' +
+                'padding:24px;box-sizing:border-box;overflow:auto;');
+            var items = problems.map(function (p) {
+                return '<li style="margin:0 0 14px;"><b style="color:#b91c1c;font-size:14px;">' + p.t + '</b>' +
+                       '<div style="margin-top:6px;color:#475569;font-size:13px;line-height:1.7;">' + p.d + '</div></li>';
+            }).join('');
+            box.innerHTML =
+                '<div style="max-width:560px;background:#fff;border-radius:16px;padding:28px 30px;' +
+                'box-shadow:0 12px 40px rgba(15,23,42,.18);border:1px solid #e2e8f0;">' +
+                '<h2 style="margin:0 0 6px;font-size:19px;color:#0f172a;">地图没能加载出来</h2>' +
+                '<p style="margin:0 0 20px;color:#64748b;font-size:13px;">' +
+                '页面数据本身是完整的（路线、海拔、补能点都已内联），差的只是底图。按下面修一下就好：</p>' +
+                '<ol style="margin:0;padding-left:22px;">' + items + '</ol>' +
+                '<p style="margin:20px 0 0;padding-top:16px;border-top:1px solid #f1f5f9;color:#94a3b8;font-size:12px;">' +
+                '详见仓库 README 的「配置地图 Key」一节。</p>' +
+                '</div>';
+            document.body.appendChild(box);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', show);
+        } else {
+            show();
+        }
+    })();
 </script>
 <script src="https://map.qq.com/api/gljs?v=1.exp&libraries=service"></script>
 </head>

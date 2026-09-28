@@ -448,5 +448,25 @@ ok('chip 允许收缩不顶宽（min-width:0）',
 ok('窄屏 chip 字号降档防溢出',
     /\.chip \{ font-size: 9\.5px/.test(html), '390px 宽下三块必须挤得下');
 
+console.log('\n【17】地图 Key 预检（部署必读）');
+// 背景：腾讯 GL JS 必须带 key 才能渲染底图。缺 key 时页面只是灰屏，
+// 且没有明确报错 —— 容易被误判成代码 bug。本页面主动检测并给出指引。
+// 这条之所以重要：项目上传 GitHub 后，本地开发用的密钥代理（127.0.0.1 + __WB_*__ 占位符）
+// 在别的环境里【不可能成立】，必须有明确的失败提示，而不是悄悄灰屏。
+ok('有 Key 预检逻辑',
+    /地图 Key 预检/.test(html) && /function show\(\)/.test(html), '缺 key 时给出可操作的指路，不是灰屏');
+ok('预检在 gljs 标签之前执行',
+    html.indexOf('地图 Key 预检') < html.indexOf('map.qq.com/api/gljs'), '否则取不到 script 的 src');
+ok('按 src 找 gljs 标签判断 key',
+    /getElementsByTagName\('script'\)/.test(html) && /indexOf\('map\.qq\.com\/api\/gljs'\)/.test(html), '');
+ok('识别 file:// 协议并给出起服务指引',
+    /location\.protocol === 'file:'/.test(html) && /python -m http\.server/.test(html),
+    '腾讯 GL JS 已不支持 file://');
+ok('提示里写清「数据本身是完整的」',
+    /路线、海拔、补能点都已内联/.test(html), '防止误解为数据丢失/加载失败');
+ok('旁边有注释提醒部署时要删掉密钥代理',
+    /部署时请删除本段/.test(html) && /127\.0\.0\.1 = 打开者自己的电脑/.test(html),
+    '本地代理指向 127.0.0.1，换环境必然失效');
+
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail > 0 ? 1 : 0);
