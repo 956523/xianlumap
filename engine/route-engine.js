@@ -1,0 +1,516 @@
+/* ============================================================================
+ * engine/route-engine.js — 地图初始化 / 取景 / 图层 / 每日路线
+ *
+ * 平台化 S2 从 index.html 主脚本拆分而来（纯搬家 + 消硬编码，逻辑未重写）：
+ *   - 出发地双基准体系收进数据契约 ROUTE_STARTS，本文件不认任何具体城市
+ *   - 地图初始视角由主基准出发地的包围盒算出（原为写死的经验值）
+ *   - 经典支线/固定支线全部由数据包（CLASSIC / EXTRA_LINES）驱动
+ * 依赖：route-defs/<route>.js（数据包）先于本文件加载；planner/profile/ui 后加载，
+ * 跨文件调用全部发生在运行时（点击/启动），加载期无交叉调用。
+ * ========================================================================== */
+
+    /* ============ 图标（运行时生成 data URI，避免外部图片依赖） ============ */
+    function icon(svg) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }
+    function pin(fill) {
+        return icon('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32"><path d="M12 1C5.9 1 1 5.9 1 12c0 8 11 19 11 19s11-11 11-19C23 5.9 18.1 1 12 1z" fill="' + fill + '" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" fill="#fff"/></svg>');
+    }
+    var IC = {
+        city: pin('#1e3a5f'),
+        spot: pin('#7c3aed'),
+        fuel: icon('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="#dc2626" stroke="#fff" stroke-width="2.2"/><rect x="9.5" y="8" width="7" height="13" rx="1.4" fill="#fff"/><rect x="11.2" y="10" width="3.6" height="3.4" rx="0.6" fill="#dc2626"/><path d="M17.5 11h2.2c.7 0 1.3.6 1.3 1.3v5.2c0 .9.6 1.5 1.3 1.5s1.3-.6 1.3-1.5v-5.4l-1.8-1.8" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/><rect x="9.5" y="19.4" width="10" height="1.8" rx="0.9" fill="#fff"/></svg>'),
+        ev:   icon('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="#16a34a" stroke="#fff" stroke-width="2.2"/><path d="M16.6 6.5L10 16.8h4.2l-1.2 6.7 6.8-10.5h-4.4l1.2-6.5z" fill="#fff"/></svg>')
+    };
+
+    /* 全程最高点：从真实高程序列算，不写死。
+       注意：ALT_REAL 有高程采样噪声（open-meteo DEM 网格点会落到路旁山脊），
+       曾出现 3km 内跳 556m 的假峰（路面上不可能）
+       → 必须先 altDenoised() 去尖峰，否则最高点显示的是噪声。 */
+    function peakAlt() {
+        var best = { alt: 0, km: 0, n: '' };
+        var clean = altDenoised();
+        clean.forEach(function (p) {
+            if (p[1] > best.alt) best = { alt: p[1], km: p[0], n: '' };
+        });
+        // 用最近的地名标注给最高点命名
+        var nearest = null, nd = 1e9;
+        ALT_MARKS.forEach(function (m) {
+            var dd = Math.abs(m.km - best.km);
+            if (dd < nd) { nd = dd; nearest = m; }
+        });
+        if (nearest && nd <= 15) { best.n = nearest.n; best.alt = Math.max(best.alt, nearest.alt); }
+        else best.n = best.km.toFixed(0) + 'km 处';
+        return { alt: Math.round(best.alt), km: best.km, n: best.n };
+    }
+    /* 去掉高程采样噪声尖峰：
+       open-meteo 的 DEM 网格点有时落在路旁山脊上，造成单点跳升 500m+ 的假峰
+       （如某段 3km 内上下 556m，路面上不可能）
+       用 5 点滑动中值滤波，只剔除孤立尖峰，保留真实山口的持续高值 */
+    var _denoised = null;
+    function altDenoised() {
+        if (_denoised) return _denoised;
+        var w = 2; // 左右各 2 点
+        _denoised = ALT_REAL.map(function (p, i) {
+            var win = [];
+            for (var j = Math.max(0, i - w); j <= Math.min(ALT_REAL.length - 1, i + w); j++) win.push(ALT_REAL[j][1]);
+            win.sort(function (a, b) { return a - b; });
+            var med = win[Math.floor(win.length / 2)];
+            // 偏离中值超过 300m 视为噪声，拉回中值；否则保留原值
+            return [p[0], Math.abs(p[1] - med) > 300 ? med : p[1]];
+        });
+        return _denoised;
+    }
+    /* 全程最低点，同理 */
+    function lowAlt() {
+        var best = { alt: 1e9, km: 0, n: '' };
+        ALT_REAL.forEach(function (p) {
+            if (p[1] < best.alt) best = { alt: p[1], km: p[0], n: '' };
+        });
+        var nearest = null, nd = 1e9;
+        ALT_MARKS.forEach(function (m) {
+            var dd = Math.abs(m.km - best.km);
+            if (dd < nd) { nd = dd; nearest = m; }
+        });
+        if (nearest && nd <= 8) best.n = nearest.n;
+        return best;
+    }
+
+    /* ============ 出发地契约（S2：双基准体系收进数据包 ROUTE_STARTS） ============
+       数据包用 ROUTE_STARTS 声明出发地列表，引擎只认契约，不认任何具体城市：
+       - starts[0] 是主基准出发地（环线里程 0 点），totalKm = 环线总里程
+       - 其余出发地可带 offsetKm（接入段里程平移）、leadPath（接入轨迹）、
+         head（接入端海拔点）、firstDay/lastDay（首末日文案）、sub（副标题）、
+         stationKm0（行程起点在站点里程基准上的 km）
+       - 单出发地线路（length < 2）不渲染切换按钮，buildDays 直接返回 CORE+TAIL */
+    var STARTS = (typeof ROUTE_STARTS !== 'undefined' && ROUTE_STARTS && ROUTE_STARTS.length)
+        ? ROUTE_STARTS
+        : [{ id: 'default', name: '默认', sub: '', offsetKm: 0, stationKm0: 0, totalKm: 0 }];
+    var start = STARTS[0].id;
+    function startById(id) {
+        for (var i = 0; i < STARTS.length; i++) if (STARTS[i].id === id) return STARTS[i];
+        return STARTS[0];
+    }
+    function curStart() { return startById(start); }
+
+    /* 环线地理包围盒（从 CORE 轨迹现算）。带接入段的出发地要并入其接入轨迹，
+       否则切到该出发地时按主基准 bbox 算 zoom 会装不下接入段。 */
+    var LOOP_BBOX = (function () {
+        function eatBox(b, pts) {
+            (pts || []).forEach(function (p) {
+                if (p[0] < b.latMin) b.latMin = p[0];
+                if (p[0] > b.latMax) b.latMax = p[0];
+                if (p[1] < b.lngMin) b.lngMin = p[1];
+                if (p[1] > b.lngMax) b.lngMax = p[1];
+            });
+            return b;
+        }
+        var base = { latMin: 99, latMax: -99, lngMin: 999, lngMax: -999 };
+        CORE.forEach(function (d) { eatBox(base, d.path); });
+        var out = {};
+        STARTS.forEach(function (s) {
+            out[s.id] = (s.leadPath && s.leadPath.length)
+                ? eatBox({ latMin: base.latMin, latMax: base.latMax, lngMin: base.lngMin, lngMax: base.lngMax }, s.leadPath)
+                : base;
+        });
+        return out;
+    })();
+
+    /* ============ 初始化地图 ============
+       初始视角取主基准出发地包围盒的中心（S2 起由数据算出；boot 后 fitAll 会精算） */
+    var _b0 = LOOP_BBOX[STARTS[0].id];
+    var map = new TMap.Map('map', {
+        zoom: 6.2,
+        center: new TMap.LatLng((_b0.latMin + _b0.latMax) / 2, (_b0.lngMin + _b0.lngMax) / 2),
+        minZoom: 5,
+        maxZoom: 15
+    });
+
+    var curIW = null;
+    function openInfo(lat, lng, tags, title, body) {
+        if (curIW) curIW.close();
+        var tagHtml = tags.map(function (t) { return '<span class="tag ' + t[1] + '">' + t[0] + '</span>'; }).join('');
+        curIW = new TMap.InfoWindow({
+            map: map,
+            position: new TMap.LatLng(lat, lng),
+            offset: { x: 0, y: -30 },
+            content: '<div class="iw"><h3>' + title + '</h3>' + tagHtml + '<p>' + body + '</p></div>'
+        });
+    }
+
+    /* --- 标注层（一次性创建） --- */
+    var cityMarkers = new TMap.MultiMarker({
+        map: map,
+        styles: { city: new TMap.MarkerStyle({ src: IC.city, width: 24, height: 32, anchor: { x: 12, y: 32 } }) },
+        geometries: CITIES.map(function (c, i) {
+            return { id: 'c' + i, styleId: 'city', position: new TMap.LatLng(c.p[0], c.p[1]) };
+        })
+    });
+    cityMarkers.on('click', function (e) {
+        var c = CITIES[parseInt(e.geometry.id.slice(1), 10)];
+        openInfo(c.p[0], c.p[1], [['城镇', 'c']], c.n, c.d);
+    });
+    var spotMarkers = new TMap.MultiMarker({
+        map: map,
+        styles: { spot: new TMap.MarkerStyle({ src: IC.spot, width: 22, height: 30, anchor: { x: 11, y: 30 } }) },
+        geometries: SPOTS.map(function (s, i) {
+            return { id: 's' + i, styleId: 'spot', position: new TMap.LatLng(s.p[0], s.p[1]) };
+        })
+    });
+    spotMarkers.on('click', function (e) {
+        var s = SPOTS[parseInt(e.geometry.id.slice(1), 10)];
+        var isPass = s.n.indexOf('垭口') >= 0;
+        openInfo(s.p[0], s.p[1], [[isPass ? '垭口' : '景点', 's']], s.n, s.d);
+    });
+    /* ⚠️ 历史教训（S0 实测）：旧版曾同时存在两套站点图层 —— 手打示例站与真实
+       STATION_DATA 各画一层，同一个站两个位置（数据自相矛盾）。旧图层已删除，
+       手打示例站变量也已于 S2 从数据包移除；真实站点统一走 planner.js 的
+       renderStations()（dimEvM/dimFuelM/planM）。 */
+
+    /* --- 地名标注层 --- */
+    function labelGeos(arr) {
+        return arr.map(function (it, i) {
+            return { id: 'l' + i, position: new TMap.LatLng(it.p[0], it.p[1]), content: it.n };
+        });
+    }
+    var cityLabels = new TMap.MultiLabel({
+        map: map,
+        styles: { default: new TMap.LabelStyle({ color: '#1f2937', size: 12, offset: { x: 0, y: 20 } }) },
+        geometries: labelGeos(CITIES)
+    });
+    var spotLabels = new TMap.MultiLabel({
+        map: map,
+        styles: { default: new TMap.LabelStyle({ color: '#6d28d9', size: 11, offset: { x: 0, y: 20 } }) },
+        geometries: labelGeos(SPOTS)
+    });
+    spotLabels.setMap(null);
+
+    /* --- 经典支线（虚线；图例文案随数据包 CLASSIC.label） ---
+       数据包可给空 CLASSIC（无支线概念的线路），此时不建图层并隐藏图例行 */
+    var hasClassic = !!(typeof CLASSIC !== 'undefined' && CLASSIC && CLASSIC.simplified && CLASSIC.simplified.length);
+    var classicLine = null;
+    if (hasClassic) {
+        classicLine = new TMap.MultiPolyline({
+            map: map,
+            styles: { default: new TMap.PolylineStyle({ color: '#c026d3', width: 3, dashArray: [10, 7], lineCap: 'round' }) },
+            geometries: [{
+                id: 'classic', styleId: 'default',
+                paths: CLASSIC.simplified.map(function (p) { return new TMap.LatLng(p[0], p[1]); })
+            }]
+        });
+        classicLine.setMap(null); // 默认关闭，由图层开关控制
+        var classicLabelEl = document.getElementById('classicLabel');
+        if (classicLabelEl && CLASSIC.label) classicLabelEl.textContent = CLASSIC.label;
+    } else {
+        var classicRowEl = document.getElementById('classicRow');
+        if (classicRowEl) classicRowEl.style.display = 'none';
+    }
+
+    /* --- 固定支线（虚线；坐标收在数据包 EXTRA_LINES，引擎不写死） --- */
+    (typeof EXTRA_LINES !== 'undefined' ? EXTRA_LINES : []).forEach(function (br) {
+        new TMap.MultiPolyline({
+            map: map,
+            styles: { default: new TMap.PolylineStyle({ color: br.color || '#94a3b8', width: br.width || 3, dashArray: br.dash || [10, 8], lineCap: 'round' }) },
+            geometries: [{
+                id: br.id || 'branch', styleId: 'default',
+                paths: br.pts.map(function (p) { return new TMap.LatLng(p[0], p[1]); })
+            }]
+        });
+    });
+
+    /* ============ 出发地 & 每日路线构建 ============
+       S2：出发地差异全部由数据包 ROUTE_STARTS 声明（接入轨迹/海拔点/首末日文案），
+       引擎按契约拼接；无接入段的出发地直接返回 CORE+TAIL。 */
+    var NORMAL = new TMap.PolylineStyle({
+        color: '#0d9488', width: 4, borderWidth: 2, borderColor: '#ffffff',
+        lineCap: 'round', arrowOptions: { width: 8 }
+    });
+    var ACTIVE = new TMap.PolylineStyle({
+        color: '#ea580c', width: 7, borderWidth: 2, borderColor: '#ffffff',
+        lineCap: 'round', arrowOptions: { width: 10 }
+    });
+    var dayLines = [];
+    var DAYS = [];
+
+    function buildDays(st) {
+        var cur = startById(st);
+        if (!cur.leadPath || !cur.leadPath.length) return CORE.concat([TAIL]);
+        var off = cur.offsetKm || 0;
+        var d1 = {
+            id: 1, title: cur.firstDay.title, km: Math.round(CORE[0].km + off), zoom: cur.firstDay.zoom,
+            note: cur.firstDay.note,
+            altKm: [0, +(CORE[0].altKm[1] + off).toFixed(1)],
+            energy: cur.firstDay.energy,
+            path: cur.leadPath.concat(CORE[0].path.slice(1))
+        };
+        var dN = {
+            id: TAIL.id, title: cur.lastDay.title, km: Math.round(TAIL.km + off), zoom: cur.lastDay.zoom,
+            note: cur.lastDay.note,
+            altKm: [+(TAIL.altKm[0] + off).toFixed(1), +(TAIL.altKm[1] + off).toFixed(1)],
+            energy: cur.lastDay.energy,
+            path: TAIL.path.concat(cur.leadPath.slice(1).reverse())
+        };
+        // 带接入段的出发地：中间天 altKm 统一平移 +off（首末日原生即该出发地基准）
+        return [d1].concat(CORE.slice(1).map(function (c) {
+            return Object.assign({}, c, { altKm: [c.altKm[0] + off, c.altKm[1] + off] });
+        }), [dN]);
+    }
+
+    function renderAll() {
+        // 清掉旧线
+        dayLines.forEach(function (pl) { if (pl) pl.setMap(null); });
+        dayLines = [];
+        DAYS = buildDays(start);
+        DAYS.forEach(function (d) {
+            if (!d.path) { dayLines.push(null); return; }
+            dayLines.push(new TMap.MultiPolyline({
+                map: map,
+                styles: { default: NORMAL },
+                geometries: [{
+                    id: 'day' + d.id, styleId: 'default',
+                    paths: d.path.map(function (pt) { return new TMap.LatLng(pt[0], pt[1]); })
+                }]
+            }));
+        });
+        // 侧栏
+        var listEl = document.getElementById('dayList');
+        listEl.innerHTML = '';
+        DAYS.forEach(function (d, i) {
+            var li = document.createElement('li');
+            li.title = d.energy;
+            li.innerHTML = '<span class="day-tag">D' + d.id + '</span>' +
+                '<span class="day-meta"><span class="day-title">' + d.title + '</span>' +
+                '<span class="day-note">' + d.note + '</span></span>' +
+                sparkSVG(d) +
+                '<span class="day-km">' + (d.km ? d.km + 'km' : '—') + '</span>';
+            li.onclick = function () { focusDay(i); };
+            listEl.appendChild(li);
+        });
+        // 统计（全部从数据算出，不再写死 —— 写死的数会跟数据脱节）
+        var totalKm = 0, driveDays = 0;
+        DAYS.forEach(function (d) {
+            totalKm += d.km;
+            if (d.km > 0) driveDays++;
+        });
+        document.getElementById('chipKm').textContent = totalKm;
+        document.getElementById('chipDays').textContent = driveDays;
+        var altPeak = peakAlt();
+        document.getElementById('chipMaxAlt').textContent = altPeak.alt;
+        document.getElementById('chipMaxAlt').title = '最高点：' + altPeak.n + '（' + altPeak.alt + 'm）';
+        // 视角复位
+        fitAll();
+        renderStations();
+    }
+
+    var activeIdx = -1;
+    function focusDay(i) {
+        if (activeIdx === i) { fitAll(); return; } // 再点同一天 → 取消聚焦
+        var d = DAYS[i];
+        activeIdx = i;
+        var listEl = document.getElementById('dayList');
+        Array.prototype.forEach.call(listEl.children, function (li, j) {
+            li.classList.toggle('active', j === i);
+        });
+        dayLines.forEach(function (pl, j) {
+            if (pl) pl.setStyles({ default: j === i ? ACTIVE : NORMAL });
+        });
+        var center, zoom = d.zoom;
+        if (d.center) { center = new TMap.LatLng(d.center[0], d.center[1]); }
+        else {
+            var mid = d.path[Math.floor(d.path.length / 2)];
+            center = new TMap.LatLng(mid[0], mid[1]);
+        }
+        map.easeTo({ center: center, zoom: zoom, duration: 600 });
+        document.getElementById('curEnergy').innerHTML = '<b>D' + d.id + ' ' + d.title + '（' + (d.km || 0) + 'km）：</b>' + d.energy;
+        // 点了某天却看不到剖面是反直觉的 → 抽屉收起时自动展开
+        if (!isOpen()) openDrawer(300);
+        else drawProfile();
+        if (window.innerWidth <= 720) setPanelOpenLater(false);
+    }
+
+    /* 地图"真正可见区域"的估算：扣掉被侧栏（横向）和抽屉（纵向）遮掉的部分。
+       这两种遮挡的形态随视口宽度完全不同，必须分开处理：
+       · 宽屏（>720）：侧栏贴左、只占一条，地图可用区 = 视口减去侧栏右边缘 → 往【东】平移即可
+       · 窄屏（≤720）：侧栏几乎占满宽度且贴顶，横向根本没地方挪
+                       → 横向不补偿，改为把地图往下挤，用【下半屏】当可见区
+       以前一刀切按横向补偿，窄屏上侧栏 right≈376 → 环线被推出屏幕外，地图一片空白。 */
+    function visibleBox() {
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var panelEl = document.getElementById('panel');
+        var w = vw, h = vh, panelRight = 0, panelBottom = 0;
+        var narrow = vw <= 720;
+
+        if (panelEl && !panelEl.classList.contains('collapsed')) {
+            var pr = panelEl.getBoundingClientRect();
+            if (narrow) {
+                // 窄屏：按"侧栏底部以下"算可用高度，宽度用整屏
+                panelBottom = pr.bottom;
+                h = vh - Math.max(panelBottom, 0) - 14;
+                w = vw - 28;
+            } else {
+                panelRight = pr.right;
+                w = vw - pr.right - 14;   // 侧栏右边缘到视口右边之间才是地图可用宽
+            }
+        } else {
+            w = vw - 56;
+        }
+        // 底部抽屉占高（与侧栏遮挡取更紧的那个）
+        var occ = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--elev-occupy')) || 0;
+        h = Math.min(h, vh - occ - 14);
+
+        return {
+            w: Math.max(200, w), h: Math.max(200, h),
+            vw: vw, vh: vh, panelRight: panelRight, panelBottom: panelBottom,
+            narrow: narrow
+        };
+    }
+
+    /* 给定可用像素区，算出刚好装下环线的 zoom（墨卡托） */
+    function zoomToFit(box, bbox, padPx) {
+        var lngSpan = bbox.lngMax - bbox.lngMin;
+        // 墨卡托：纬度方向要用投影后的 y 差
+        function mercY(lat) {
+            var s = Math.sin(lat * Math.PI / 180);
+            return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+        }
+        var ySpan = Math.abs(mercY(bbox.latMin) - mercY(bbox.latMax));
+        var xSpan = lngSpan / 360;
+        var availW = Math.max(120, box.w - padPx * 2);
+        var availH = Math.max(120, box.h - padPx * 2);
+        var zx = Math.log2(availW / (256 * xSpan));
+        var zy = Math.log2(availH / (256 * ySpan));
+        return Math.min(zx, zy);
+    }
+
+    function fitAll(redraw) {
+        activeIdx = -1;
+        var listEl = document.getElementById('dayList');
+        Array.prototype.forEach.call(listEl.children, function (li) { li.classList.remove('active'); });
+        dayLines.forEach(function (pl) { if (pl) pl.setStyles({ default: NORMAL }); });
+
+        // zoom：按"环线真实地理包围盒"装进"真正可见的像素区"反算，不再用经验常数。
+        // 以前只吃容器高度 → 窄视口下路线被横向压扁、环线右侧出画。
+        var box = visibleBox();
+        var bbox = LOOP_BBOX[start] || LOOP_BBOX[STARTS[0].id];
+        var z = zoomToFit(box, bbox, 26);
+        z = Math.max(4.5, Math.min(7.6, z));
+
+        /* 中心点：让【环线包围盒】在【真正可见的矩形】里居中。
+           注意不能写成"给 bbox 中心加一个像素偏量" —— 那是线性近似，
+           在纬度高、跨度大时会偏（墨卡托纬度是非线性的，且地图容器的几何中心
+           与"可见区中心"根本不是同一个点：地图容器高 = vh−抽屉，
+           而窄屏下可见区是 [侧栏底, vh]）。
+           正确做法：直接反解 —— 要把 bbox 的某个纬度对齐到屏幕某个 y。 */
+        var bboxMidLat = (bbox.latMin + bbox.latMax) / 2;
+        var cx = bboxMidLat;
+        var cy = (bbox.lngMin + bbox.lngMax) / 2;
+        var pxPerDegLng = 256 * Math.pow(2, z) / 360;
+
+        // 地图容器的几何中心（TMap 的 center 落在容器的正中心）
+        var mapH = box.vh - 46;
+        var midY = mapH / 2;
+
+        function mercY(lat) {
+            var s = Math.sin(lat * Math.PI / 180);
+            return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+        }
+        var ppxY = 256 * Math.pow(2, z);   // 墨卡托 y 的像素比（每单位），与经度同为这个世界宽度
+
+        if (box.narrow) {
+            // 窄屏：横向占满，纵向要让环线整体落在 [panelBottom, vh] 内居中。
+            // 可见区中心的屏幕 y（用 vh 口径，因为它是相对视口的 CSS 像素）
+            var visTop = box.panelBottom + 6;
+            var visBot = box.vh - 6;
+            var visMid = (visTop + visBot) / 2;
+            // 反解：让 bbox 中心纬线落在 visMid → center.lat 使 mercY(lat) 满足下式
+            //   visMid = midY + (mercY(centerLat) − mercY(bboxMidLat)) · ppxY
+            // ⇒ mercY(centerLat) = mercY(bboxMidLat) + (visMid − midY) / ppxY
+            var mercTarget = mercY(bboxMidLat) + (visMid - midY) / ppxY;
+            // mercY 反函数：y = 0.5 − ln((1+s)/(1−s))/(4π) ⇒ lat = asin(1 − 2/(e^(4π(0.5−y))+1)) 的等价形式
+            var n = Math.PI * (1 - 2 * mercTarget);
+            cx = Math.atan(Math.sinh(n)) * 180 / Math.PI;
+        } else if (box.panelRight > 0) {
+            // 宽屏：横向平移，把 bbox 中心经线对齐到可见区中心
+            // 经度是线性的，直接按像素差折算即可
+            var shiftPx = ((box.panelRight + box.vw) / 2) - (box.vw / 2);
+            cy -= shiftPx / pxPerDegLng;
+        }
+
+        map.easeTo({
+            center: new TMap.LatLng(cx, cy),
+            zoom: z, duration: 600
+        });
+        document.getElementById('curEnergy').textContent = '点选上方任意一天，看这段的海拔与能耗提示。';
+        if (redraw !== false) drawProfile();
+        if (window.__fitDebug) window.__fitDebug = { z: z, box: box, bbox: bbox };
+    }
+    document.getElementById('btnFit').onclick = function () { fitAll(); };
+
+    /* --- 出发地切换（按钮由 ROUTE_STARTS 渲染；单出发地线路整段隐藏） --- */
+    var startBtns = [];
+    function renderStartButtons() {
+        var seg = document.getElementById('startSeg');
+        if (!seg) return;
+        seg.innerHTML = '';
+        startBtns = [];
+        if (STARTS.length < 2) { seg.style.display = 'none'; return; }
+        seg.style.display = '';
+        STARTS.forEach(function (s) {
+            var btn = document.createElement('button');
+            btn.textContent = s.name;
+            if (s.id === start) btn.className = 'on';
+            btn.onclick = function () { setStart(s.id); };
+            seg.appendChild(btn);
+            startBtns.push(btn);
+        });
+    }
+    function setStart(st) {
+        if (start === st) return;
+        start = st;
+        var cur = curStart();
+        startBtns.forEach(function (b, i) {
+            b.classList.toggle('on', STARTS[i].id === st);
+        });
+        var subEl = document.querySelector('#panel .sub');
+        if (subEl && cur.sub) subEl.textContent = cur.sub;
+        renderAll();
+    }
+    renderStartButtons();
+
+    /* --- 图层开关 ---
+       tgFuel / tgEv 不绑到固定的 marker 变量上：它们控制的是【renderStations() 里
+       动态重建的】dimEvM/dimFuelM，而每次重建都会 new 一个新的 MultiMarker →
+       不能再持有旧引用。做法：开关只改一个状态位，然后触发重绘 → 重绘时按状态决定 setMap。 */
+    function bindToggle(inputId, layers) {
+        document.getElementById(inputId).addEventListener('change', function (e) {
+            layers.forEach(function (l) { l.setMap(e.target.checked ? map : null); });
+        });
+    }
+    bindToggle('tgCity', [cityMarkers, cityLabels]);
+    bindToggle('tgSpot', [spotMarkers, spotLabels]);
+
+    // 站点图层开关：只记状态 + 重绘（重绘里会把新图层挂上/摘掉）
+    var layerOn = { fuel: true, ev: true };
+    document.getElementById('tgFuel').addEventListener('change', function (e) {
+        layerOn.fuel = e.target.checked;
+        renderStations();
+    });
+    document.getElementById('tgEv').addEventListener('change', function (e) {
+        layerOn.ev = e.target.checked;
+        renderStations();
+    });
+    document.getElementById('tgClassic').addEventListener('change', function (e) {
+        if (classicLine) classicLine.setMap(e.target.checked ? map : null);
+    });
+
+    /* --- 侧栏折叠（全尺寸可用，地图软件惯例：面板自带折叠把手） --- */
+    var panelEl = document.getElementById('panel');
+    var handleEl = document.getElementById('panelHandle');
+    function setPanelOpen(open) {
+        panelEl.classList.toggle('collapsed', !open);
+        handleEl.classList.toggle('show', !open);
+        // 侧栏开合会改变地图可视区域，稍后重画剖面宽度
+        setTimeout(function () { if (isOpen()) drawProfile(); }, 260);
+    }
+    // focusDay 在窄屏自动收侧栏（早于此定义，靠函数声明提升安全调用）
+    function setPanelOpenLater(open) { setPanelOpen(open); }
+    document.getElementById('panelFold').addEventListener('click', function () { setPanelOpen(false); });
+    handleEl.addEventListener('click', function () { setPanelOpen(true); });

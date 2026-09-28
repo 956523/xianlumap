@@ -1,0 +1,155 @@
+# 平台化执行计划 v1.0
+
+> 本文档是 `PLATFORM.md` 的执行层补充：PLATFORM.md 讲「做成什么样」，本文档讲「按什么顺序做、每步怎么验收」。
+> 评审状态：§9 五问的建议结论见本文档 §2（待开洋签字确认，确认前按本计划推进 S1——S1 只搬数据，任何结论下都无损）。
+
+---
+
+## 1. 现状（2026-09-28 盘点）
+
+- S0（缩放分级）已完成并验收 ✅
+- S1（青甘数据 verbatim 抽出为 route-defs/qinghai-gansu.js）已完成并验收 ✅（实测结论见 §4）
+- S1.5（川西小环线探针）已完成并验收 ✅：引擎可同时加载两条线（`?route=chuanxi`），
+  引擎写死青甘的假设已盘点为 docs/GAP-LIST.md 并全部处置（见该文文末回填）
+- S2（引擎消硬编码 + engine/ 拆分）已完成并验收 ✅（实测结论与契约终形见 §7）
+- S3–S8 未开工
+- 已知待清理项（与平台化并行处理，不阻塞）：
+  - `routes/qinghai-gansu/stations-new.json`（2026-09-26 新抓取，多 `op/slow/cat` 字段）未回写 `stations-data.js`
+  - `tools/write-real-route.js` 引用旧文件名 `qinghai-gansu-loop.html`，疑似死代码
+  - README 写测试 88 条，实际 94 条
+  - `index.html` 顶部残留 WorkBuddy 开发环境密钥代理块（`__WB_*__`）
+
+## 2. 对 PLATFORM.md §9 五问的建议结论
+
+| # | 问题 | 建议结论 |
+| --- | ---- | ---- |
+| 1 | 抽象粒度：主折线 + 分段 + 支线，不做路网 | **同意**。网格路网是另一个产品，硬塞会四不像 |
+| 2 | 执行顺序 | **修订**（见 §3）：第二条线从 S6 提前为「探针」，抽象由真实差异驱动 |
+| 3 | 第二条线 | **先川西小环线（快验证），再 318（狠压测）**，与 PLATFORM.md 倾向一致 |
+| 4 | 成本分工：几何人定、文案人改、中间脚本算 | **同意**，并加一条：地名/分段/文案的初稿由 LLM 生成、人审改（见 §5.3） |
+| 5 | 数据可信度硬规矩 | **同意**。「抓不到的不假装抓到」是产品底线，不是技术取舍 |
+
+## 3. 修订后的执行顺序
+
+PLATFORM.md 原计划：S1 → S2 → S3 → S4 → S5 → **S6 第二条线** → S7 → S8。
+问题：文档自己写明「不做第二条线的抽象都是纸上谈兵」，却把验证放在五个准备阶段之后——抽象先行、验证滞后，正是 §0 警惕的失败路径。
+
+**修订原则：抽象被第二条线逼出来，而不是被设计出来。**
+
+| 阶段 | 内容 | 验收 |
+| ---- | ---- | ---- |
+| **S1** | 线路包落地（薄做）：青甘数据 verbatim 抽出为 `route-defs/qinghai-gansu.js`，页面改读它。**只搬数据不改行为，不追求契约完美** | 页面行为逐像素一致；c4-test 94 全绿；抽出值与原值逐字节一致 |
+| **S1.5** | 手写川西小环线**最小探针包**（约 20 途经点 + 粗分段，数据允许不全） | 引擎能同时加载两条线（哪怕川西显示粗糙） |
+| **S2** ✅ | 引擎消硬编码：由两条线的真实差异驱动契约补全与 `engine/` 改造 | `engine/` grep 不到青甘/川西地名里程；两条线均正常渲染 |
+| **S3** | 构建管线参数化：`build-route.js <线路包>` / `build-stations.js <线路包>` | 用青甘包重跑，产出与现有数据一致 |
+| **S4** | 体检 V1–V4 + 可信度透出（长盲区上图、站点来源日期、侧栏声明） | 体检全绿或有明确标注；青甘 199.9km 无桩段在页面可见 |
+| **S5** | 页面内编辑模式（改文案存 localStorage、可导出） | 改天标题/分段/地名刷新保留，可导出 JSON |
+| **S6** | 川西小环线全量补数据（高程/站点穷举） | PLATFORM.md A1–A6 全达标 |
+| **S7** | 318 川藏南线 | 同上，引擎改动仍为 0 |
+| **S8** | 多线路入口（选线器 + 按需加载） | 打开页面选线，各自独立加载 |
+
+**不变的原则**：每步独立验收、青甘线全程可跑、不做破坏性重构、不引入 webpack/vite/TS。
+
+## 4. S1 构建计划（已完成）
+
+### 产出物
+
+- 新增 `route-defs/qinghai-gansu.js`：包含从 `index.html` 抽出的全部数据变量，顶层 `var` 保持全局，**值逐字节不动**：
+  - `ALT_REAL`（L464）、`ALT_MARKS`（L522）、`ALT`（L524，是 IIFE 合成逻辑，原样搬走）、`LZ_XN_KM`（L534）、`TOTAL_XN`（L536）、`P_LZ_XN`（L593）、`CORE`（L594）、`TAIL`（L639）、`CLASSIC`（L648）、`CITIES`（L651）、`SPOTS`（L675）、`FUELS`（L694）、`EVS`（L711）、`STATION_DATA`（L1139）
+  - 文件头加注释块：来源说明、禁止手改（构建产物/注入数据的边界说明）
+- 修改 `index.html`：数据块原位删除，主 `<script>`（L449）前加 `<script src="route-defs/qinghai-gansu.js"></script>`
+
+### 明确不做（留给 S2）
+
+- 不把数据重组成 PLATFORM.md §2.1 的 `waypoints/days/marks` 契约形状（S1.5/S2 由真实差异驱动）
+- 不回写 `stations-new.json`（会改变行为）
+- 不动任何逻辑代码
+
+### 验收
+
+1. `node tools/c4-test.js` → 94 pass / 0 fail
+2. 抽出值校验：Node 脚本分别加载原/新两处变量，`JSON.stringify` 全等
+3. 手动起 `python -m http.server` 开页面，渲染与之前一致（有 Key 时）
+
+> S1 实测结论（2026-09-28）：c4-test 94 pass / 0 fail；15 个变量（指定 14 个 + 一并搬出的 LZ_HEAD）
+> 与原文件逐字节全等；index.html 1916 → 1701 行；c4-test.js 加了 2 行机械适配
+> （vm 里按页面相同顺序先注入 route-defs 数据包，断言与工具逻辑未动）。
+
+## 5. 工程补强（与阶段并行，量小）
+
+1. **最小 CI**：GitHub Actions 跑 `node tools/c4-test.js`。项目零依赖，成本≈0。顺手修 README 数字、删 `write-real-route.js`、清 `__WB_*__` 残留
+2. **站点数据刷新入口**：tools/ 固化「重抓 → 体检 → 回写」一条命令；不做自动调度，页面透出 `updatedAt`（契约已有字段），每季度手动跑一次
+3. **LLM 辅助「加线」**：途经点人定后，地名标注、日均 250km 初分天数、文案骨架由 LLM 生成初稿、人审改。目标：把 §0 难题二的第 4/5/6 行从「手打」降为「审改」
+
+## 6. 风险与边界（沿用 PLATFORM.md §8，不重复）
+
+补充一条：**S8（多线路入口）不得提前**。三条线之前没有选线的必要；S5（编辑模式）也不急——现阶段唯一用户是开洋自己，「不依赖开洋」的开关等第二个真实用户出现再付它的成本。
+
+## 7. S2 实测结论与数据包契约终形（2026-09-28）
+
+### 验收结果
+
+1. `grep -ri 'qinghai|青甘|兰州|西宁|塔尔寺|拉脊山' engine/` → 无匹配 ✅
+2. `node tools/c4-test.js` → 94 pass / 0 fail ✅（加载链改为按 index.html 顺序拼接 engine/*.js，断言与工具逻辑未动）
+3. `node tools/probe-check.js` → 20 pass / 0 fail ✅（川西「无可达警告」断言按新契约改为「未接入」透出）
+4. 青甘行为一致性：用同一套 mock 在 node vm 里分别跑「git HEAD 旧主脚本」与「engine/*.js」，
+   对比每日列表/统计 chips/全程与聚焦剖面 SVG/站点全量与去重/LOOP_BBOX/第二出发地全部状态/
+   油车与 300km 续航档位——输出逐字节一致。**唯一差异**：续航规划面板的 D 前缀，
+   修正了旧 dayOf 对主基准出发地多减一次接入段里程的既有 bug（详见 GAP-LIST B5 注）
+5. 未执行 git 提交 ✅
+
+### 文件清单
+
+- `engine/route-engine.js`（516 行）：地图初始化/取景/图层/每日路线/出发地切换/侧栏折叠
+- `engine/planner.js`（462 行）：续航规划/站点分级（去重/锚点/缩放分级）/规划面板
+- `engine/profile.js`（326 行）：海拔剖面抽屉/拖拽/altSeries/剖面 SVG/尺寸监听
+- `engine/ui.js`（75 行）：ROUTE_META 注入/能耗文案/启动序列
+- `index.html`：1742 → 450 行，只剩页面外壳（DOM + Key 预检 + 数据加载器 + 按序加载 engine/*.js）
+- 纯 script 标签加载，无构建工具，「改文件刷页面」回路不变
+
+### 数据包契约终形（route-defs/<id>.js，顶层 var 全局）
+
+```javascript
+ROUTE_META = {
+  key, name, title, sub,            // 标题/线路名/副标题（展示层文案全部随包）
+  direction,                        // 图例主路线方向注记（缺省「沿线方向」）
+  evNotice,                         // 纯电通知条；缺省 → 引擎移除该通知
+  rulesClimb, rulesEnv,             // 能耗教育两段文案；缺省 → 引擎通用版（不写地名）
+  probe                             // 是否探针包
+  // startButtons 已废弃：出发地按钮显隐由 ROUTE_STARTS.length 决定
+}
+
+ROUTE_STARTS = [                    // 出发地列表；starts[0] = 主基准出发地（环线里程 0 点）
+  { id, name, sub,                  // 切换按钮名 / 切到该出发地时的副标题
+    offsetKm,                       // 接入段里程平移（主基准 = 0；中间天 altKm 由引擎 +offsetKm）
+    stationKm0,                     // 行程起点在 STATION_DATA 站点里程基准上的 km
+    totalKm,                        // 仅 starts[0]：环线总里程（curTotal = totalKm + offsetKm）
+    head, leadPath,                 // 仅带接入段的出发地：接入端海拔点 {alt,n} / 接入轨迹
+    firstDay, lastDay }             // 首末日 {title, zoom, note, energy}（km 由引擎按 CORE[0]/TAIL 推算）
+]
+
+// 几何/分段数据（verbatim 层，S1 抽出，S2 未动）：
+ALT_REAL / ALT_MARKS / ALT / CORE / TAIL / CITIES / SPOTS
+CLASSIC                            // 支线；含 label（图例文案随包）；空 simplified = 无支线
+EXTRA_LINES                        // 固定支线（青甘包带丹霞支线原值）
+
+STATION_DATA = {
+  builtAt, source, totalKm, xnStart, xnEnd,
+  ev: [], fuel: []
+  // 契约语义：ev/fuel = [] 表示「该线路未接入此类站点数据」（UI 显示"未接入"，
+  //   规划面板不产出结论）；与「已接入但这段真没站」（显示无桩段）严格区分。
+  // xnStart = 站点 km 基准字段（构建侧遗留命名，S3 管线参数化时统一改名）；
+  //   引擎不直读，经 ROUTE_STARTS[].stationKm0 引用
+}
+
+// 历史变量 LZ_XN_KM / LZ_HEAD / P_LZ_XN / TOTAL_XN 仅作为青甘包内部数据被
+// ROUTE_STARTS 引用，引擎不读；FUELS / EVS（手打示例站）已全线删除。
+```
+
+### 给 S3 的注意事项
+
+- `tools/build-probe-route.js` 已同步新契约（不再产出 LZ_XN_KM/LZ_HEAD/P_LZ_XN/FUELS/EVS，
+  产出 ROUTE_STARTS）；但未联网重跑验证，重新生成前建议先 diff 一遍
+- `STATION_DATA.xnStart` 改名（如 datumStartKm）要连带 tools/build-stations.js、
+  tools/apply-real-route.js、routes/qinghai-gansu/ 下产物一起改
+- 青甘包 totalKm（1882.4）与日行程合计（2163.4）差 281km 的陈旧常量仍在，S4 体检处理

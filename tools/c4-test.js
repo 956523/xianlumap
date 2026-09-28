@@ -9,16 +9,12 @@ const ROOT = path.resolve(dir, '..');
 const ROUTE = path.join(ROOT, 'routes', 'qinghai-gansu');
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-// 主脚本：动态提取最长的 <script>...</script> 内联块（免受行号漂移影响）
-const lines = html.split('\n');
-let mainScript = '', best = '';
-lines.forEach(function (l) {
-    if (/<script>/.test(l)) { mainScript = ''; return; }
-    if (/<\/script>/.test(l)) { if (mainScript.length > best.length) best = mainScript; mainScript = ''; return; }
-    mainScript += l + '\n';
-});
-if (best.length > mainScript.length) mainScript = best;
-mainScript = mainScript.trim();
+// 主脚本：S2 起引擎拆分为 engine/*.js（index.html 按序以 <script src> 加载），
+// 此处按页面相同顺序拼接注入，断言对象与工具逻辑未动
+const engineSrcs = Array.from(html.matchAll(/<script src="(engine\/[^"]+)"><\/script>/g)).map(m => m[1]);
+const mainScript = engineSrcs.map(s => fs.readFileSync(path.join(ROOT, s), 'utf8')).join('\n').trim();
+// S1：线路数据已抽至 route-defs/qinghai-gansu.js，页面经 <script src> 先于主脚本加载，此处按同顺序拼接注入
+const routeDefs = fs.readFileSync(path.join(ROOT, 'route-defs', 'qinghai-gansu.js'), 'utf8');
 
 let pass = 0, fail = 0;
 function ok(name, cond, extra) {
@@ -97,7 +93,7 @@ console.log('\n【1】脚本加载与启动');
 const syncTimeout = (fn) => { try { fn(); } catch (e) {} return 0; };
 let bootErr = null;
 try {
-    vm.runInNewContext(mainScript, { TMap, document, window, console, setTimeout: syncTimeout, clearTimeout: () => {}, encodeURIComponent, parseFloat, parseInt, getComputedStyle, ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; } });
+    vm.runInNewContext(routeDefs + '\n' + mainScript, { TMap, document, window, console, setTimeout: syncTimeout, clearTimeout: () => {}, encodeURIComponent, parseFloat, parseInt, getComputedStyle, ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; } });
 } catch (e) { bootErr = e; }
 ok('主脚本执行无异常', !bootErr, bootErr ? bootErr.message.slice(0, 120) : '');
 if (bootErr) { console.log(bootErr.stack); console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail（中断）'); process.exit(1); }
@@ -135,9 +131,10 @@ const mFuel = (planBox.innerHTML.match(/全程需加油 <b>(\d+)<\/b>/) || [])[1
 ok('加油规划输出', mFuel !== undefined, mFuel + ' 次');
 elCache['btnEv'].onclick && elCache['btnEv'].onclick();
 
-console.log('\n【4】出发地切换（兰州基准 2604km，日行程合计口径）');
-// fromLZ 的 onclick 在 renderAll 里绑定
-elCache['fromLZ'].onclick && elCache['fromLZ'].onclick();
+console.log('\n【4】出发地切换（第二出发地基准 2604km，日行程合计口径）');
+// S2 起出发地按钮由数据包 ROUTE_STARTS 渲染（createElement 产出），不再是静态 DOM
+const lzBtn = created.filter(el => el.id === 'dyn:button' && el.onclick && el.textContent === '兰州')[0];
+lzBtn && lzBtn.onclick();
 const mLz = (planBox.innerHTML.match(/全程需\S+ <b>(\d+)<\/b>/) || [])[1];
 ok('兰州基准规划重算', mLz !== undefined, mLz + ' 次');
 const chipKm = elCache['chipKm'].textContent;
@@ -179,8 +176,8 @@ const svgAll = elCache['chartBox'].children;
 const t2 = svgAll[svgAll.length - 1].innerHTML;
 ok('再点同一天恢复全程（新 SVG 无聚焦标题）', !/↑\d+m/.test(t2) && !/↓\d+m/.test(t2), '');
 ok('恢复全程提示文案', elCache['elevTitle'].textContent.includes('点侧栏任一天'), elCache['elevTitle'].textContent);
-// 切兰州后再点最后一天（D10 到兰州 525km）→ 聚焦标题应含 D10
-elCache['fromLZ'].onclick();
+// 切第二出发地后再点最后一天（D10 含接入段 525km）→ 聚焦标题应含 D10
+lzBtn && lzBtn.onclick();
 const lisLz = created.filter(el => el.id === 'dyn:li').slice(-10);
 lisLz[lisLz.length - 1].onclick();
 const svgLz = elCache['chartBox'].children[elCache['chartBox'].children.length - 1];
@@ -391,7 +388,7 @@ ok('缩放重绘有防抖 + 变化量阈值',
     /setTimeout\(function \(\) \{[\s\S]{0,200}renderStations\(\);[\s\S]{0,40}\},\s*120\)/.test(mainScript),
     'MultiMarker 是整层重建，每帧重建会卡');
 ok('远景隐加油站时有 UI 提示',
-    /fuelTierHint/.test(html) && /（放大后显示）/.test(html),
+    /fuelTierHint/.test(html) && /（放大后显示）/.test(mainScript),
     '否则用户以为图层开关坏了');
 // S0 实测后补的两条（这是实测踩出来的，不是设计出来的）：
 // ① 纯像素去重会留下"碰巧没撞车"的站，远景下最长空档被放大到 554km（真实只有 199.9km）
