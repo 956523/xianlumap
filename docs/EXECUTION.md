@@ -12,7 +12,8 @@
 - S1.5（川西小环线探针）已完成并验收 ✅：引擎可同时加载两条线（`?route=chuanxi`），
   引擎写死青甘的假设已盘点为 docs/GAP-LIST.md 并全部处置（见该文文末回填）
 - S2（引擎消硬编码 + engine/ 拆分）已完成并验收 ✅（实测结论与契约终形见 §7）
-- S3–S8 未开工
+- S3（构建管线参数化 + 接入高德数据源 + 川西全量真实数据）已完成并验收 ✅（见 §8）
+- S4–S8 未开工
 - 已知待清理项（与平台化并行处理，不阻塞）：
   - `routes/qinghai-gansu/stations-new.json`（2026-09-26 新抓取，多 `op/slow/cat` 字段）未回写 `stations-data.js`
   - `tools/write-real-route.js` 引用旧文件名 `qinghai-gansu-loop.html`，疑似死代码
@@ -41,7 +42,7 @@ PLATFORM.md 原计划：S1 → S2 → S3 → S4 → S5 → **S6 第二条线** �
 | **S1** | 线路包落地（薄做）：青甘数据 verbatim 抽出为 `route-defs/qinghai-gansu.js`，页面改读它。**只搬数据不改行为，不追求契约完美** | 页面行为逐像素一致；c4-test 94 全绿；抽出值与原值逐字节一致 |
 | **S1.5** | 手写川西小环线**最小探针包**（约 20 途经点 + 粗分段，数据允许不全） | 引擎能同时加载两条线（哪怕川西显示粗糙） |
 | **S2** ✅ | 引擎消硬编码：由两条线的真实差异驱动契约补全与 `engine/` 改造 | `engine/` grep 不到青甘/川西地名里程；两条线均正常渲染 |
-| **S3** | 构建管线参数化：`build-route.js <线路包>` / `build-stations.js <线路包>` | 用青甘包重跑，产出与现有数据一致 |
+| **S3** ✅ | 构建管线参数化：`build-route.js <线路包>` / `build-stations.js <线路包>` | 用青甘包重跑，产出与现有数据一致 |
 | **S4** | 体检 V1–V4 + 可信度透出（长盲区上图、站点来源日期、侧栏声明） | 体检全绿或有明确标注；青甘 199.9km 无桩段在页面可见 |
 | **S5** | 页面内编辑模式（改文案存 localStorage、可导出） | 改天标题/分段/地名刷新保留，可导出 JSON |
 | **S6** | 川西小环线全量补数据（高程/站点穷举） | PLATFORM.md A1–A6 全达标 |
@@ -110,6 +111,21 @@ PLATFORM.md 原计划：S1 → S2 → S3 → S4 → S5 → **S6 第二条线** �
 ### 数据包契约终形（route-defs/<id>.js，顶层 var 全局）
 
 ```javascript
+ROUTE_BUILD = {                     // 【人写输入契约，S3 起】改线路 = 改这里，然后重跑构建
+  inputDatum: 'wgs84' | 'gcj02',    // 输入坐标系（页面轨迹一律 GCJ-02）
+  meta: { name, title, sub, direction, evNotice, rulesClimb, rulesEnv, probe },
+  waypoints: { key: { n, p, alt, d } },        // 途经点（几何人定）
+  legs: [ { id, title, note, zoom, from, to, via, energy?,
+            rest?, altKm?, center?,            // 休整日直给区间/中心
+            core? } ],                         // core:false = 接入段（不进每日行程）
+  marks: [ { n, p?, km?, alt?, pass?, lowest? } ],  // p 吸附到采样点；km 直给的原样保留
+  cities / spots: [ { n, p, d } ],             // 有 cities 时城镇用 cities（文案更全）
+  poiRegions: [ '行政区名', … ],               // 站点穷举清单（人工可审）
+  starts: [ { id, name, sub?, leadLegId?,      // leadLegId → 构建时展开
+              head?, firstDay?, lastDay? } ],
+  marksIncludeWaypoints: false?               // 默认 true：核心段途经点自动补海拔标注
+}
+
 ROUTE_META = {
   key, name, title, sub,            // 标题/线路名/副标题（展示层文案全部随包）
   direction,                        // 图例主路线方向注记（缺省「沿线方向」）
@@ -135,10 +151,12 @@ EXTRA_LINES                        // 固定支线（青甘包带丹霞支线原
 
 STATION_DATA = {
   builtAt, source, totalKm, xnStart, xnEnd,
+  regions: [],      // 实际穷举的行政区清单（审计）
+  truncated: [],    // 分页截断未抓全的「关键词@行政区」（如实记录，不假装抓全）
   ev: [], fuel: []
   // 契约语义：ev/fuel = [] 表示「该线路未接入此类站点数据」（UI 显示"未接入"，
   //   规划面板不产出结论）；与「已接入但这段真没站」（显示无桩段）严格区分。
-  // xnStart = 站点 km 基准字段（构建侧遗留命名，S3 管线参数化时统一改名）；
+  // xnStart = 站点 km 基准字段（构建侧遗留命名，S4 体检时统一改名）；
   //   引擎不直读，经 ROUTE_STARTS[].stationKm0 引用
 }
 
@@ -146,10 +164,52 @@ STATION_DATA = {
 // ROUTE_STARTS 引用，引擎不读；FUELS / EVS（手打示例站）已全线删除。
 ```
 
-### 给 S3 的注意事项
+### 数据段归属（S3 起）
 
-- `tools/build-probe-route.js` 已同步新契约（不再产出 LZ_XN_KM/LZ_HEAD/P_LZ_XN/FUELS/EVS，
-  产出 ROUTE_STARTS）；但未联网重跑验证，重新生成前建议先 diff 一遍
-- `STATION_DATA.xnStart` 改名（如 datumStartKm）要连带 tools/build-stations.js、
-  tools/apply-real-route.js、routes/qinghai-gansu/ 下产物一起改
-- 青甘包 totalKm（1882.4）与日行程合计（2163.4）差 281km 的陈旧常量仍在，S4 体检处理
+- `build-route.js <id>` 重新生成：ROUTE_META / ALT_REAL / ALT_MARKS / ALT / TOTAL_XN / CORE / TAIL / CITIES / SPOTS / ROUTE_STARTS（全部来自 ROUTE_BUILD + 拉取数据）
+- 同一次构建**原样保留**：STATION_DATA / CLASSIC / EXTRA_LINES（站点由 `build-stations.js <id>` 单独更新；支线由专项工具产出）
+- `build-probe-route.js` 已退役（逻辑并入 build-route.js；OSRM 对比以 `--compare-osrm` 保留）
+- 遗留：青甘包 totalKm（1882.4）与日行程合计（2163.4）差 281km 的陈旧常量仍在，S4 体检处理
+
+## 8. S3 实测结论：构建管线参数化 + 高德数据源（2026-09-28）
+
+### 验收结果
+
+1. `node tools/c4-test.js` → 94 pass / 0 fail ✅（青甘数据未动，仅增量 ROUTE_BUILD）
+2. `node tools/probe-check.js` → 20 pass / 0 fail ✅（川西「未接入」断言已改为断言真实数据）
+3. 川西包三源全真实：轨迹（高德 v3 驾车）/ 高程（open-meteo）/ 站点（高德 POI 穷举）✅
+4. 全程无 Key 泄漏：日志只显示前 4 位；grep 全仓无完整 Key；.env.local 已 gitignore ✅
+5. 未执行 git 提交 ✅
+
+### 川西重建数据摘要
+
+- 总里程 850km（5 天）；轨迹 15356 点抽稀至每天 ≤240 点；高程 328 个采样点（无降级）
+- 站点：穷举 16 行政区 × 2 类，125 请求 0 失败；原始 2050 充电 + 371 加油 → 配额后 **155 充电 + 64 加油**
+- 覆盖体检：最大无桩间隔 **63.5km**（卧龙 → 四姑娘山镇，km146–209，巴朗山段）；最大无油间隔 **77.2km**（同段）；25km 网格 EV 盲区 3/35 格（无长盲区），加油长盲区 1 段（km150–200）——已如实写入 ROUTE_META.evNotice
+- 22 个「关键词@行政区」组合触发分页截断（高德单区上限 200 条），如实记录在 STATION_DATA.truncated
+
+### 数据源实测对比（轨迹）
+
+川西线高德 vs OSRM 逐段（`--compare-osrm` 实测）：平原/高速段高度一致——
+D1 +0.4km、D4 +1.3km、D5 −1.0km（同一条路）；山区段选路不同——
+D2 −6.2km、D3 −9.0km（高德更短）；合计 851.8 vs 866.3km（−1.7%）。
+结论：公里数级差异属正常，两条源走向一致；高德返回即 GCJ-02，
+省去 WGS-84→GCJ-02 转换误差（探针期的转换算法已退役）。
+
+| 维度 | 高德（默认源） | 腾讯（保留路径，无 Key 未验证） | OSRM（仅对比用） |
+| ---- | ---- | ---- | ---- |
+| 轨迹 | v3 驾车，GCJ-02 原生，途经点拆子段拼接 | v1 驾车，差分 polyline（青甘在用） | WGS-84，需自转 GCJ-02 |
+| POI | place/text，city+citylimit 行政区穷举；type 分类干净（011100 充电站） | region() 只覆盖建成区，依赖本地代理（换环境不成立） | 无 |
+| 字段 | name/location/address/tel/type（品牌可直接用） | title/location/address/tel/category（品牌靠标题白名单猜） | — |
+| 限制 | 单区分页上限 200（截断已如实记录） | 需 WorkBuddy 代理 + 代理 secret | 无私家/山区选路偏差 |
+
+### Key 管理规矩
+
+- **存放**：仓库根 `.env.local`（gitignore 已覆盖；文件权限 600）；或环境变量 `AMAP_WEB_SERVICE_KEY`
+- **读取**：`tools/lib/build-lib.js` 的 `loadAmapKey()` 是唯一入口（env 优先，.env.local 兜底）
+- **脱敏**：日志只显示前 4 位（`maskKey`）；API 报错只含 infocode/info，不回显 Key；禁止打印含 Key 的完整 URL
+- 腾讯保留路径的代理 secret 不再硬编码（旧 build-stations.js 曾内联 WorkBuddy secret），改从 `TMAP_SECRET`/`TMAP_PORT` 环境变量读
+
+### 环境备注
+
+- 本机默认 DNS 把 restapi.amap.com 污染到 0.0.0.0；build-lib 自动检测并切阿里 DoH（223.5.5.5）解析，日志可见 `via: alidns-doh`

@@ -89,24 +89,31 @@ window._TMapSecurityConfig = {
 
 ```
 线路图/
-├── index.html                      # 主页面（单文件，零构建，双击即可跑）
+├── index.html                      # 页面外壳（DOM + 数据加载器，零构建）
+├── engine/                         # 引擎（按序 script 标签加载，无构建工具）
+│   ├── route-engine.js             # 地图/取景/图层/每日路线
+│   ├── planner.js                  # 续航规划/站点分级
+│   ├── profile.js                  # 海拔剖面抽屉
+│   └── ui.js                       # 元信息注入/启动序列
+├── route-defs/                     # 线路包（每线一个文件）
+│   ├── qinghai-gansu.js            # 青甘大环线（含 ROUTE_BUILD 输入契约）
+│   └── chuanxi.js                  # 川西小环线
 ├── docs/
 │   ├── PROJECT.md                  # 青甘线产品文档（需求 / 数据 / 迭代记录）
-│   └── PLATFORM.md                 # 平台化规划（怎么让它服务所有线路）
+│   ├── PLATFORM.md                 # 平台化规划（怎么让它服务所有线路）
+│   ├── EXECUTION.md                # 平台化执行计划与阶段验收记录
+│   └── GAP-LIST.md                 # 引擎写死青甘假设盘点与处置（S2 已清）
 ├── routes/
-│   └── qinghai-gansu/              # 线路包：青甘线全部数据
-│       ├── route-real-data.js      # 真实轨迹（2391 点，腾讯驾车路线 API）
-│       ├── route-elev.js           # 真实地形海拔采样（661 点）
-│       ├── route-classic-branch.js # 经典支线几何
-│       ├── stations-data.js        # 补能点（固化产物）
-│       └── stations-new.json       # 补能点原始抓取结果
+│   └── qinghai-gansu/              # 青甘线历史构建产物（轨迹/站点原始数据）
 └── tools/                          # 构建与测试脚本（Node，无依赖）
-    ├── build-route.js              # 路线构建
-    ├── build-stations.js           # 站点抓取 + 配额筛选
-    ├── apply-real-route.js         # 把真实轨迹写回页面
-    ├── write-real-route.js         # 轨迹落盘
-    ├── build-classic-branch.js     # 支线构建
-    └── c4-test.js                  # 回归测试（88 条断言）
+    ├── build-route.js <id>         # 路线构建（--source amap|tencent，默认高德）
+    ├── build-stations.js <id>      # 站点抓取 + 配额筛选 + 覆盖体检
+    ├── lib/build-lib.js            # 共享：Key 加载（脱敏）/DNS 绕行/坐标转换
+    ├── apply-real-route.js         # 青甘历史：真实轨迹写回（遗留）
+    ├── write-real-route.js         # 青甘历史：轨迹落盘（遗留）
+    ├── build-classic-branch.js     # 青甘支线构建（遗留）
+    ├── c4-test.js                  # 青甘回归测试（94 条断言）
+    └── probe-check.js              # 两条线加载冒烟（20 条断言）
 ```
 
 ### 两条设计约定
@@ -125,7 +132,7 @@ window._TMapSecurityConfig = {
 
 ```bash
 node tools/c4-test.js
-# 结果: 88 pass / 0 fail
+# 结果: 94 pass / 0 fail
 ```
 
 测试覆盖：页面结构、投影自洽、数据完整性、去重与分级行为、窄视口布局、
@@ -137,7 +144,7 @@ node tools/c4-test.js
 
 - **地图**：腾讯地图 GL JS（代理模式，无需 API Key）
 - **构建**：纯 Node，零第三方依赖
-- **页面**：单 HTML 文件，零构建工具链 —— 改完刷新即可看到效果
+- **页面**：index.html + engine/*.js + route-defs/*.js，纯 script 标签加载，零构建工具链 —— 改完刷新即可看到效果
 
 ### 已知的接口限制（实测结论，非猜测）
 

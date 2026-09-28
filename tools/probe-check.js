@@ -107,16 +107,16 @@ ok('出发地切换按钮保留（青甘）', !elCache['startSeg'] || elCache['s
 /* ---------- 川西（探针） ---------- */
 console.log('\n【2】川西小环线（探针包）');
 const cx = bootRoute('chuanxi');
-ok('主脚本执行无异常（空站点/空支线不崩）', !cx.err, cx.err ? cx.err.message.slice(0, 160) : '');
+ok('主脚本执行无异常（真实站点/空支线）', !cx.err, cx.err ? cx.err.message.slice(0, 160) : '');
 if (cx.err) { console.log(cx.err.stack); console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail（中断）'); process.exit(1); }
 const cxDays = created.filter(el => el.id === 'dyn:li');
 ok('每日列表渲染 5 天', cxDays.length === 5, cxDays.length + ' 项');
-ok('总里程 chip ≈866', Math.abs(parseInt(elCache['chipKm'].textContent, 10) - 866) <= 25, elCache['chipKm'].textContent);
+ok('总里程 chip ≈850（高德轨迹）', Math.abs(parseInt(elCache['chipKm'].textContent, 10) - 850) <= 25, elCache['chipKm'].textContent);
 ok('最高海拔 chip ≈4298（折多山）', Math.abs(parseInt(elCache['chipMaxAlt'].textContent, 10) - 4298) <= 150, elCache['chipMaxAlt'].textContent);
-ok('续航规划如实透出「未接入」（站点数据缺失）', elCache['planBox'].innerHTML.includes('未接入'), '');
+ok('续航规划输出真实结果（站点已接入）', elCache['planBox'].innerHTML.includes('全程需充电'), '');
 ok('标题来自 ROUTE_META', document.title.includes('川西'), document.title);
-ok('副标题标注探针包与站点未接入', elCache['routeSub'].textContent.includes('探针包') && elCache['routeSub'].textContent.includes('未接入'), elCache['routeSub'].textContent);
-ok('纯电提示标注数据未接入', elCache['evNotice'].querySelector('span').innerHTML.includes('未接入'), '');
+ok('副标题如实描述真实数据口径（不再是探针包）', elCache['routeSub'].textContent.includes('真实数据') && !elCache['routeSub'].textContent.includes('探针包'), elCache['routeSub'].textContent);
+ok('纯电提示标注山区盲区', elCache['evNotice'].querySelector('span').innerHTML.includes('无快充'), '');
 ok('出发地切换按钮隐藏（单出发地）', elCache['startSeg'].style.display === 'none', '');
 ok('经典支线行隐藏（无支线）', elCache['classicRow'].style.display === 'none', '');
 // 交互冒烟：点第 1 天 → focusDay + 剖面重画不崩
