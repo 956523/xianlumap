@@ -198,6 +198,35 @@ node tools/validate.js qinghai-gansu   # 数据体检 V1–V4（--fix 可修复�
 
 ---
 
+## 部署你的副本（GitHub Pages）
+
+仓库自带 `.github/workflows/deploy.yml`，fork 后做三件事就能拥有公网体验版：
+
+1. **配 Secrets**（Settings → Secrets and variables → Actions → New repository secret）：
+   - `AMAP_JS_KEY` —— 高德「Web 端(JS API)」Key
+   - `AMAP_JS_SECURITY_CODE` —— 同一应用的安全密钥
+   - workflow 会把它们生成 `key.local.js`（复用 `tools/make-key-local.js`，格式永不跑偏；
+     浏览器端 Key 出现在部署物里是所有 JS 地图的常态，见安全边界说明）
+2. **开 Pages**（Settings → Pages）：Source 选 **GitHub Actions**
+3. **高德白名单**：控制台给 Key 的域名白名单加上你的 Pages 域名
+   （`https://<你的用户名>.github.io`），本地开发再加 `localhost`
+
+之后 push 到 main 自动部署；Actions 页的 `deploy-pages` 也可手动触发。
+
+## 云端构建（GitHub Actions）
+
+`.github/workflows/build.yml`：**Actions → cloud-build → Run workflow**：
+
+- `routeId`：线路包名（如 `chuanxi`）——跑 build-route → build-stations → validate →
+  全量回归，全绿才以 bot 身份提交（提交信息注明触发人）；任一步失败不提交半成品
+- `refresh_stations`：勾选则忽略 90 天新鲜度全量重抓站点
+
+另有**季度刷新**定时任务（每年 3/6/9/12 月 1 日）：manifest 全部线路
+`build-stations --refresh` + `validate --fix` + 全量回归，自动提交。
+需要的 secret：`AMAP_WEB_SERVICE_KEY`（高德 Web 服务 Key）。
+
+---
+
 ## 共享数据底座（S10）
 
 `data/db/`（进 git）是全站共享库：**坐标基准 WGS-84 厂商中立**，站点带原始抓取值与

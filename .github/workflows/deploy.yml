@@ -1,0 +1,63 @@
+# ============================================================
+# deploy.yml — GitHub Pages 公网体验版（S11 任务 1）
+# 触发：push 到 main 或手动。Key 从 Secrets 生成 key.local.js（复用
+# tools/make-key-local.js，格式与 engine/boot-route.js 的约定永不跑偏）。
+# 浏览器端 Key 运行时必然出现在页面源码里（JS 地图厂商常态），防护靠
+# 高德控制台的域名白名单（见 README「部署你的副本」）。
+# ============================================================
+name: deploy-pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Secrets → .env.local → make-key-local.js → key.local.js（日志自动脱敏）
+      - name: 生成 key.local.js
+        env:
+          AMAP_JS_KEY: ${{ secrets.AMAP_JS_KEY }}
+          AMAP_JS_SECURITY_CODE: ${{ secrets.AMAP_JS_SECURITY_CODE }}
+        run: |
+          test -n "$AMAP_JS_KEY" || { echo "::error::secret AMAP_JS_KEY 未设置"; exit 1; }
+          test -n "$AMAP_JS_SECURITY_CODE" || { echo "::error::secret AMAP_JS_SECURITY_CODE 未设置"; exit 1; }
+          printf 'AMAP_JS_KEY=%s\nAMAP_JS_SECURITY_CODE=%s\n' "$AMAP_JS_KEY" "$AMAP_JS_SECURITY_CODE" > .env.local
+          node tools/make-key-local.js
+          rm -f .env.local
+
+      # upload-pages-artifact 底层是 actions/upload-artifact v4：遵循 .gitignore，
+      # 会把 key.local.js 排除掉。这里在 CI 工作区临时取消其排除（只影响 artifact，
+      # 不影响 git——本 workflow 从不提交），并验证文件确实存在且形状正确。
+      - name: 确保 key.local.js 进入 Pages artifact 并自检
+        run: |
+          printf '\n!key.local.js\n' >> .gitignore
+          test -f key.local.js
+          grep -q 'amapKey' key.local.js && grep -q 'amapSecurity' key.local.js
+          echo "key.local.js OK（字段 amapKey/amapSecurity 齐全）"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - uses: actions/deploy-pages@v4
+        id: deployment

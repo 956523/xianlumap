@@ -682,3 +682,53 @@ build-route 物化 CITIES/SPOTS 时改为「库导出 + 包内覆盖」双通道
 2. **去重/合并逻辑已在库层**（db-lib.js），云端化时整体搬移，语义不变
 3. **90 天新鲜度 + sources 审计**给了增量刷新与计费的天然口径（按 vendor 统计调用）
 4. spots/regions 同库后，「加线」的人工输入只剩途经点清单（几何人定）与分段审改
+
+## 18. 部署与云端构建（2026-09-28，S11）
+
+### 分层架构决策：展示层 Pages + 构建层 Actions + 后期 VPS
+
+| 层 | 载体 | 职责 | 为什么 |
+| ---- | ---- | ---- | ---- |
+| 展示层 | **GitHub Pages** | 静态托管（index.html + engine + route-defs + data/db 只读展示） | 零成本、全球 CDN、push 即部署；站点数据本来就是构建产物，静态足够 |
+| 构建层 | **GitHub Actions** | 手动触发单线构建 / 季度全量刷新（调高德、跑体检、回归后 bot 提交） | 构建需要 Web 服务 Key 与分钟级联网任务，不适合在浏览器/ Pages 里做；Actions 的 Secrets 管 Key 干净 |
+| 后期（已拍板方向） | VPS 云端构建服务 | 自定义线路的实时/按需构建 | 等「用户自定义线路」需求出现，把 tools/ 管线原样搬上 VPS（db-lib 已是独立层） |
+
+**Key 安全边界（再次明确）**：浏览器端 Key（AMAP_JS_KEY）运行时必然出现在页面源码——
+这是 JS 地图厂商的常态，防护靠高德控制台**域名白名单**；仓库（git 历史）与 workflow
+文件里一个 Key 字符都没有（只出现 `${{ secrets.* }}` 引用）。Web 服务 Key 只存在于
+Actions Secrets，构建时写入 `.env.local`（全程日志脱敏），构建完不提交。
+
+### deploy.yml（Pages 部署）
+
+- 触发：push main / workflow_dispatch；官方 actions（upload-pages-artifact v3 +
+  deploy-pages v4），permissions: pages:write + id-token:write
+- Key 注入：secrets → `.env.local` → **`node tools/make-key-local.js` 复用生成
+  key.local.js**（与 engine/boot-route.js 的 `{amapKey, amapSecurity}` 约定永不跑偏）
+- 关键坑（workflow 注释留痕）：upload-artifact v4 **遵循 .gitignore**，会把被忽略的
+  key.local.js 排除出 artifact——CI 工作区临时追加 `!key.local.js` 取消排除（只影响
+  artifact 上传，本 workflow 从不提交），并 `test -f` + grep 字段自检后才上传
+
+### build.yml（云端构建器）
+
+- `workflow_dispatch`：`routeId`（必填）+ `refresh_stations`（布尔，--refresh）
+  → build-route → build-stations → validate（严格模式，不 --fix）→
+  c4-test && probe-check → bot 提交（注明触发人与方式）；**任一失败即中止，不提交半成品**
+- `schedule`（cron `0 2 1 3,6,9,12 *`，每年 3/6/9/12 月 1 日 02:00 UTC）：
+  manifest 全部线路 `build-stations --refresh` + `validate --fix`（DEM 尖峰按既定流程
+  修复写回）+ 全量回归 → 有变化才提交。定时任务**不重跑 build-route**（季度刷新不动几何）
+- 目标线路解析：手动 = 输入的 routeId；定时 = 从 `route-defs/manifest.js` 解析 id 列表
+  （新增线路自动纳入季度刷新，无需改 workflow）
+- 提交范围：`route-defs data/db`（构建产物 + 共享库沉淀），bot 身份
+  `github-actions[bot]`；cloud-build 的 push 会联动触发 deploy.yml 重新部署
+
+### 首次部署操作清单（主会话照单执行）
+
+1. 提交本仓库全部改动（含 `.github/workflows/`）并 push 到 main
+2. Settings → Secrets and variables → Actions，建三个 secret：
+   `AMAP_JS_KEY` / `AMAP_JS_SECURITY_CODE`（高德「Web 端(JS API)」应用的 Key + 安全密钥）、
+   `AMAP_WEB_SERVICE_KEY`（高德 Web 服务 Key，云端构建用）
+3. Settings → Pages：Source 选 **GitHub Actions**
+4. 高德控制台：给浏览器端 Key 配域名白名单 = `https://<用户名>.github.io` + `localhost`
+5. Actions → cloud-build → Run workflow（routeId 填 `chuanxi` 试跑）验证构建链路；
+   成功后 push 任意提交或手动触发 deploy-pages，访问 `https://<用户名>.github.io/xianlumap/`
+   应见选线器（注意仓库名路径；若用自定义域名/CNAME 另配）

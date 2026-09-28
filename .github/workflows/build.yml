@@ -1,0 +1,95 @@
+# ============================================================
+# build.yml — 云端构建器（S11 任务 2）
+# 手动触发（workflow_dispatch）：指定线路包跑完整构建
+#   build-route（轨迹+高程）→ build-stations（查库优先）→ validate（不 --fix，
+#   有问题就失败，不提交半成品）→ c4-test + probe-check 全绿才提交。
+# 定时触发（schedule）：每年 3/6/9/12 月 1 日 02:00 UTC 季度刷新——manifest 全部
+#   线路 build-stations --refresh + validate --fix（DEM 尖峰按既定流程修复写回）。
+# 提交用 github-actions[bot] 身份；提交信息注明触发来源；无变化不提交。
+# ============================================================
+name: cloud-build
+
+on:
+  workflow_dispatch:
+    inputs:
+      routeId:
+        description: '线路包名（route-defs/ 下的 id，如 chuanxi）'
+        required: true
+        type: string
+      refresh_stations:
+        description: '重抓全部站点（忽略 90 天新鲜度，--refresh）'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # 季度刷新：每年 3/6/9/12 月 1 日 02:00 UTC
+    - cron: '0 2 1 3,6,9,12 *'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Web 服务 Key 写进 .env.local（构建脚本的唯一读取入口，日志脱敏）
+      - name: 准备构建 Key
+        env:
+          AMAP_WEB_SERVICE_KEY: ${{ secrets.AMAP_WEB_SERVICE_KEY }}
+        run: |
+          test -n "$AMAP_WEB_SERVICE_KEY" || { echo "::error::secret AMAP_WEB_SERVICE_KEY 未设置"; exit 1; }
+          printf 'AMAP_WEB_SERVICE_KEY=%s\n' "$AMAP_WEB_SERVICE_KEY" > .env.local
+          node -p "'Key 已就绪: ' + require('./tools/lib/build-lib.js').maskKey(process.env.AMAP_WEB_SERVICE_KEY)"
+
+      # 目标解析：手动 = 输入的单条线路；定时 = manifest 全部线路
+      - name: 解析构建目标
+        id: targets
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            IDS=$(node -e "const m=require('fs').readFileSync('route-defs/manifest.js','utf8').match(/id:\s*'([^']+)'/g).map(s=>s.match(/'([^']+)'/)[1]);console.log(m.join(' '))")
+            echo "ids=$IDS" >> "$GITHUB_OUTPUT"
+            echo "refresh=--refresh" >> "$GITHUB_OUTPUT"
+            echo "fix=--fix" >> "$GITHUB_OUTPUT"
+          else
+            echo "ids=${{ inputs.routeId }}" >> "$GITHUB_OUTPUT"
+            echo "refresh=${{ inputs.refresh_stations && '--refresh' || '' }}" >> "$GITHUB_OUTPUT"
+            echo "fix=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 手动构建才重抓几何（途经点可能改过）；季度刷新不动轨迹
+      - name: 构建轨迹 + 高程
+        if: github.event_name == 'workflow_dispatch'
+        run: node tools/build-route.js "${{ inputs.routeId }}"
+
+      - name: 构建站点（查库优先，缺失/过期才调高德）
+        run: |
+          for id in ${{ steps.targets.outputs.ids }}; do
+            node tools/build-stations.js "$id" ${{ steps.targets.outputs.refresh }}
+          done
+
+      - name: 数据体检（手动=严格模式；定时=--fix 修复 DEM 尖峰写回）
+        run: |
+          for id in ${{ steps.targets.outputs.ids }}; do
+            node tools/validate.js "$id" ${{ steps.targets.outputs.fix }}
+          done
+
+      - name: 全量回归（任一失败即中止，不提交半成品）
+        run: node tools/c4-test.js && node tools/probe-check.js
+
+      - name: 提交构建产物
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add route-defs data/db
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "chore(build): 云端构建 ${{ steps.targets.outputs.ids }}（${{ github.event_name }} by ${{ github.actor }}）"
+            git push
+          fi
