@@ -180,4 +180,88 @@ function loadRoutePackage(routeId) {
     return { file, src, pkg: sb };
 }
 
-module.exports = { loadAmapKey, maskKey, getJSON, sleep, amapGet, resolveAmapIp, wgs2gcj, gcj2wgs, haversine, loadRoutePackage, ROOT };
+/* ---------- 站点投影主线（与页面同源：接入段 + CORE + TAIL，apiKm 缩放对齐） ----------
+   build-stations.js（抓站）与 validate.js（V3/V4 体检）共用同一投影，保证口径一致。 */
+function buildProjection(pkg) {
+    const STARTS = pkg.ROUTE_STARTS || [];
+    const lead = STARTS.filter(s => s.leadPath && s.leadPath.length)[0];
+    const segs = [];
+    if (lead) segs.push({ pts: lead.leadPath, apiKm: lead.offsetKm });
+    (pkg.CORE || []).concat([pkg.TAIL]).forEach(d => {
+        if (d && d.path && d.path.length) segs.push({ pts: d.path, apiKm: d.apiKm });
+    });
+    if (!segs.length) throw new Error('包内没有可用轨迹（CORE/TAIL path 为空）');
+    const COSLAT = Math.cos(segs.reduce((a, s) => a + s.pts.reduce((x, p) => x + p[0], 0) / s.pts.length, 0) / segs.length * Math.PI / 180);
+    const ROUTE_ALL = [], SEG_KM = [];
+    let acc = 0;
+    segs.forEach(sg => {
+        const pts = sg.pts;
+        const lens = [0]; let arc = 0;
+        for (let i = 1; i < pts.length; i++) {
+            const dx = (pts[i][1] - pts[i - 1][1]) * COSLAT, dy = pts[i][0] - pts[i - 1][0];
+            arc += Math.sqrt(dx * dx + dy * dy); lens.push(arc);
+        }
+        const scale = arc ? (sg.apiKm / arc) : 0;
+        for (let j = 0; j < pts.length; j++) {
+            if (j === 0 && ROUTE_ALL.length) continue;
+            ROUTE_ALL.push(pts[j]);
+            SEG_KM.push(acc + lens[j] * scale);
+        }
+        acc += sg.apiKm;
+    });
+    const TOTAL_KM = SEG_KM[SEG_KM.length - 1];
+    function project(lat, lng) {
+        const px = lng * COSLAT, py = lat;
+        let best = { d: 1e18, i: 1, t: 0 };
+        for (let i = 1; i < ROUTE_ALL.length; i++) {
+            const A = ROUTE_ALL[i - 1], B = ROUTE_ALL[i];
+            const ax = A[1] * COSLAT, ay = A[0], bx = B[1] * COSLAT, by = B[0];
+            const abx = bx - ax, aby = by - ay, ab2 = abx * abx + aby * aby || 1e-12;
+            let t = ((px - ax) * abx + (py - ay) * aby) / ab2;
+            t = Math.max(0, Math.min(1, t));
+            const cx = ax + t * abx, cy = ay + t * aby, dx = px - cx, dy = py - cy, d = dx * dx + dy * dy;
+            if (d < best.d) best = { d, i, t };
+        }
+        const k0 = SEG_KM[best.i - 1], k1 = SEG_KM[best.i];
+        return { dist: Math.sqrt(best.d) * 111.32, routeKm: k0 + (k1 - k0) * best.t };
+    }
+    return { ROUTE_ALL, SEG_KM, TOTAL_KM, project, COSLAT };
+}
+
+/* ---------- 包内变量块替换（按行定位 + 括号配平找块尾，兼容缩进与多行数组） ----------
+   用于 --fix 写回（validate）与 STATION_DATA 就地更新（build-stations）。 */
+function replaceVarBlock(src, name, newCode) {
+    const re = new RegExp('^[ \\t]*var ' + name + '[ \\t]*=');
+    const lines = src.split('\n');
+    const start = lines.findIndex(l => re.test(l));
+    if (start < 0) throw new Error('包内找不到 var ' + name);
+    let depth = 0, seen = false, end = start;
+    for (let i = start; i < lines.length; i++) {
+        for (const ch of lines[i]) {
+            if (ch === '[' || ch === '{') { depth++; seen = true; }
+            else if (ch === ']' || ch === '}') depth--;
+        }
+        if (seen && depth <= 0 && /;\s*$/.test(lines[i])) { end = i; break; }
+    }
+    lines.splice(start, end - start + 1, newCode);
+    return lines.join('\n');
+}
+
+/* ---------- 长盲区（>100km）计算：站点表（datum 空间）→ warnings ----------
+   build-stations 与 validate --fix 共用，产出引擎透出用的 warnings 契约。 */
+function longBlindWarnings(sd) {
+    const out = [];
+    const totalKm = sd.totalKm;
+    [['ev', '无快充'], ['fuel', '无加油站']].forEach(function ([type, label]) {
+        const list = (sd[type] || []).slice().sort((a, b) => a.km - b.km);
+        let prev = 0;
+        list.forEach(s => {
+            if (s.km - prev > 100) out.push({ type: type, from: +prev.toFixed(1), to: +s.km.toFixed(1), km: +(s.km - prev).toFixed(1), label: label });
+            prev = s.km;
+        });
+        if (totalKm - prev > 100) out.push({ type: type, from: +prev.toFixed(1), to: +totalKm.toFixed(1), km: +(totalKm - prev).toFixed(1), label: label });
+    });
+    return out.sort((a, b) => a.from - b.from);
+}
+
+module.exports = { loadAmapKey, maskKey, getJSON, sleep, amapGet, resolveAmapIp, wgs2gcj, gcj2wgs, haversine, loadRoutePackage, buildProjection, longBlindWarnings, replaceVarBlock, ROOT };

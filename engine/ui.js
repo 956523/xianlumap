@@ -51,6 +51,22 @@
         if (re) re.querySelector('.rbody').innerHTML = meta.rulesEnv || RULES_GENERIC.env;
     })();
 
+    /* ============ 数据可信度声明（S4）：站点快照日期 + 截断透出 ============
+       全部来自 STATION_DATA：builtAt（快照日期）、truncated（分页截断清单）。
+       「截断」指城区 POI 数量超单区抓取上限被截断的部分——如实提示，不假装抓全。 */
+    (function applyDataCaveat() {
+        var el = document.getElementById('dataCaveat');
+        if (!el || typeof STATION_DATA === 'undefined' || !STATION_DATA) return;
+        var txt = '';
+        if (STATION_DATA.builtAt) {
+            txt = '站点为 ' + STATION_DATA.builtAt + ' 时点快照，出行前请用地图 App 复核营业状态。';
+        }
+        if (STATION_DATA.truncated && STATION_DATA.truncated.length) {
+            txt += '其中 ' + STATION_DATA.truncated.length + ' 个城区数据量大被截断，城郊可能不全。';
+        }
+        if (txt) el.textContent = txt;
+    })();
+
     /* ============ 启动 ============ */
     /* 顺序很重要：
        1) 先把抽屉占用高度写进 CSS 变量，让 #map 拿到最终高度；

@@ -13,7 +13,8 @@
   引擎写死青甘的假设已盘点为 docs/GAP-LIST.md 并全部处置（见该文文末回填）
 - S2（引擎消硬编码 + engine/ 拆分）已完成并验收 ✅（实测结论与契约终形见 §7）
 - S3（构建管线参数化 + 接入高德数据源 + 川西全量真实数据）已完成并验收 ✅（见 §8）
-- S4–S8 未开工
+- S4（体检 V1–V4 + 可信度透出 + 青甘 281km 修正）已完成并验收 ✅（见 §10）
+- S5–S8 未开工
 - 已知待清理项（与平台化并行处理，不阻塞）：
   - `routes/qinghai-gansu/stations-new.json`（2026-09-26 新抓取，多 `op/slow/cat` 字段）未回写 `stations-data.js`
   - `tools/write-real-route.js` 引用旧文件名 `qinghai-gansu-loop.html`，疑似死代码
@@ -43,7 +44,7 @@ PLATFORM.md 原计划：S1 → S2 → S3 → S4 → S5 → **S6 第二条线** �
 | **S1.5** | 手写川西小环线**最小探针包**（约 20 途经点 + 粗分段，数据允许不全） | 引擎能同时加载两条线（哪怕川西显示粗糙） |
 | **S2** ✅ | 引擎消硬编码：由两条线的真实差异驱动契约补全与 `engine/` 改造 | `engine/` grep 不到青甘/川西地名里程；两条线均正常渲染 |
 | **S3** ✅ | 构建管线参数化：`build-route.js <线路包>` / `build-stations.js <线路包>` | 用青甘包重跑，产出与现有数据一致 |
-| **S4** | 体检 V1–V4 + 可信度透出（长盲区上图、站点来源日期、侧栏声明） | 体检全绿或有明确标注；青甘 199.9km 无桩段在页面可见 |
+| **S4** ✅ | 体检 V1–V4（tools/validate.js）+ 可信度透出（长盲区上图、站点来源日期、侧栏快照声明与截断提示） | 体检全绿或有明确标注；青甘 199.9km 无桩段在页面可见 |
 | **S5** | 页面内编辑模式（改文案存 localStorage、可导出） | 改天标题/分段/地名刷新保留，可导出 JSON |
 | **S6** | 川西小环线全量补数据（高程/站点穷举） | PLATFORM.md A1–A6 全达标 |
 | **S7** | 318 川藏南线 | 同上，引擎改动仍为 0 |
@@ -150,14 +151,15 @@ CLASSIC                            // 支线；含 label（图例文案随包）
 EXTRA_LINES                        // 固定支线（青甘包带丹霞支线原值）
 
 STATION_DATA = {
-  builtAt, source, totalKm, xnStart, xnEnd,
+  builtAt, source, sourceShort, totalKm,
+  datumStartKm, datumEndKm,   // 站点里程基准上主出发地行程的起点/终点 km（S4 由 xnStart/xnEnd 改名）
   regions: [],      // 实际穷举的行政区清单（审计）
   truncated: [],    // 分页截断未抓全的「关键词@行政区」（如实记录，不假装抓全）
+  warnings: [],     // >100km 长盲区 [{type: ev|fuel, from, to, km, label}]（体检/构建产出，引擎上图）
   ev: [], fuel: []
   // 契约语义：ev/fuel = [] 表示「该线路未接入此类站点数据」（UI 显示"未接入"，
   //   规划面板不产出结论）；与「已接入但这段真没站」（显示无桩段）严格区分。
-  // xnStart = 站点 km 基准字段（构建侧遗留命名，S4 体检时统一改名）；
-  //   引擎不直读，经 ROUTE_STARTS[].stationKm0 引用
+  // 引擎不直读 datumStartKm，经 ROUTE_STARTS[].stationKm0 引用。
 }
 
 // 历史变量 LZ_XN_KM / LZ_HEAD / P_LZ_XN / TOTAL_XN 仅作为青甘包内部数据被
@@ -213,3 +215,62 @@ D2 −6.2km、D3 −9.0km（高德更短）；合计 851.8 vs 866.3km（−1.7%�
 ### 环境备注
 
 - 本机默认 DNS 把 restapi.amap.com 污染到 0.0.0.0；build-lib 自动检测并切阿里 DoH（223.5.5.5）解析，日志可见 `via: alidns-doh`
+
+## 10. S4 实测结论：体检 V1–V4 + 可信度透出（2026-09-28）
+
+### 验收结果
+
+1. `node tools/validate.js qinghai-gansu` / `chuanxi` → 均 PASS（warnings-only，退出码 0）✅
+2. `node tools/c4-test.js` → 94 pass / 0 fail；`node tools/probe-check.js` → 20 pass / 0 fail ✅
+   （c4-test 一条断言随全长规划修复合理放宽：300km 续航遇 >210km 真实站距时段会
+   如实报「无可达」并停止数站，「次数更少 + 不可达警告」是正确行为）
+3. 青甘页面总里程显示 2164（日合计口径，本就对）+ 续航规划从此覆盖全程 ✅；
+   川西页面无 >100km 长盲区（最大 63.5km），evNotice 已标注 ✅
+4. `grep -ri 'qinghai|青甘|兰州|西宁|塔尔寺|拉脊山' engine/` → 无匹配 ✅；无 Key 泄漏 ✅
+5. 未执行 git 提交 ✅
+
+### 两线体检明细（validate.js 实测）
+
+**青甘（qinghai-gansu）**：V1 无尖峰（661 采样点干净）；V2 三条充电长盲区
+km601.7–713.2（111.5km，德令哈—大柴旦）、km967.4–1167.3（**199.9km**，大柴旦—敦煌）、
+km1957.1–2100.6（143.5km，祁连回程）——已写入 STATION_DATA.warnings 并上图；
+V3 475 站点重投影全部 ≤5km；V4 在修正前 B 项 FAIL（TOTAL_XN 1882.4 vs ΣapiKm 2166.2）。
+
+**川西（chuanxi）**：V1 发现 **10 处高程尖峰**（DEM 噪声，如 km190.69 的 4680m 假峰，
+中值 3886m）→ `--fix` 中值滤波修复（与引擎运行时去噪同一规则，页面显示不变）；
+另有 12 个持续陡坡点（>120 m/km 非单点尖峰，按真实地形保留并警告）。
+V2 无 >100km 长盲区（最大 63.5km 已在 evNotice）；V3 全部 ≤5km；V4 全过。
+
+### 青甘 281km 的处理方式（有意行为修正，留痕）
+
+- `TOTAL_XN` 1882.4 → **2166.2**（= ΣapiKm，与 STATION_DATA.datumEndKm 精确一致）。
+  旧值是漏了末段 ~281km 的陈旧常量（PROJECT.md 早有成因记录）。影响：西宁版
+  续航规划原截断在 km1882、末段约 40 个站点被 datum 过滤——修正后规划覆盖全程
+  （vm 实测：西宁版 5→**11 次**充电，兰州版 1→**12 次**）。
+- 连带挖出第二个真 bug：规划循环 guard 固定 80 次，站点多的长线未遍历完就被截断
+  （兰州版被截成「全程只需充电 1 次」）。guard 改为 `stops.length*2+50`。
+- 这两处都是「数字从错误变正确」，侧栏/逐日列表/剖面等显示不变（chipKm 本就走日合计）。
+
+### 可信度透出的 UI 落点（全部读数据包字段，引擎零硬编码）
+
+| 透出 | 数据字段 | 代码位置 |
+| ---- | ---- | ---- |
+| 长盲区上图（>100km 无站段折线染色 + 「km382–493 无快充（111.5km）」标注，切换出发地自动换算） | STATION_DATA.warnings | engine/route-engine.js `renderWarnings()`（renderAll 内调用） |
+| 站点来源日期（信息窗「腾讯地图 POI · 2026-09-26」） | STATION_DATA.sourceShort/builtAt | engine/planner.js `stationSourceNote()`（三类站点信息窗统一拼接） |
+| 侧栏底部快照声明（「站点为 YYYY-MM-DD 时点快照，出行前请用地图 App 复核营业状态」） | STATION_DATA.builtAt | engine/ui.js `applyDataCaveat()` + index.html `#dataCaveat` |
+| 截断透出（「其中 N 个城区数据量大被截断，城郊可能不全」） | STATION_DATA.truncated | 同上 |
+
+### 顺延小项
+
+- `STATION_DATA.xnStart/xnEnd` → **`datumStartKm/datumEndKm`**：构建侧
+  （build-stations.js、apply-real-route.js）、routes/ 产物（stations-data.js、
+  stations-new.json、build-stations*.html）、两个线路包、docs 全部连带改完；
+  validate.js 保留对旧字段的读取兜底（老包兼容）。引擎侧本就走 stationKm0，未动。
+
+### 工具链
+
+- 新增 `tools/validate.js <routeId> [--fix]`：V1–V4 体检；--fix 应用 V1 中值滤波并写回
+  warnings/datum 字段；FAIL 退出码 1，warnings-only 退出码 0。
+- `tools/lib/build-lib.js` 新增 `buildProjection()`（站点投影主线，build-stations 与
+  validate 共用同一口径）与 `longBlindWarnings()`（长盲区计算，构建/体检/引擎三方同一份）。
+- build-stations.js 重构为共用 buildProjection，并在产出的 STATION_DATA 中带 warnings。

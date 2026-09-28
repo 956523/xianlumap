@@ -224,8 +224,11 @@
         // 未接入站点数据：不产出规划（空数组 ≠ 全程无需补能，由面板如实透出）
         if (!stops.length) return [];
         var plan = [];
-        var pos = 0, soc = 1.0, idx = 0, guard = 0;
-        while (pos < total - 1 && guard++ < 80) {
+        var pos = 0, soc = 1.0, idx = 0;
+        // guard 防死循环：上限与站点数挂钩——固定 80 次会把 280+ 站的长线规划
+        // 中途截断（S4 实测：站点多的长线会被截成「全程只需充电 1 次」）
+        var guard = 0, guardMax = stops.length * 2 + 50;
+        while (pos < total - 1 && guard++ < guardMax) {
             var next = stops[idx] || null;
             var dNext = (next ? next.km : total) - pos;
             var canGo = (soc - TH) * R;
@@ -283,6 +286,14 @@
 
     function clearLayer(l) { if (l) l.setMap(null); return null; }
 
+    /* 站点来源透出（S4）：信息窗标注数据来源 + 快照日期（STATION_DATA.sourceShort/builtAt） */
+    function stationSourceNote() {
+        if (typeof STATION_DATA === 'undefined' || !STATION_DATA || !STATION_DATA.builtAt) return '';
+        var short = STATION_DATA.sourceShort ||
+            ((STATION_DATA.source || '').split('（')[0] || 'POI 数据');
+        return '<br><span style="color:#94a3b8;font-size:10.5px">' + short + ' · ' + STATION_DATA.builtAt + '</span>';
+    }
+
     /* 当前地图 zoom（腾讯 GL JS 的 getZoom 在动画中是瞬时值，够用） */
     function getMapZoom() {
         try { if (typeof map.getZoom === 'function') return map.getZoom(); } catch (e) {}
@@ -334,7 +345,7 @@
         });
         dimEvM.on('click', function (e) {
             var s = dimDataEv[parseInt(e.geometry.id.slice(1), 10)];
-            if (s) openInfo(s.lat, s.lng, [['⚡ 充电站', 'e']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : ''));
+            if (s) openInfo(s.lat, s.lng, [['⚡ 充电站', 'e']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : '') + stationSourceNote());
         });
         dimFuelM = new TMap.MultiMarker({
             map: (tier.fuel && onFuel) ? map : null,
@@ -345,7 +356,7 @@
         });
         dimFuelM.on('click', function (e) {
             var s = dimDataFuel[parseInt(e.geometry.id.slice(1), 10)];
-            if (s) openInfo(s.lat, s.lng, [['⛽ 加油站', 'f']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : ''));
+            if (s) openInfo(s.lat, s.lng, [['⛽ 加油站', 'f']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : '') + stationSourceNote());
         });
 
         // 计划层（必充/必加站）
@@ -362,7 +373,7 @@
             var i = parseInt(e.geometry.id.slice(1), 10);
             var p = planData[i];
             openInfo(p.st.lat, p.st.lng, [[isFuel ? '⛽ 必加站' : '⚡ 必充站', isFuel ? 'f' : 'e']], p.st.t,
-                p.st.a + (p.st.tel ? '<br>☎ ' + p.st.tel : '') +
+                p.st.a + (p.st.tel ? '<br>☎ ' + p.st.tel : '') + stationSourceNote() +
                 '<br><b style="color:#ea580c">D' + dayOf(p.st.km) + ' · 到达剩 ' + Math.round(p.arrive * 100) + '% · ' + (isFuel ? '建议加满' : '建议充至 ' + Math.round(p.target * 100) + '%') + '</b>');
         });
         planLb = new TMap.MultiLabel({

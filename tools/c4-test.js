@@ -121,8 +121,11 @@ ok('1000km 续航充电次数 ≤ 默认 500km', mHi !== undefined && +mHi <= nD
 elCache['rngRange'].value = '300';
 elCache['rngRange'].oninput && elCache['rngRange'].oninput();
 const mLo = (planBox.innerHTML.match(/全程需\S+ <b>(\d+)<\/b>/) || [])[1];
-ok('300km 续航充电次数 ≥ 默认', +mLo >= nDefault, mLo + ' 次');
 const hasWarn = planBox.innerHTML.includes('无可达');
+// 续航变低 → 充电次数不减。但若某段真实站距已超车可达范围，规划会如实报「无可达」并停止
+// 继续数站——S4 修复全长规划后青甘出现此情况（199.9km 无桩段 > 300km 续航×0.85×0.7）。
+// 此时「次数更少 + 不可达警告」是正确行为，不是回归。
+ok('300km 续航充电次数 ≥ 默认（或如实报不可达）', +mLo >= nDefault || hasWarn, mLo + ' 次' + (hasWarn ? '（含不可达警告）' : ''));
 console.log((hasWarn ? '  ⚠️ 300km 续航出现不可达警告（预期内：部分区间站距 > 210km）' : '  ℹ️ 300km 续航无不可达警告'));
 
 console.log('\n【3】油车模式');

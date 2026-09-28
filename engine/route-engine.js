@@ -298,6 +298,58 @@
         // 视角复位
         fitAll();
         renderStations();
+        renderWarnings();
+    }
+
+    /* --- 长盲区上图（S4 可信度透出）---
+       STATION_DATA.warnings 是体检/构建产出的 >100km 无站段（站点表 datum 空间），
+       按当前出发地 stationKm0 换算成行程基准后叠画在每日轨迹上 + 文字标注。
+       全部读数据包字段：任何线路有长盲区都会自动上图，引擎不认具体路段。 */
+    var warnLines = [], warnLabels = [];
+    function clearWarnings() {
+        warnLines.forEach(function (l) { l.setMap(null); });
+        warnLabels.forEach(function (l) { l.setMap(null); });
+        warnLines = []; warnLabels = [];
+    }
+    function renderWarnings() {
+        clearWarnings();
+        var ws = (typeof STATION_DATA !== 'undefined' && STATION_DATA && STATION_DATA.warnings) || [];
+        if (!ws.length || !DAYS.length) return;
+        // km → 经纬度表：每天 path 按 altKm 线性插值（画盲区带足够，精度 ~天/240 点）
+        var table = [];
+        DAYS.forEach(function (d) {
+            if (!d.path || !d.altKm) return;
+            var n = d.path.length;
+            d.path.forEach(function (p, i) {
+                table.push([d.altKm[0] + (d.altKm[1] - d.altKm[0]) * i / (n - 1), p[0], p[1]]);
+            });
+        });
+        table.sort(function (a, b) { return a[0] - b[0]; });
+        if (table.length < 2) return;
+        var off = curStart().stationKm0 || 0;
+        ws.forEach(function (w, wi) {
+            var a = w.from - off, b = w.to - off;
+            var seg = table.filter(function (t) { return t[0] >= a && t[0] <= b; });
+            if (seg.length < 2) return;
+            var color = w.type === 'fuel' ? '#b45309' : '#dc2626';
+            warnLines.push(new TMap.MultiPolyline({
+                map: map,
+                styles: { default: new TMap.PolylineStyle({ color: color, width: 6, borderWidth: 2, borderColor: '#ffffff', lineCap: 'round' }) },
+                geometries: [{
+                    id: 'warn' + wi, styleId: 'default',
+                    paths: seg.map(function (t) { return new TMap.LatLng(t[1], t[2]); })
+                }]
+            }));
+            var mid = seg[Math.floor(seg.length / 2)];
+            warnLabels.push(new TMap.MultiLabel({
+                map: map,
+                styles: { default: new TMap.LabelStyle({ color: color, size: 11, offset: { x: 0, y: -16 } }) },
+                geometries: [{
+                    id: 'warnlb' + wi, position: new TMap.LatLng(mid[1], mid[2]),
+                    content: 'km' + Math.round(a) + '–' + Math.round(b) + ' ' + (w.label || '') + '（' + w.km + 'km）'
+                }]
+            }));
+        });
     }
 
     var activeIdx = -1;

@@ -319,7 +319,7 @@
 
         var now = new Date();
         var builtAt = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-        window.__STATION_DATA__ = { builtAt: builtAt, totalKm: TOTAL_KM, xnStart: XN_START_KM, xnEnd: XN_END_KM, ev: raw.ev, fuel: raw.fuel };
+        window.__STATION_DATA__ = { builtAt: builtAt, totalKm: TOTAL_KM, datumStartKm: XN_START_KM, datumEndKm: XN_END_KM, ev: raw.ev, fuel: raw.fuel };
         // 分块导出支持（绕过终端输出长度限制）
         var s = JSON.stringify(window.__STATION_DATA__);
         window.__CH__ = [];

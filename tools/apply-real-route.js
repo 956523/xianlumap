@@ -68,16 +68,16 @@ function reproject(arr) {
 }
 const ev2 = reproject(STA.ev);
 const fuel2 = reproject(STA.fuel);
-const xnStart = leg11.km; // 西宁在兰州基准上的里程
-console.log('西宁基准点 xnStart =', xnStart.toFixed(1), 'km');
+const datumStart = leg11.km; // 主出发地（西宁）在站点里程基准（兰州起算）上的里程
+console.log('站点基准起点 datumStartKm =', datumStart.toFixed(1), 'km');
 console.log('重投影后 充电 km 范围', Math.min(...ev2.map(x=>x.km)), '-', Math.max(...ev2.map(x=>x.km)));
 console.log('重投影后 加油 km 范围', Math.min(...fuel2.map(x=>x.km)), '-', Math.max(...fuel2.map(x=>x.km)));
 
 /* ---------- 生成适配数据 ---------- */
-const out = { ROUTE_REAL: ROUTE, MAINLINE: MAIN, XN_START: +xnStart.toFixed(1) };
+const out = { ROUTE_REAL: ROUTE, MAINLINE: MAIN, DATUM_START_KM: +datumStart.toFixed(1) };
 fs.writeFileSync(path.join(dir, '.real-adapt.json'), JSON.stringify({
   totalLz: +MAIN.total.toFixed(1),
-  xnStart: +xnStart.toFixed(1),
+  datumStartKm: +datumStart.toFixed(1),
   ev: ev2, fuel: fuel2
 }));
 console.log('\n适配数据已写出 .real-adapt.json');

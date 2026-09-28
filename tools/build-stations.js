@@ -14,7 +14,7 @@
 const fs = require('fs');
 const {
     loadAmapKey, maskKey, sleep, amapGet,
-    loadRoutePackage, ROOT
+    loadRoutePackage, buildProjection, longBlindWarnings, replaceVarBlock, ROOT
 } = require('./lib/build-lib');
 const http = require('http');
 
@@ -42,33 +42,12 @@ if (SOURCE === 'amap') {
 
 const MAX_DIST = 35;   // 站点离路线超过这个距离就丢弃（km）
 
-/* ---------- 1. 投影主线（与页面同源：接入段 + CORE + TAIL，apiKm 缩放对齐） ---------- */
+/* ---------- 1. 投影主线（与页面同源；tools/lib/build-lib.js 与 validate.js 共用同口径） ---------- */
 const STARTS = pkg.ROUTE_STARTS || [];
-const lead = STARTS.filter(s => s.leadPath && s.leadPath.length)[0];
-const segs = [];
-if (lead) segs.push({ pts: lead.leadPath, apiKm: lead.offsetKm });
-(pkg.CORE || []).concat([pkg.TAIL]).forEach(d => {
-    if (d && d.path && d.path.length) segs.push({ pts: d.path, apiKm: d.apiKm });
-});
-const COSLAT = Math.cos(segs.reduce((a, s) => a + s.pts.reduce((x, p) => x + p[0], 0) / s.pts.length, 0) / segs.length * Math.PI / 180);
-const ROUTE_ALL = [], SEG_KM = [];
-let acc = 0;
-segs.forEach(sg => {
-    const pts = sg.pts;
-    const lens = [0]; let arc = 0;
-    for (let i = 1; i < pts.length; i++) {
-        const dx = (pts[i][1] - pts[i - 1][1]) * COSLAT, dy = pts[i][0] - pts[i - 1][0];
-        arc += Math.sqrt(dx * dx + dy * dy); lens.push(arc);
-    }
-    const scale = arc ? (sg.apiKm / arc) : 0;
-    for (let j = 0; j < pts.length; j++) {
-        if (j === 0 && ROUTE_ALL.length) continue;
-        ROUTE_ALL.push(pts[j]);
-        SEG_KM.push(acc + lens[j] * scale);
-    }
-    acc += sg.apiKm;
-});
-const TOTAL_KM = SEG_KM[SEG_KM.length - 1];
+const PROJ = buildProjection(pkg);
+const ROUTE_ALL = PROJ.ROUTE_ALL, SEG_KM = PROJ.SEG_KM;
+const TOTAL_KM = PROJ.TOTAL_KM;
+const COSLAT = PROJ.COSLAT;
 const XN_START = (STARTS[0] && STARTS[0].stationKm0) || 0;
 
 /* 折线包围盒（行政区清单人工可审的依据） */
@@ -76,7 +55,7 @@ const bbox = ROUTE_ALL.reduce((b, p) => ({
     latMin: Math.min(b.latMin, p[0]), latMax: Math.max(b.latMax, p[0]),
     lngMin: Math.min(b.lngMin, p[1]), lngMax: Math.max(b.lngMax, p[1])
 }), { latMin: 99, latMax: -99, lngMin: 999, lngMax: -999 });
-console.log(`路线：投影点 ${ROUTE_ALL.length} / 总里程 ${TOTAL_KM.toFixed(1)}km / 站点基准 xnStart=${XN_START}`);
+console.log(`路线：投影点 ${ROUTE_ALL.length} / 总里程 ${TOTAL_KM.toFixed(1)}km / 站点基准 datumStartKm=${XN_START}`);
 console.log(`折线包围盒：lat ${bbox.latMin.toFixed(2)}–${bbox.latMax.toFixed(2)}，lng ${bbox.lngMin.toFixed(2)}–${bbox.lngMax.toFixed(2)}`);
 console.log(`行政区穷举清单（${REGIONS.length} 个，人工可审）：${REGIONS.join('、')}`);
 
@@ -85,21 +64,7 @@ if (DRY) {
     process.exit(0);
 }
 
-function projectRoute(lat, lng) {
-    const px = lng * COSLAT, py = lat;
-    let best = { d: 1e18, i: 1, t: 0 };
-    for (let i = 1; i < ROUTE_ALL.length; i++) {
-        const A = ROUTE_ALL[i - 1], Bp = ROUTE_ALL[i];
-        const ax = A[1] * COSLAT, ay = A[0], bx = Bp[1] * COSLAT, by = Bp[0];
-        const abx = bx - ax, aby = by - ay, ab2 = abx * abx + aby * aby || 1e-12;
-        let t = ((px - ax) * abx + (py - ay) * aby) / ab2;
-        t = Math.max(0, Math.min(1, t));
-        const cx = ax + t * abx, cy = ay + t * aby, dx = px - cx, dy = py - cy, d = dx * dx + dy * dy;
-        if (d < best.d) best = { d, i, t };
-    }
-    const k0 = SEG_KM[best.i - 1], k1 = SEG_KM[best.i];
-    return { dist: Math.sqrt(best.d) * 111.32, routeKm: k0 + (k1 - k0) * best.t };
-}
+function projectRoute(lat, lng) { return PROJ.project(lat, lng); }
 
 /* ---------- 2. POI 查询封装 ---------- */
 const BRANDS = ['特来电', '星星充电', '特斯拉', '驴充充', '云快充', '国家电网', '小桔充电',
@@ -275,15 +240,14 @@ async function main() {
             ? '高德地图 POI（place/text 行政区穷举）沿真实驾车轨迹重投影'
             : '腾讯地图真实驾车轨迹重投影',
         totalKm: +TOTAL_KM.toFixed(1),
-        xnStart: +XN_START.toFixed(1),
-        xnEnd: +(TOTAL_KM - XN_START).toFixed(1),
+        datumStartKm: +XN_START.toFixed(1),   // 站点里程基准上主出发地行程起点的 km（S4 起由 xnStart 改名）
+        datumEndKm: +(TOTAL_KM - XN_START).toFixed(1),
         regions: REGIONS,
         truncated: truncated,
+        warnings: longBlindWarnings({ totalKm: TOTAL_KM, ev: raw.ev, fuel: raw.fuel }),
         ev: raw.ev, fuel: raw.fuel
     };
-    const line = 'var STATION_DATA = ' + JSON.stringify(out) + ';';
-    if (!/^var STATION_DATA = .*;$/m.test(PKG_SRC)) throw new Error('包内找不到 STATION_DATA 行，无法写回');
-    fs.writeFileSync(PKG_FILE, PKG_SRC.replace(/^var STATION_DATA = .*;$/m, line));
+    fs.writeFileSync(PKG_FILE, replaceVarBlock(PKG_SRC, 'STATION_DATA', 'var STATION_DATA = ' + JSON.stringify(out) + ';'));
     console.log(`已写回 ${PKG_FILE}（${raw.ev.length} 充电 + ${raw.fuel.length} 加油，STATION_DATA ${(line.length / 1024).toFixed(0)}KB）`);
     if (SOURCE === 'amap' && truncated.length) {
         console.log('提醒：存在分页截断区域，如需更全覆盖可细分行政区后重跑（清单见 STATION_DATA.regions）');

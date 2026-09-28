@@ -28,7 +28,7 @@ function FakeLayer(kind, opts) {
 const TMap = {
     Map: function () { this.on = function () {}; this.easeTo = function () {}; this.setCenter = function () {}; this.fitBounds = function () {}; this.destroy = function () {}; },
     LatLng: function (lat, lng) { this.lat = lat; this.lng = lng; },
-    InfoWindow: function () { this.open = function () {}; this.close = function () {}; this.setPosition = function () {}; },
+    InfoWindow: function (o) { globalThis.__lastIW = o; this.open = function () {}; this.close = function () {}; this.setPosition = function () {}; },
     MultiMarker: function (o) { FakeLayer.call(this, 'marker', o); },
     MultiLabel: function (o) { FakeLayer.call(this, 'label', o); },
     MultiPolyline: function (o) { FakeLayer.call(this, 'polyline', o); },
@@ -88,7 +88,7 @@ function bootRoute(routeKey) {
     try {
         vm.runInNewContext(dataSrc + '\n' + mainScript, sandbox);
     } catch (e) { err = e; }
-    return { err: err, routeKey: routeKey };
+    return { err: err, routeKey: routeKey, sandbox: sandbox };
 }
 
 /* ---------- 青甘（默认线，回归） ---------- */
@@ -99,7 +99,14 @@ const qhDays = created.filter(el => el.id === 'dyn:li');
 ok('每日列表渲染 10 天', qhDays.length === 10, qhDays.length + ' 项');
 ok('总里程 chip ≈2164（日行程合计口径）', Math.abs(parseInt(elCache['chipKm'].textContent, 10) - 2164) <= 25, elCache['chipKm'].textContent);
 ok('最高海拔 chip >3700（祁连段去噪后）', parseInt(elCache['chipMaxAlt'].textContent, 10) > 3700, elCache['chipMaxAlt'].textContent);
-ok('续航规划输出', elCache['planBox'].innerHTML.includes('全程需充电'), '');
+ok('续航规划输出 + 长盲区上图（无桩段渲染为图层）',
+    elCache['planBox'].innerHTML.includes('全程需充电') &&
+    calls.polyline.some(function (p) { return (p.geometries || []).some(function (g) { return String(g.id).indexOf('warn') === 0; }); }),
+    '');
+// 信息窗站点来源日期透出（S4）：站点信息窗统一拼 stationSourceNote()（数据包 sourceShort/builtAt）
+let srcNote = '';
+try { srcNote = qh.sandbox.stationSourceNote(); } catch (e) { srcNote = 'ERR ' + e.message; }
+ok('站点来源日期透出（来源+快照日期）', /POI · \d{4}-\d{2}-\d{2}/.test(srcNote), srcNote);
 ok('标题来自 ROUTE_META', document.title.includes('青甘'), document.title);
 ok('纯电提示来自 ROUTE_META（青甘文案）', elCache['evNotice'].querySelector('span').innerHTML.includes('大柴旦'), '');
 ok('出发地切换按钮保留（青甘）', !elCache['startSeg'] || elCache['startSeg'].style.display !== 'none', '');
@@ -113,12 +120,13 @@ const cxDays = created.filter(el => el.id === 'dyn:li');
 ok('每日列表渲染 5 天', cxDays.length === 5, cxDays.length + ' 项');
 ok('总里程 chip ≈850（高德轨迹）', Math.abs(parseInt(elCache['chipKm'].textContent, 10) - 850) <= 25, elCache['chipKm'].textContent);
 ok('最高海拔 chip ≈4298（折多山）', Math.abs(parseInt(elCache['chipMaxAlt'].textContent, 10) - 4298) <= 150, elCache['chipMaxAlt'].textContent);
-ok('续航规划输出真实结果（站点已接入）', elCache['planBox'].innerHTML.includes('全程需充电'), '');
+ok('续航规划输出真实结果 + 截断透出（快照声明含截断提示）',
+    elCache['planBox'].innerHTML.includes('全程需充电') && /截断/.test(elCache['dataCaveat'].textContent),
+    elCache['dataCaveat'].textContent.slice(0, 60));
 ok('标题来自 ROUTE_META', document.title.includes('川西'), document.title);
 ok('副标题如实描述真实数据口径（不再是探针包）', elCache['routeSub'].textContent.includes('真实数据') && !elCache['routeSub'].textContent.includes('探针包'), elCache['routeSub'].textContent);
 ok('纯电提示标注山区盲区', elCache['evNotice'].querySelector('span').innerHTML.includes('无快充'), '');
-ok('出发地切换按钮隐藏（单出发地）', elCache['startSeg'].style.display === 'none', '');
-ok('经典支线行隐藏（无支线）', elCache['classicRow'].style.display === 'none', '');
+ok('单出发地按钮与经典支线行均隐藏', elCache['startSeg'].style.display === 'none' && elCache['classicRow'].style.display === 'none', '');
 // 交互冒烟：点第 1 天 → focusDay + 剖面重画不崩
 let focusErr = null;
 try { cxDays[0].onclick(); } catch (e) { focusErr = e; }

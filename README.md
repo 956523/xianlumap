@@ -108,6 +108,7 @@ window._TMapSecurityConfig = {
 └── tools/                          # 构建与测试脚本（Node，无依赖）
     ├── build-route.js <id>         # 路线构建（--source amap|tencent，默认高德）
     ├── build-stations.js <id>      # 站点抓取 + 配额筛选 + 覆盖体检
+    ├── validate.js <id> [--fix]    # 数据体检 V1–V4（尖峰滤波/长盲区/投影/里程对账）
     ├── lib/build-lib.js            # 共享：Key 加载（脱敏）/DNS 绕行/坐标转换
     ├── apply-real-route.js         # 青甘历史：真实轨迹写回（遗留）
     ├── write-real-route.js         # 青甘历史：轨迹落盘（遗留）

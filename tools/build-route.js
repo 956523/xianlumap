@@ -350,7 +350,7 @@ async function fetchElevations(points) {
  *   - 站点：${sd.ev && sd.ev.length || sd.fuel && sd.fuel.length ? sd.source + '（' + sd.builtAt + '，' + (sd.ev || []).length + ' 充电 + ' + (sd.fuel || []).length + ' 加油）' : '未接入（STATION_DATA.ev/fuel = []，UI 显示"未接入"）'}
  *
  * 结构说明：
-${(B.starts || []).length < 2 ? ' *   - ROUTE_STARTS 单出发地：无「双基准」概念，引擎隐藏出发地切换按钮\n' : ''}${pkg.CLASSIC && pkg.CLASSIC.simplified && pkg.CLASSIC.simplified.length ? '' : ' *   - CLASSIC = 空（无经典支线概念）\n'} *   - 站点 km 基准见 STATION_DATA.xnStart，与 ALT/ALT_MARKS/CORE.altKm 的同基准关系经 ROUTE_STARTS[].stationKm0 声明
+${(B.starts || []).length < 2 ? ' *   - ROUTE_STARTS 单出发地：无「双基准」概念，引擎隐藏出发地切换按钮\n' : ''}${pkg.CLASSIC && pkg.CLASSIC.simplified && pkg.CLASSIC.simplified.length ? '' : ' *   - CLASSIC = 空（无经典支线概念）\n'} *   - 站点 km 基准见 STATION_DATA.datumStartKm，与 ALT/ALT_MARKS/CORE.altKm 的同基准关系经 ROUTE_STARTS[].stationKm0 声明
  *
  * 页面通过 <script src> 加载；?route=${ROUTE_ID} 切换（默认 qinghai-gansu）。
  * ========================================================================== */`;
