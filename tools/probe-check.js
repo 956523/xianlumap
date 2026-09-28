@@ -134,8 +134,8 @@ const cxDays = created.filter(el => el.id === 'dyn:li');
 ok('每日列表渲染 5 天', cxDays.length === 5, cxDays.length + ' 项');
 ok('总里程 chip ≈850（高德轨迹）', Math.abs(parseInt(elCache['chipKm'].textContent, 10) - 850) <= 25, elCache['chipKm'].textContent);
 ok('最高海拔 chip ≈4298（折多山）', Math.abs(parseInt(elCache['chipMaxAlt'].textContent, 10) - 4298) <= 150, elCache['chipMaxAlt'].textContent);
-ok('续航规划输出真实结果 + 截断透出（快照声明含截断提示）',
-    elCache['planBox'].innerHTML.includes('全程需充电') && /截断/.test(elCache['dataCaveat'].textContent),
+ok('续航规划输出真实结果 + 快照声明（截断提示按数据实有实无透出）',
+    elCache['planBox'].innerHTML.includes('全程需充电') && /时点快照/.test(elCache['dataCaveat'].textContent),
     elCache['dataCaveat'].textContent.slice(0, 60));
 ok('标题来自 ROUTE_META', !!cx.sandbox.ROUTE_META && document.title === cx.sandbox.ROUTE_META.title && document.title.length > 0, document.title);
 ok('副标题如实描述真实数据口径（不再是探针包）', elCache['routeSub'].textContent.includes('真实数据') && !elCache['routeSub'].textContent.includes('探针包'), elCache['routeSub'].textContent);
@@ -243,6 +243,39 @@ ok('引导含按当前线路生成的确切构建命令',
     S.Edit.waypointGuideText().indexOf('node tools/build-route.js ' + S.ROUTE_META.key) >= 0 &&
     S.Edit.waypointGuideText().indexOf('ROUTE_BUILD.waypoints') >= 0,
     S.ROUTE_META.key);
+
+/* ---------- 坐标策略（S10）：库内 WGS-84 基准的往返精度 + 库一致性 ---------- */
+console.log('\n【6】坐标往返精度（S10 厂商中立坐标策略）');
+const { gcj2wgs, wgs2gcj } = (() => { try { return require('./lib/build-lib.js'); } catch (e) { return {}; } })();
+let rtMax = 0, rtN = 0;
+['qinghai-gansu', 'chuanxi', 'chengdu-lhasa-318'].forEach(id => {
+    const dataSrc = fs.readFileSync(path.join(ROOT, 'route-defs', id + '.js'), 'utf8');
+    const sb2 = {};
+    vm.runInNewContext(dataSrc, sb2);
+    const sample = (sb2.STATION_DATA.ev || []).concat(sb2.STATION_DATA.fuel || []).slice(0, 12);
+    sample.forEach(s => {
+        const w = gcj2wgs(s.lat, s.lng);
+        const g = wgs2gcj(w[0], w[1]);
+        const d = Math.hypot((g[0] - s.lat) * 111320, (g[1] - s.lng) * 111320 * Math.cos(s.lat * Math.PI / 180));
+        rtN++;
+        if (d > rtMax) rtMax = d;
+    });
+});
+ok('GCJ02→WGS84→GCJ02 往返偏差 <2m（' + rtN + ' 个抽样站）', rtMax < 2, '最大 ' + rtMax.toFixed(4) + ' m');
+let dbOk = false, dbCount = 0;
+try {
+    const dbSrc = fs.readFileSync(path.join(ROOT, 'data', 'db', 'stations.json'), 'utf8');
+    const db = JSON.parse(dbSrc);
+    dbCount = db.stations.length;
+    const wgs = db.stations.every(s => typeof s.lat === 'number' && typeof s.lng === 'number' &&
+        Array.isArray(s.sources) && s.sources.length > 0 && s.srcCoord && s.srcCoord.sys === 'gcj02');
+    const roundtrip = db.stations.slice(0, 20).every(s => {
+        const g = wgs2gcj(s.lat, s.lng);
+        return Math.hypot(g[0] - s.srcCoord.lat, g[1] - s.srcCoord.lng) * 111320 < 2;
+    });
+    dbOk = dbCount >= 900 && wgs && roundtrip;
+} catch (e) { dbOk = false; }
+ok('共享库存在且记录形状合规（WGS 基准 + 来源记录 + GCJ 原值）', dbOk, dbCount + ' 条');
 
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

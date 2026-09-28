@@ -1,0 +1,744 @@
+{
+ "version": 1,
+ "regions": [
+  {
+   "name": "兰州市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "城关区",
+   "usedBy": [
+    "qinghai-gansu",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "七里河区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "安宁区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "西固区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "红古区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "永登县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "榆中县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "皋兰县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "武威市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "天祝藏族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "张掖市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "甘州区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "民乐县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "临泽县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "高台县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "山丹县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "肃南裕固族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "酒泉市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "肃州区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "玉门市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "敦煌市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "瓜州县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "金塔县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "阿克塞哈萨克族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "肃北蒙古族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "嘉峪关市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "西宁市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "城东区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "城中区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "城西区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "城北区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "湟中区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "湟源县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "大通回族土族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "海东市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "乐都区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "平安区",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "民和回族土族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "互助土族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "化隆回族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "循化撒拉族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "海北藏族自治州",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "门源回族自治县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "祁连县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "海晏县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "刚察县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "海南藏族自治州",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "共和县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "同德县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "贵德县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "兴海县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "贵南县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "海西蒙古族藏族自治州",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "德令哈市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "格尔木市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "茫崖市",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "乌兰县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "都兰县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "天峻县",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "大柴旦行政委员会",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "冷湖行政委员会",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "茫崖行政委员会",
+   "usedBy": [
+    "qinghai-gansu"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "青羊区",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "武侯区",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "温江区",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "崇州市",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "双流区",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "都江堰市",
+   "usedBy": [
+    "chuanxi"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "汶川县",
+   "usedBy": [
+    "chuanxi"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "小金县",
+   "usedBy": [
+    "chuanxi"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "丹巴县",
+   "usedBy": [
+    "chuanxi"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "道孚县",
+   "usedBy": [
+    "chuanxi"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "康定市",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "泸定县",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "天全县",
+   "usedBy": [
+    "chuanxi"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "雅安市",
+   "usedBy": [
+    "chuanxi"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "名山区",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "蒲江县",
+   "usedBy": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "雨城区",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "雅江县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "理塘县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "巴塘县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "芒康县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "左贡县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "八宿县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "波密县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "巴宜区",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "工布江达县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "墨竹工卡县",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  },
+  {
+   "name": "达孜区",
+   "usedBy": [
+    "chengdu-lhasa-318"
+   ],
+   "purpose": "poi-enumeration",
+   "source": "ROUTE_BUILD"
+  }
+ ],
+ "updatedAt": "2026-09-28"
+}

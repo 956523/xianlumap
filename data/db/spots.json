@@ -1,0 +1,1551 @@
+{
+ "version": 1,
+ "spots": [
+  {
+   "id": "spo-city-0",
+   "name": "兰州",
+   "category": "city",
+   "lat": 36.061423,
+   "lng": 103.831892,
+   "srcCoord": {
+    "lat": 36.0611,
+    "lng": 103.8343,
+    "sys": "gcj02"
+   },
+   "desc": "1520m | 兰州出发版起点。黄河风情线夜市先逛再说。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-1",
+   "name": "西宁",
+   "category": "city",
+   "lat": 36.61718,
+   "lng": 101.776265,
+   "srcCoord": {
+    "lat": 36.6171,
+    "lng": 101.7782,
+    "sys": "gcj02"
+   },
+   "desc": "2264m | 西宁版起点 & 兰州版中转。出发前加满油/充满电，检查胎压——后面要翻 3400m 级垭口。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-2",
+   "name": "湟源",
+   "category": "city",
+   "lat": 36.685736,
+   "lng": 101.255004,
+   "srcCoord": {
+    "lat": 36.6857,
+    "lng": 101.2569,
+    "sys": "gcj02"
+   },
+   "desc": "京藏高速(G6)沿线，西宁—青海湖之间的补给点。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-3",
+   "name": "倒淌河",
+   "category": "city",
+   "lat": 36.444326,
+   "lng": 100.936508,
+   "srcCoord": {
+    "lat": 36.444,
+    "lng": 100.938,
+    "sys": "gcj02"
+   },
+   "desc": "3290m | “众河皆东流，唯此河向西”，日月山下的经典路口。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-4",
+   "name": "黑马河",
+   "category": "city",
+   "lat": 36.729058,
+   "lng": 99.783611,
+   "srcCoord": {
+    "lat": 36.729,
+    "lng": 99.785,
+    "sys": "gcj02"
+   },
+   "desc": "3202m | 青海湖看日出的经典住处，旺季住宿紧张。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-5",
+   "name": "乌兰",
+   "category": "city",
+   "lat": 36.931866,
+   "lng": 98.480386,
+   "srcCoord": {
+    "lat": 36.932,
+    "lng": 98.481,
+    "sys": "gcj02"
+   },
+   "desc": "3034m | 茶卡—德令哈之间的补给点，G315 沿线。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-6",
+   "name": "德令哈",
+   "category": "city",
+   "lat": 37.373521,
+   "lng": 97.370197,
+   "srcCoord": {
+    "lat": 37.374,
+    "lng": 97.371,
+    "sys": "gcj02"
+   },
+   "desc": "2970m | 海西州府，住宿餐饮选择多，可去海子诗歌纪念馆。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-7",
+   "name": "大柴旦",
+   "category": "city",
+   "lat": 37.823544,
+   "lng": 95.355634,
+   "srcCoord": {
+    "lat": 37.824,
+    "lng": 95.357,
+    "sys": "gcj02"
+   },
+   "desc": "3182m | 柴达木北部枢纽，去敦煌前最后的大补给点。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-8",
+   "name": "阿克塞",
+   "category": "city",
+   "lat": 39.633184,
+   "lng": 94.339617,
+   "srcCoord": {
+    "lat": 39.634,
+    "lng": 94.341,
+    "sys": "gcj02"
+   },
+   "desc": "1683m | 哈萨克族自治县，《九层妖塔》取景老城在旁。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-9",
+   "name": "敦煌",
+   "category": "city",
+   "lat": 40.141476,
+   "lng": 94.660659,
+   "srcCoord": {
+    "lat": 40.1421,
+    "lng": 94.6617,
+    "sys": "gcj02"
+   },
+   "desc": "1140m | 全程海拔最低的住宿点，夜市沙州食驿值得逛。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-10",
+   "name": "瓜州",
+   "category": "city",
+   "lat": 40.516856,
+   "lng": 95.781574,
+   "srcCoord": {
+    "lat": 40.5177,
+    "lng": 95.7826,
+    "sys": "gcj02"
+   },
+   "desc": "1186m | 连霍高速补给点，戈壁雕塑“大地之子”在高速旁。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-11",
+   "name": "玉门",
+   "category": "city",
+   "lat": 40.285575,
+   "lng": 97.04019,
+   "srcCoord": {
+    "lat": 40.2865,
+    "lng": 97.0409,
+    "sys": "gcj02"
+   },
+   "desc": "1486m | 河西走廊上的老石油城，连霍高速服务区可补给。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-12",
+   "name": "嘉峪关",
+   "category": "city",
+   "lat": 39.771582,
+   "lng": 98.27722,
+   "srcCoord": {
+    "lat": 39.7724,
+    "lng": 98.2778,
+    "sys": "gcj02"
+   },
+   "desc": "1674m | 天下第一雄关，关城+悬壁长城半天可逛完。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-13",
+   "name": "临泽",
+   "category": "city",
+   "lat": 39.14419,
+   "lng": 100.093257,
+   "srcCoord": {
+    "lat": 39.145,
+    "lng": 100.095,
+    "sys": "gcj02"
+   },
+   "desc": "连霍高速出口，七彩丹霞的北门通道。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-14",
+   "name": "张掖",
+   "category": "city",
+   "lat": 38.929665,
+   "lng": 100.452504,
+   "srcCoord": {
+    "lat": 38.9303,
+    "lng": 100.4542,
+    "sys": "gcj02"
+   },
+   "desc": "1482m | 河西走廊重镇，大佛寺、甘州夜市。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-15",
+   "name": "肃南",
+   "category": "city",
+   "lat": 38.836743,
+   "lng": 99.613776,
+   "srcCoord": {
+    "lat": 38.837,
+    "lng": 99.615,
+    "sys": "gcj02"
+   },
+   "desc": "2250m | 裕固族自治县，张掖→祁连走张肃公路经此进山。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-16",
+   "name": "野牛沟",
+   "category": "city",
+   "lat": 38.399691,
+   "lng": 99.498607,
+   "srcCoord": {
+    "lat": 38.4,
+    "lng": 99.5,
+    "sys": "gcj02"
+   },
+   "desc": "3359m | 祁连山腹地牧场，G213 上最高的一段，风光原始。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-17",
+   "name": "祁连",
+   "category": "city",
+   "lat": 38.178562,
+   "lng": 100.24633,
+   "srcCoord": {
+    "lat": 38.1789,
+    "lng": 100.2478,
+    "sys": "gcj02"
+   },
+   "desc": "2662m | “天境祁连”，县城住宿条件不错，牛羊肉管够。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-18",
+   "name": "峨堡",
+   "category": "city",
+   "lat": 37.949737,
+   "lng": 100.948416,
+   "srcCoord": {
+    "lat": 37.95,
+    "lng": 100.95,
+    "sys": "gcj02"
+   },
+   "desc": "3427m | 丝路南道古驿站，祁连→门源必经的高原小镇。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-19",
+   "name": "门源",
+   "category": "city",
+   "lat": 37.376677,
+   "lng": 101.618112,
+   "srcCoord": {
+    "lat": 37.3769,
+    "lng": 101.6199,
+    "sys": "gcj02"
+   },
+   "desc": "3046m | 7月百里油菜花海，青石嘴观景台视角最好。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-20",
+   "name": "大通",
+   "category": "city",
+   "lat": 36.934835,
+   "lng": 101.681711,
+   "srcCoord": {
+    "lat": 36.9349,
+    "lng": 101.6836,
+    "sys": "gcj02"
+   },
+   "desc": "2500m | 出达坂山后回西宁前的休整点。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-21",
+   "name": "塔尔寺",
+   "category": "spot",
+   "lat": 36.490699,
+   "lng": 101.566833,
+   "srcCoord": {
+    "lat": 36.4904,
+    "lng": 101.5686,
+    "sys": "gcj02"
+   },
+   "desc": "藏传佛教格鲁派六大寺之一，壁画·堆绣·酥油花“三绝”。游览约 2-3 小时。（经典支线，非主线）",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-22",
+   "name": "拉脊山垭口",
+   "category": "spot",
+   "lat": 36.369742,
+   "lng": 101.445072,
+   "srcCoord": {
+    "lat": 36.3697,
+    "lng": 101.4472,
+    "sys": "gcj02"
+   },
+   "desc": "3820m | 宁果公路 G227 垭口，环湖赛 HC 级爬坡点。**仅经典支线经过**，主线走京藏高速不翻此山。动作放慢，防高反。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-23",
+   "name": "日月山垭口",
+   "category": "spot",
+   "lat": 36.444211,
+   "lng": 100.798453,
+   "srcCoord": {
+    "lat": 36.444,
+    "lng": 100.8,
+    "sys": "gcj02"
+   },
+   "desc": "3433m | 主线（京藏高速）最高点，文成公主庙，藏汉分界。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-24",
+   "name": "青海湖二郎剑",
+   "category": "spot",
+   "lat": 36.58207,
+   "lng": 100.486498,
+   "srcCoord": {
+    "lat": 36.582,
+    "lng": 100.488,
+    "sys": "gcj02"
+   },
+   "desc": "3224m | 湖边经典景区，环湖公路风景不输景区，注意限速和牦牛。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-25",
+   "name": "橡皮山垭口",
+   "category": "spot",
+   "lat": 36.789837,
+   "lng": 99.430499,
+   "srcCoord": {
+    "lat": 36.79,
+    "lng": 99.432,
+    "sys": "gcj02"
+   },
+   "desc": "3480m | 黑马河—茶卡之间，俯瞰青海湖。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-26",
+   "name": "茶卡盐湖",
+   "category": "spot",
+   "lat": 36.757447,
+   "lng": 99.100147,
+   "srcCoord": {
+    "lat": 36.7576,
+    "lng": 99.1014,
+    "sys": "gcj02"
+   },
+   "desc": "3069m | “天空之镜”。建议傍晚光线好时下湖，穿凉鞋或租鞋套。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-27",
+   "name": "可鲁克湖",
+   "category": "spot",
+   "lat": 37.269923,
+   "lng": 96.889774,
+   "srcCoord": {
+    "lat": 37.27,
+    "lng": 96.89,
+    "sys": "gcj02"
+   },
+   "desc": "德令哈西南的淡水湖，顺路可绕。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-28",
+   "name": "翡翠湖",
+   "category": "spot",
+   "lat": 37.857806,
+   "lng": 95.324998,
+   "srcCoord": {
+    "lat": 37.8582,
+    "lng": 95.3263,
+    "sys": "gcj02"
+   },
+   "desc": "3150m | 大柴旦旁的盐湖群，日落时分最出片。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-29",
+   "name": "当金山垭口",
+   "category": "spot",
+   "lat": 39.02455,
+   "lng": 94.282736,
+   "srcCoord": {
+    "lat": 39.025,
+    "lng": 94.284,
+    "sys": "gcj02"
+   },
+   "desc": "3648m | 柴达木与河西走廊的分界，长下坡注意控速。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-30",
+   "name": "鸣沙山月牙泉",
+   "category": "spot",
+   "lat": 40.085054,
+   "lng": 94.673928,
+   "srcCoord": {
+    "lat": 40.0857,
+    "lng": 94.675,
+    "sys": "gcj02"
+   },
+   "desc": "傍晚骑骆驼+滑沙，看日落，门票三天内可二次入园。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-31",
+   "name": "莫高窟",
+   "category": "spot",
+   "lat": 40.03582,
+   "lng": 94.807974,
+   "srcCoord": {
+    "lat": 40.0365,
+    "lng": 94.8091,
+    "sys": "gcj02"
+   },
+   "desc": "⚠️ 实名预约制，旺季请提前数日在“莫高窟参观预约网”抢 A 类票。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-32",
+   "name": "嘉峪关关城",
+   "category": "spot",
+   "lat": 39.799684,
+   "lng": 98.226224,
+   "srcCoord": {
+    "lat": 39.8005,
+    "lng": 98.2268,
+    "sys": "gcj02"
+   },
+   "desc": "明长城西端起点，出关仪式值得看。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-33",
+   "name": "七彩丹霞",
+   "category": "spot",
+   "lat": 38.969368,
+   "lng": 100.039956,
+   "srcCoord": {
+    "lat": 38.97,
+    "lng": 100.0416,
+    "sys": "gcj02"
+   },
+   "desc": "傍晚雨后色彩最艳，西门入少排队。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-34",
+   "name": "卓尔山",
+   "category": "spot",
+   "lat": 38.199056,
+   "lng": 100.226317,
+   "srcCoord": {
+    "lat": 38.1994,
+    "lng": 100.2278,
+    "sys": "gcj02"
+   },
+   "desc": "祁连县城旁，红色丹崖+牛心山雪山同框，清晨光线最佳。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-35",
+   "name": "达坂山（景阳岭隧道）",
+   "category": "spot",
+   "lat": 37.611569,
+   "lng": 101.403773,
+   "srcCoord": {
+    "lat": 37.6122,
+    "lng": 101.406,
+    "sys": "gcj02"
+   },
+   "desc": "约 3230m | 走张汶高速以隧道群越岭（老 G227 垭口 3792m 已不通行）。出隧道后直降回西宁。",
+   "routes": [
+    "qinghai-gansu"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-36",
+   "name": "成都",
+   "category": "city",
+   "lat": 30.657002,
+   "lng": 104.066002,
+   "srcCoord": {
+    "lat": 30.65458,
+    "lng": 104.06851,
+    "sys": "gcj02"
+   },
+   "desc": "501m | 环线起终点。出发满油/满电、检查胎压——后面要翻 4298m 折多山。",
+   "routes": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-37",
+   "name": "都江堰",
+   "category": "city",
+   "lat": 30.988997,
+   "lng": 103.605996,
+   "srcCoord": {
+    "lat": 30.9864,
+    "lng": 103.60801,
+    "sys": "gcj02"
+   },
+   "desc": "722m | 成都平原西缘，都江堰景区在此，出城第一站。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-38",
+   "name": "映秀",
+   "category": "city",
+   "lat": 31.062998,
+   "lng": 103.484999,
+   "srcCoord": {
+    "lat": 31.06067,
+    "lng": 103.48723,
+    "sys": "gcj02"
+   },
+   "desc": "1013m | 5·12 汶川特大地震震中，G213 沿线纪念地。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-39",
+   "name": "卧龙",
+   "category": "city",
+   "lat": 31.020005,
+   "lng": 103.160004,
+   "srcCoord": {
+    "lat": 31.01772,
+    "lng": 103.16211,
+    "sys": "gcj02"
+   },
+   "desc": "2032m | 大熊猫栖息地，进山前最后一个低海拔补给点。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-40",
+   "name": "四姑娘山镇",
+   "category": "city",
+   "lat": 31.004997,
+   "lng": 102.837995,
+   "srcCoord": {
+    "lat": 31.00247,
+    "lng": 102.8396,
+    "sys": "gcj02"
+   },
+   "desc": "3242m | 日隆镇，游览双桥沟/长坪沟的基地，注意高反。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-41",
+   "name": "小金",
+   "category": "city",
+   "lat": 30.999,
+   "lng": 102.362999,
+   "srcCoord": {
+    "lat": 30.99673,
+    "lng": 102.36476,
+    "sys": "gcj02"
+   },
+   "desc": "2410m | 小金县城，四姑娘山—丹巴之间的河谷城镇。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-42",
+   "name": "丹巴",
+   "category": "city",
+   "lat": 30.878003,
+   "lng": 101.890998,
+   "srcCoord": {
+    "lat": 30.87532,
+    "lng": 101.89248,
+    "sys": "gcj02"
+   },
+   "desc": "2044m | 大渡河上游，甲居藏寨观景台在县城以北。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-43",
+   "name": "八美",
+   "category": "city",
+   "lat": 30.478005,
+   "lng": 101.555002,
+   "srcCoord": {
+    "lat": 30.47518,
+    "lng": 101.55657,
+    "sys": "gcj02"
+   },
+   "desc": "3762m | 道孚八美镇，亚拉雪山观景沿线的补给点。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-44",
+   "name": "塔公",
+   "category": "city",
+   "lat": 30.315001,
+   "lng": 101.524005,
+   "srcCoord": {
+    "lat": 30.31222,
+    "lng": 101.52565,
+    "sys": "gcj02"
+   },
+   "desc": "3719m | 塔公草原与塔公寺，天气好时远眺亚拉雪山。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-45",
+   "name": "新都桥",
+   "category": "city",
+   "lat": 30.042002,
+   "lng": 101.493995,
+   "srcCoord": {
+    "lat": 30.0393,
+    "lng": 101.49573,
+    "sys": "gcj02"
+   },
+   "desc": "3464m | 「摄影天堂」，G318 与 G248 交汇，光影著名。",
+   "routes": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-46",
+   "name": "康定",
+   "category": "city",
+   "lat": 30.050003,
+   "lng": 101.957004,
+   "srcCoord": {
+    "lat": 30.04717,
+    "lng": 101.95851,
+    "sys": "gcj02"
+   },
+   "desc": "2613m | 甘孜州府，翻折多山前最后的大城市，补给充足。",
+   "routes": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-47",
+   "name": "泸定",
+   "category": "city",
+   "lat": 29.913996,
+   "lng": 102.234005,
+   "srcCoord": {
+    "lat": 29.91129,
+    "lng": 102.23557,
+    "sys": "gcj02"
+   },
+   "desc": "1320m | 大渡河畔，泸定桥纪念地，海拔骤降的休整点。",
+   "routes": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-48",
+   "name": "雅安",
+   "category": "city",
+   "lat": 30.010001,
+   "lng": 103.013003,
+   "srcCoord": {
+    "lat": 30.00734,
+    "lng": 103.01487,
+    "sys": "gcj02"
+   },
+   "desc": "599m | 雨城，回成都前最后的补给与检查点。",
+   "routes": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-49",
+   "name": "都江堰景区",
+   "category": "spot",
+   "lat": 30.998002,
+   "lng": 103.604996,
+   "srcCoord": {
+    "lat": 30.99541,
+    "lng": 103.60701,
+    "sys": "gcj02"
+   },
+   "desc": "千年水利工程，成都平原的起点。游览约 2–3 小时。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-50",
+   "name": "映秀震中遗址",
+   "category": "spot",
+   "lat": 31.059003,
+   "lng": 103.486002,
+   "srcCoord": {
+    "lat": 31.05667,
+    "lng": 103.48823,
+    "sys": "gcj02"
+   },
+   "desc": "5·12 汶川特大地震震中纪念地，免费参观，请保持肃穆。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-51",
+   "name": "巴朗山垭口",
+   "category": "spot",
+   "lat": 30.915,
+   "lng": 102.908004,
+   "srcCoord": {
+    "lat": 30.91235,
+    "lng": 102.90957,
+    "sys": "gcj02"
+   },
+   "desc": "4480m | 卧龙—四姑娘山之间的历史垭口，现驾车走巴朗山隧道（约 3850m），垭口老路需专程前往。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-52",
+   "name": "四姑娘山·双桥沟",
+   "category": "spot",
+   "lat": 31.033999,
+   "lng": 102.798005,
+   "srcCoord": {
+    "lat": 31.03156,
+    "lng": 102.79967,
+    "sys": "gcj02"
+   },
+   "desc": "3200–3800m | 四姑娘山最易到达的沟，观光车直达，布达拉峰视角经典。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-53",
+   "name": "亚拉雪山观景台",
+   "category": "spot",
+   "lat": 30.462004,
+   "lng": 101.572002,
+   "srcCoord": {
+    "lat": 30.45915,
+    "lng": 101.57354,
+    "sys": "gcj02"
+   },
+   "desc": "八美—塔公沿线远眺亚拉雪山（5820m）的最佳机位之一。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-54",
+   "name": "塔公草原·木雅金塔",
+   "category": "spot",
+   "lat": 30.317998,
+   "lng": 101.523002,
+   "srcCoord": {
+    "lat": 30.31522,
+    "lng": 101.52465,
+    "sys": "gcj02"
+   },
+   "desc": "3700m | 塔公寺与金塔同框，背景即亚拉雪山。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-55",
+   "name": "折多山垭口",
+   "category": "spot",
+   "lat": 30.176,
+   "lng": 101.838998,
+   "srcCoord": {
+    "lat": 30.17317,
+    "lng": 101.84055,
+    "sys": "gcj02"
+   },
+   "desc": "4298m | G318 康巴第一关，新都桥—康定必经，冬季易结冰暗冰。",
+   "routes": [
+    "chuanxi"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-56",
+   "name": "泸定桥",
+   "category": "spot",
+   "lat": 29.913996,
+   "lng": 102.234005,
+   "srcCoord": {
+    "lat": 29.91129,
+    "lng": 102.23557,
+    "sys": "gcj02"
+   },
+   "desc": "大渡河上的铁索桥，红军飞夺泸定桥纪念地，县城停车后步行可达。",
+   "routes": [
+    "chuanxi",
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-57",
+   "name": "雅江",
+   "category": "city",
+   "lat": 30.031998,
+   "lng": 101.016002,
+   "srcCoord": {
+    "lat": 30.02932,
+    "lng": 101.01757,
+    "sys": "gcj02"
+   },
+   "desc": "2614m | 雅砻江河谷县城，松茸产地，海拔相对温和。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-58",
+   "name": "理塘",
+   "category": "city",
+   "lat": 30.001997,
+   "lng": 100.271004,
+   "srcCoord": {
+    "lat": 29.99927,
+    "lng": 100.27222,
+    "sys": "gcj02"
+   },
+   "desc": "4009m | 世界高城（4014m），仓央嘉措诗中的理塘，注意高反。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-59",
+   "name": "姊妹湖",
+   "category": "city",
+   "lat": 30.283,
+   "lng": 99.816997,
+   "srcCoord": {
+    "lat": 30.28019,
+    "lng": 99.81813,
+    "sys": "gcj02"
+   },
+   "desc": "4579m | 海子山下的两个高山湖泊，G318 路边的经典机位。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-60",
+   "name": "巴塘",
+   "category": "city",
+   "lat": 30.004997,
+   "lng": 99.103996,
+   "srcCoord": {
+    "lat": 30.00243,
+    "lng": 99.10506,
+    "sys": "gcj02"
+   },
+   "desc": "2589m | 金沙江东岸，进藏前最后一个四川县城，海拔友好。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-61",
+   "name": "金沙江大桥",
+   "category": "city",
+   "lat": 29.763001,
+   "lng": 98.779,
+   "srcCoord": {
+    "lat": 29.76022,
+    "lng": 98.77955,
+    "sys": "gcj02"
+   },
+   "desc": "3278m | 川藏界河，过桥即入西藏（芒康）。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-62",
+   "name": "芒康",
+   "category": "city",
+   "lat": 29.679996,
+   "lng": 98.592996,
+   "srcCoord": {
+    "lat": 29.67703,
+    "lng": 98.59323,
+    "sys": "gcj02"
+   },
+   "desc": "3868m | 入藏第一县，滇藏线与川藏线交汇，盐井古盐田在旁。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-63",
+   "name": "如美",
+   "category": "city",
+   "lat": 29.567,
+   "lng": 98.475003,
+   "srcCoord": {
+    "lat": 29.56426,
+    "lng": 98.47548,
+    "sys": "gcj02"
+   },
+   "desc": "3861m | 澜沧江河谷小镇，连续翻山间的低海拔落脚点。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-64",
+   "name": "左贡",
+   "category": "city",
+   "lat": 29.671001,
+   "lng": 97.841001,
+   "srcCoord": {
+    "lat": 29.66809,
+    "lng": 97.84129,
+    "sys": "gcj02"
+   },
+   "desc": "3809m | 玉曲河畔县城，东达山下来后的休整点。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-65",
+   "name": "邦达",
+   "category": "city",
+   "lat": 30.073004,
+   "lng": 97.464999,
+   "srcCoord": {
+    "lat": 30.07033,
+    "lng": 97.46558,
+    "sys": "gcj02"
+   },
+   "desc": "4064m | 邦达草原岔路口，川藏南北线分野，业拉山起点。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-66",
+   "name": "八宿",
+   "category": "city",
+   "lat": 30.053,
+   "lng": 96.918001,
+   "srcCoord": {
+    "lat": 30.05004,
+    "lng": 96.91813,
+    "sys": "gcj02"
+   },
+   "desc": "3274m | 怒江上游县城，72 拐下来后的落脚点。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-67",
+   "name": "然乌",
+   "category": "city",
+   "lat": 29.499004,
+   "lng": 96.611997,
+   "srcCoord": {
+    "lat": 29.49596,
+    "lng": 96.61209,
+    "sys": "gcj02"
+   },
+   "desc": "3891m | 然乌湖畔，湖光与来古冰川，早晚光线最佳。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-68",
+   "name": "波密",
+   "category": "city",
+   "lat": 29.860996,
+   "lng": 95.773003,
+   "srcCoord": {
+    "lat": 29.85819,
+    "lng": 95.7738,
+    "sys": "gcj02"
+   },
+   "desc": "2730m | 藏王故里，雪山森林环绕，海拔舒适、食宿好。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-69",
+   "name": "通麦",
+   "category": "city",
+   "lat": 30.111995,
+   "lng": 95.006996,
+   "srcCoord": {
+    "lat": 30.10921,
+    "lng": 95.00801,
+    "sys": "gcj02"
+   },
+   "desc": "2301m | 通麦天险（现大桥隧道已通过），帕隆藏布峡谷。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-70",
+   "name": "鲁朗",
+   "category": "city",
+   "lat": 29.773,
+   "lng": 94.735996,
+   "srcCoord": {
+    "lat": 29.77018,
+    "lng": 94.73694,
+    "sys": "gcj02"
+   },
+   "desc": "3432m | 鲁朗林海与石锅鸡，雪山下的高山牧场。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-71",
+   "name": "林芝",
+   "category": "city",
+   "lat": 29.653998,
+   "lng": 94.362004,
+   "srcCoord": {
+    "lat": 29.65131,
+    "lng": 94.36317,
+    "sys": "gcj02"
+   },
+   "desc": "2990m | 林芝市区（巴宜），西藏江南，补给充足。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-72",
+   "name": "工布江达",
+   "category": "city",
+   "lat": 29.883999,
+   "lng": 93.246005,
+   "srcCoord": {
+    "lat": 29.88117,
+    "lng": 93.24724,
+    "sys": "gcj02"
+   },
+   "desc": "3418m | 尼洋河畔县城，去拉萨前最后一站大补给。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-73",
+   "name": "松多",
+   "category": "city",
+   "lat": 30.094996,
+   "lng": 92.526002,
+   "srcCoord": {
+    "lat": 30.09208,
+    "lng": 92.52688,
+    "sys": "gcj02"
+   },
+   "desc": "4826m | 米拉山前的小镇，翻最后一座山前可加满。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-74",
+   "name": "米拉山口",
+   "category": "city",
+   "lat": 29.705002,
+   "lng": 92.148002,
+   "srcCoord": {
+    "lat": 29.70228,
+    "lng": 92.1492,
+    "sys": "gcj02"
+   },
+   "desc": "4264m | 拉萨前最后一座大山口（5013m），下山即到圣城。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-city-75",
+   "name": "拉萨",
+   "category": "city",
+   "lat": 29.652003,
+   "lng": 91.139999,
+   "srcCoord": {
+    "lat": 29.64927,
+    "lng": 91.14153,
+    "sys": "gcj02"
+   },
+   "desc": "3655m | 终点。布达拉宫、大昭寺，行程收官。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-76",
+   "name": "姊妹湖",
+   "category": "spot",
+   "lat": 30.283,
+   "lng": 99.816997,
+   "srcCoord": {
+    "lat": 30.28019,
+    "lng": 99.81813,
+    "sys": "gcj02"
+   },
+   "desc": "海子山姊妹湖，G318 路边的两个高山湖泊，下垭口即见。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-77",
+   "name": "怒江72拐",
+   "category": "spot",
+   "lat": 30.079996,
+   "lng": 96.880005,
+   "srcCoord": {
+    "lat": 30.07704,
+    "lng": 96.88013,
+    "sys": "gcj02"
+   },
+   "desc": "业拉山下的连续发卡弯，观景台俯瞰全貌；下坡挂低挡控速。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-78",
+   "name": "然乌湖",
+   "category": "spot",
+   "lat": 29.499004,
+   "lng": 96.611997,
+   "srcCoord": {
+    "lat": 29.49596,
+    "lng": 96.61209,
+    "sys": "gcj02"
+   },
+   "desc": "帕隆藏布源头湖泊，早晚光影最佳，可顺路去来古冰川。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-79",
+   "name": "鲁朗林海",
+   "category": "spot",
+   "lat": 29.773,
+   "lng": 94.735996,
+   "srcCoord": {
+    "lat": 29.77018,
+    "lng": 94.73694,
+    "sys": "gcj02"
+   },
+   "desc": "雪山下的高山牧场与云杉林，石锅鸡是招牌。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  },
+  {
+   "id": "spo-spot-80",
+   "name": "布达拉宫",
+   "category": "spot",
+   "lat": 29.656995,
+   "lng": 91.116999,
+   "srcCoord": {
+    "lat": 29.65429,
+    "lng": 91.11856,
+    "sys": "gcj02"
+   },
+   "desc": "拉萨终点地标。需提前预约门票，注意高原作息。",
+   "routes": [
+    "chengdu-lhasa-318"
+   ],
+   "autoCaptured": false,
+   "source": "manual",
+   "updatedAt": "2026-09-28"
+  }
+ ],
+ "updatedAt": "2026-09-28"
+}

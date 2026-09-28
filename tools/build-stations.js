@@ -1,29 +1,36 @@
 /* ============================================================
-   build-stations.js — 参数化沿线站点构建（S3）
-   用法：node tools/build-stations.js <routeId> [--source amap|tencent] [--dry]
+   build-stations.js — 参数化沿线站点构建（S3 → S10 查库优先）
+   用法：node tools/build-stations.js <routeId> [--source amap|tencent] [--dry] [--refresh]
    输入：route-defs/<routeId>.js（ROUTE_BUILD.poiRegions 行政区清单 +
         CORE/TAIL/ROUTE_STARTS 轨迹，站点投影到与页面同源的轨迹上）
    输出：就地更新包内 STATION_DATA（ev/fuel，含 regions/truncated 审计字段）
+   流程（S10）：共享库查候选（WGS-84 空间粗筛：包围盒+35km 走廊，线性扫描）→
+        新鲜（≤90 天）且数量达阈值的类型直接物化；不足的调高德 → 入库去重合并 → 物化
    做法对齐青甘版：35km 离路过滤 → 25km 里程桶配额（含长间隔补洞）→
         覆盖体检（最大无桩间隔 + 25km 网格盲区）。
    数据源：
      --source amap（默认）：高德 POI place/text，city+citylimit 行政区穷举
      --source tencent：腾讯 POI region()（⚠️ 无 Key 未验证；代理地址从
         环境变量 TMAP_SECRET/TMAP_PORT 读，不再硬编码）
+     --refresh：忽略库新鲜度，全部重抓并回写库
    ============================================================ */
 const fs = require('fs');
 const {
-    loadAmapKey, maskKey, sleep, amapGet,
+    loadAmapKey, maskKey, sleep, amapGet, wgs2gcj,
     loadRoutePackage, buildProjection, longBlindWarnings, replaceVarBlock, ROOT
 } = require('./lib/build-lib');
+const {
+    readDb, writeDb, upsertStation, isFresh, fromDbStation, fromAmapPoi
+} = require('./lib/db-lib');
 const http = require('http');
 
 const ARGS = process.argv.slice(2);
 const ROUTE_ID = ARGS.filter(a => !a.startsWith('--'))[0];
 const SOURCE = (ARGS.filter(a => a.indexOf('--source=') === 0)[0] || '--source=amap').split('=')[1];
 const DRY = ARGS.indexOf('--dry') >= 0;
+const REFRESH = ARGS.indexOf('--refresh') >= 0;
 if (!ROUTE_ID || ['amap', 'tencent'].indexOf(SOURCE) < 0) {
-    console.error('用法: node tools/build-stations.js <routeId> [--source amap|tencent] [--dry]');
+    console.error('用法: node tools/build-stations.js <routeId> [--source amap|tencent] [--dry] [--refresh]');
     process.exit(1);
 }
 
@@ -113,12 +120,54 @@ function searchTencent(keyword, region, page) {
     });
 }
 
-/* ---------- 3. 抓取 ---------- */
+/* ---------- 3. 抓取（S10：共享库查候选优先，API 只做增量） ---------- */
+const stationDb = readDb('stations.json', { version: 1, stations: [] });
+const fetchedAt = new Date().toISOString().slice(0, 10);
+
+/* 库候选：包围盒粗筛 → 35km 走廊精筛（WGS→GCJ 后投到线路轨迹，与 API 数据同口径）。
+   命中口径 = 来源记录里含本线路（sources[].routeId）：保证「缓存重建」逐站复现
+   该线自己的产物；跨线候选不进命中池（新线首次构建仍全量抓取，跨线预置留待后续）。 */
+function dbCandidates(type) {
+    return stationDb.stations.filter(s => {
+        if (s.type !== type) return false;
+        if (!s.sources.some(src => src.routeId === ROUTE_ID)) return false;
+        if (s.lat < bbox.latMin - 0.4 || s.lat > bbox.latMax + 0.4) return false;
+        if (s.lng < bbox.lngMin - 0.4 || s.lng > bbox.lngMax + 0.4) return false;
+        const g = wgs2gcj(s.lat, s.lng);
+        return projectRoute(g[0], g[1]).dist <= MAX_DIST;
+    });
+}
+/* 类型级新鲜度闸门：走廊内新鲜候选 ≥ 阈值则该类型整体不发起 API 检索（v1 为类型级，
+   区域级细粒度留待后续——库记录带 sources.region 后可按区裁剪） */
+const TYPE_GATE = { ev: 120, fuel: 60 };
+
 async function main() {
     const raw = { ev: [], fuel: [] };
     const seen = new Set();
     const stats = { req: 0, fail: 0, empty: [] };
     const truncated = [];   // 抓到上限但未抓完的 region+kw（如实记录，不假装抓全）
+    let dbSaved = false;
+    const hits = { ev: 0, fuel: 0 };   // 库命中物化数（统计打印用）
+
+    /* 库命中直接物化（转 GCJ-02 → 投影 → 同形站点记录） */
+    ['ev', 'fuel'].forEach(type => {
+        const fresh = dbCandidates(type).filter(s => REFRESH ? false : isFresh(s));
+        if (fresh.length >= TYPE_GATE[type]) {
+            fresh.forEach(s => {
+                const g = wgs2gcj(s.lat, s.lng);
+                const pr = projectRoute(g[0], g[1]);
+                if (pr.dist > MAX_DIST) return;
+                raw[type].push({
+                    t: s.name, a: s.address || '', tel: s.tel || '',
+                    lat: +g[0].toFixed(5), lng: +g[1].toFixed(5),
+                    km: +pr.routeKm.toFixed(1), d: +pr.dist.toFixed(1),
+                    op: s.brand || '', slow: s.slow || 0, cat: s.cat || ''
+                });
+            });
+            hits[type] = fresh.length;
+        }
+    });
+    console.log(`共享库：候选 ${stationDb.stations.length} 条；本次命中物化 充电 ${hits.ev} / 加油 ${hits.fuel}`);
 
     function push(bucket, item) {
         const loc = item.location; // amap: "lng,lat" 字符串；tencent: {lat,lng}
@@ -151,12 +200,27 @@ async function main() {
             slow: title.indexOf('慢充') >= 0 ? 1 : 0,
             cat: cat
         });
+        // 入库（S10）：35km 走廊内的抓取结果沉淀进共享库（WGS-84 基准 + 来源记录）
+        if (SOURCE === 'amap') {
+            upsertStation(stationDb, fromAmapPoi(item, ROUTE_ID, fetchedAt));
+            dbSaved = true;
+        }
     }
 
     for (const job of [{ kw: '充电站', bucket: 'ev' }, { kw: '加油站', bucket: 'fuel' }]) {
+        if (hits[job.bucket] >= TYPE_GATE[job.bucket]) {
+            console.log(`${job.kw}：库新鲜候选充足（${hits[job.bucket]} ≥ 阈值 ${TYPE_GATE[job.bucket]}），跳过 API 检索`);
+            continue;
+        }
         await fetchKeyword(job);
         console.log(`${job.kw} 完成：${raw[job.bucket].length} 条`);
     }
+    if (dbSaved) {
+        writeDb('stations.json', stationDb);
+        console.log('共享库已更新：' + stationDb.stations.length + ' 条（新增/合并见上）');
+    }
+    const hitN = hits.ev + hits.fuel, rawN = raw.ev.length + raw.fuel.length;
+    console.log(`命中率：库命中 ${hitN} / 物化池 ${rawN}（${rawN ? Math.round(hitN / rawN * 100) : 0}%）· API 请求 ${stats.req} 次`);
     async function fetchKeyword(job) {
         // 两阶段全并发：阶段 1 所有区县的第 1 页过闸门并发（拿 count）；
         // 阶段 2 把全部后续页一次性过闸门并发。单请求 ~3s 是服务器延迟，
@@ -278,7 +342,9 @@ async function main() {
     const out = {
         builtAt,
         source: SOURCE === 'amap'
-            ? '高德地图 POI（place/text 行政区穷举）沿真实驾车轨迹重投影'
+            ? (stats.req > 0
+                ? '高德地图 POI（place/text 行政区穷举，新抓取并沉淀共享库）沿真实驾车轨迹重投影'
+                : '站点共享库（data/db，WGS-84 基准）物化：高德/腾讯 POI 沉淀，未发起 API 抓取')
             : '腾讯地图真实驾车轨迹重投影',
         totalKm: +TOTAL_KM.toFixed(1),
         datumStartKm: +XN_START.toFixed(1),   // 站点里程基准上主出发地行程起点的 km（S4 起由 xnStart 改名）
@@ -288,6 +354,9 @@ async function main() {
         warnings: longBlindWarnings({ totalKm: TOTAL_KM, ev: raw.ev, fuel: raw.fuel }),
         ev: raw.ev, fuel: raw.fuel
     };
+    // sourceShort（信息窗来源透出）保留包内现值，不随构建源波动
+    const prevSd = pkg.STATION_DATA || {};
+    if (prevSd.sourceShort) out.sourceShort = prevSd.sourceShort;
     fs.writeFileSync(PKG_FILE, replaceVarBlock(PKG_SRC, 'STATION_DATA', 'var STATION_DATA = ' + JSON.stringify(out) + ';'));
     console.log(`已写回 ${PKG_FILE}（${raw.ev.length} 充电 + ${raw.fuel.length} 加油，STATION_DATA ${(JSON.stringify(out).length / 1024).toFixed(0)}KB）`);
     if (SOURCE === 'amap' && truncated.length) {
