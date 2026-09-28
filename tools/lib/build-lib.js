@@ -72,8 +72,8 @@ async function resolveAmapIp() {
     return amapIpCache;
 }
 
-/* 高德业务错误码：可重试的（QPS/并发超限类） */
-const RETRYABLE_INFOCODES = { '10004': 1, '10009': 1, '10044': 1 };
+/* 高德业务错误码：可重试的（QPS/并发超限类；CUQPS=10021 实测会瞬时触发） */
+const RETRYABLE_INFOCODES = { '10004': 1, '10009': 1, '10021': 1, '10044': 1 };
 
 /* 高德 GET：path 以 / 开头且已含 query（不含 key，key 由本函数追加，绝不外泄） */
 async function amapGet(pathWithQuery, key, retries) {

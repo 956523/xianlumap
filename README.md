@@ -132,8 +132,14 @@ window._TMapSecurityConfig = {
 ## 跑测试
 
 ```bash
-node tools/c4-test.js
-# 结果: 94 pass / 0 fail
+node tools/c4-test.js            # 轮跑 route-defs/ 下全部线路包，每包 94 项
+node tools/c4-test.js chuanxi    # 只跑指定线路包
+# 结果: 188 pass / 0 fail（2 包 × 94）
+```
+
+```bash
+node tools/probe-check.js   # 两条线加载冒烟 + 编辑模式（27 项）
+node tools/validate.js qinghai-gansu   # 数据体检 V1–V4（--fix 可修复高程尖峰/写回长盲区）
 ```
 
 测试覆盖：页面结构、投影自洽、数据完整性、去重与分级行为、窄视口布局、

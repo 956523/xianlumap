@@ -82,6 +82,10 @@ async function searchAmap(keyword, region, page) {
 /* 腾讯保留路径（无 Key 未验证）：代理地址全部走环境变量 */
 const TSECRET = process.env.TMAP_SECRET || '';
 const TPORT = process.env.TMAP_PORT || '49234';
+/* 源分发器：amap 默认 / tencent 保留 */
+function search(keyword, region, page) {
+    return SOURCE === 'amap' ? searchAmap(keyword, region, page) : searchTencent(keyword, region, page);
+}
 function searchTencent(keyword, region, page) {
     if (!TSECRET) return Promise.resolve({ status: -1, message: 'tencent 源需要环境变量 TMAP_SECRET/TMAP_PORT（无 Key 未验证）' });
     const base = `http://127.0.0.1:${TPORT}/_TMapService/_wbt/${TSECRET}/service/place/v1/search`;
@@ -136,30 +140,49 @@ async function main() {
     }
 
     for (const job of [{ kw: '充电站', bucket: 'ev' }, { kw: '加油站', bucket: 'fuel' }]) {
+        await fetchKeyword(job);
+        console.log(`${job.kw} 完成：${raw[job.bucket].length} 条`);
+    }
+    async function fetchKeyword(job) {
         for (let r = 0; r < REGIONS.length; r++) {
             const rg = REGIONS[r];
             let got = 0, count = null;
             const maxPage = SOURCE === 'amap' ? 8 : 6; // amap offset=25×8=200 上限；tencent 20×6=120
-            for (let pg = 1; pg <= maxPage; pg++) {
-                const res = SOURCE === 'amap' ? await searchAmap(job.kw, rg, pg) : await searchTencent(job.kw, rg, pg);
-                stats.req++;
-                if (String(res.status) !== '1' && res.status !== 0) {
-                    stats.fail++;
-                    if (stats.fail <= 6) console.log(`  ⚠ ${rg} ${job.kw} status=${res.status} ${res.message || res.info || ''}`);
-                    break;
-                }
-                const pois = res.pois || res.data || [];
-                if (count == null) count = +(res.count != null ? res.count : pois.length);
-                got += pois.length;
-                pois.forEach(it => push(job.bucket, it));
-                if (pois.length < (SOURCE === 'amap' ? 25 : 20)) break;
-                await sleep(SOURCE === 'amap' ? 130 : 70);
+            const per = SOURCE === 'amap' ? 25 : 20;
+            // 第 1 页先行：拿到 count 才知道要翻几页
+            const res1 = await search(job.kw, rg, 1);
+            stats.req++;
+            if (String(res1.status) !== '1' && res1.status !== 0) {
+                stats.fail++;
+                if (stats.fail <= 6) console.log(`  ⚠ ${rg} ${job.kw} status=${res1.status} ${res1.message || res1.info || ''}`);
+                stats.empty.push(job.kw + '@' + rg);
+                continue;
+            }
+            const p1 = res1.pois || res1.data || [];
+            count = +(res1.count != null ? res1.count : p1.length);
+            got += p1.length;
+            p1.forEach(it => push(job.bucket, it));
+            // 其余页 3 路并发（实测该 Key CUQPS 上限内；瞬时超限由 amapGet 退避重试兜住）。
+            // 单请求 ~3.2s 是服务器延迟，并发是唯一的提速手段——S6 前单线构建 6.6 分钟超 A3 预算。
+            const totalPages = Math.min(maxPage, Math.max(1, Math.ceil(count / per)));
+            for (let pg = 2; pg <= totalPages; pg += 3) {
+                const pages = [];
+                for (let p = pg; p < Math.min(pg + 3, totalPages + 1); p++) pages.push(p);
+                const results = await Promise.all(pages.map(p => search(job.kw, rg, p)));
+                results.forEach(res => {
+                    stats.req++;
+                    if (String(res.status) !== '1' && res.status !== 0) { stats.fail++; return; }
+                    const pois = res.pois || res.data || [];
+                    got += pois.length;
+                    pois.forEach(it => push(job.bucket, it));
+                });
+                if (pg + 3 <= totalPages) await sleep(500);   // 批间礼让，压 QPS
             }
             if (count != null && got < count) truncated.push(job.kw + '@' + rg + '（' + got + '/' + count + '）');
             if (got === 0) stats.empty.push(job.kw + '@' + rg);
             if (r % 8 === 0) console.log(`  ${job.kw} ${r}/${REGIONS.length}（累计 ${raw[job.bucket].length}）`);
+            await sleep(300);
         }
-        console.log(`${job.kw} 完成：${raw[job.bucket].length} 条`);
     }
     console.log(`请求 ${stats.req} / 失败 ${stats.fail} / 零结果区县 ${stats.empty.length}`);
     if (truncated.length) console.log(`⚠️ 未抓全（分页上限截断）：${truncated.join('，')}`);
@@ -248,7 +271,7 @@ async function main() {
         ev: raw.ev, fuel: raw.fuel
     };
     fs.writeFileSync(PKG_FILE, replaceVarBlock(PKG_SRC, 'STATION_DATA', 'var STATION_DATA = ' + JSON.stringify(out) + ';'));
-    console.log(`已写回 ${PKG_FILE}（${raw.ev.length} 充电 + ${raw.fuel.length} 加油，STATION_DATA ${(line.length / 1024).toFixed(0)}KB）`);
+    console.log(`已写回 ${PKG_FILE}（${raw.ev.length} 充电 + ${raw.fuel.length} 加油，STATION_DATA ${(JSON.stringify(out).length / 1024).toFixed(0)}KB）`);
     if (SOURCE === 'amap' && truncated.length) {
         console.log('提醒：存在分页截断区域，如需更全覆盖可细分行政区后重跑（清单见 STATION_DATA.regions）');
     }
