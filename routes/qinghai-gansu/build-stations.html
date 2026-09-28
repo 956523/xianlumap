@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>构建：沿线站点数据固化</title>
+<style>
+    body { background: #0f172a; color: #e2e8f0; font-family: Consolas, monospace; padding: 20px; font-size: 13px; }
+    #log { white-space: pre-wrap; line-height: 1.6; }
+</style>
+<script>
+    window._TMapSecurityConfig = {
+        serviceHost: 'http://127.0.0.1:__WB_HTTP_PORT__/_TMapService/_wbt/__WB_TMAP_SECRET__',
+    };
+</script>
+<script src="https://map.qq.com/api/gljs?v=1.exp&libraries=service"></script>
+<!-- 投影必须与页面渲染同源：直接加载真实轨迹数据 -->
+<script src="route-real-data.js"></script>
+</head>
+<body>
+<div id="log">启动…</div>
+<script>
+    var logEl = document.getElementById('log');
+    function log(m) { logEl.textContent += '\n' + m; }
+
+    /* ===== 主路线：与页面完全同源 =====
+       旧版在这里手写 9 段折线做投影，而页面渲染用的是 route-real-data.js 的
+       240点/段真实轨迹 —— 两条线不是同一条，实测同一站点距离差可达 10km
+       （民乐站：旧折线算 47km，真实轨迹算 57km），导致 d 字段失真、
+       km 与地址错配。现在直接消费同一份真实轨迹，两边永远一致。 */
+    var ROUTE_LEGS = (window.ROUTE_REAL && window.ROUTE_REAL.legs) || [];
+    if (!ROUTE_LEGS.length) {
+        log('❌ 致命：未加载 route-real-data.js（window.ROUTE_REAL 为空）');
+        log('   投影必须使用与页面同源的真实轨迹，否则 km 会错。已中止。');
+        throw new Error('ROUTE_REAL missing');
+    }
+    // 按页面 DAYS 顺序拼出兰州版全线：兰州→西宁 + D1..D5 + D7..D10 + 西宁→兰州
+    function legById(id) { return ROUTE_LEGS.filter(function (l) { return l.id === id; })[0]; }
+    var ORDER = [11, 1, 2, 3, 4, 5, 7, 8, 9, 10]; // 11=兰州→西宁起头，10=祁连→西宁收尾
+    var ROUTE_ALL = [];
+    ORDER.forEach(function (id) {
+        var l = legById(id);
+        if (!l) { log('⚠️ 缺少 leg' + id); return; }
+        var pts = l.simplified || l.path;
+        pts.forEach(function (p, i) {
+            if (i === 0 && ROUTE_ALL.length) return; // 去重接头点
+            ROUTE_ALL.push(p);
+        });
+    });
+    // 真实里程：各段 apiKm 累加（比弧长×缩放系数准）
+    var SEG_KM = [];  // 每个点在整条线上的累计里程（按 apiKm 比例分配）
+    (function () {
+        var acc = 0;
+        ORDER.forEach(function (id) {
+            var l = legById(id);
+            if (!l) return;
+            var pts = l.simplified || l.path;
+            var COSL = Math.cos(38 * Math.PI / 180);
+            var lens = [0], arc = 0;
+            for (var i = 1; i < pts.length; i++) {
+                var dx = (pts[i][1] - pts[i - 1][1]) * COSL, dy = pts[i][0] - pts[i - 1][0];
+                arc += Math.sqrt(dx * dx + dy * dy);
+                lens.push(arc);
+            }
+            var scale = arc ? (l.apiKm / arc) : 0;
+            for (var j = 0; j < pts.length; j++) {
+                if (j === 0 && SEG_KM.length) continue;
+                SEG_KM.push(acc + lens[j] * scale);
+            }
+            acc += l.apiKm;
+        });
+    })();
+    var TOTAL_KM = SEG_KM[SEG_KM.length - 1];
+    // 西宁版区间：兰州→西宁段里程 之后 到 收尾前
+    var LZ_XN_KM = (legById(11) || { apiKm: 219.7 }).apiKm;
+    var XN_START_KM = LZ_XN_KM;
+    var XN_END_KM = TOTAL_KM - LZ_XN_KM;
+    log('路线加载：' + ROUTE_LEGS.length + ' 段，投影点 ' + ROUTE_ALL.length +
+        '，总里程 ' + TOTAL_KM.toFixed(1) + 'km（西宁版 ' + XN_START_KM.toFixed(1) + '–' + XN_END_KM.toFixed(1) + '）');
+
+    /* 弧长累计（等距柱状近似）—— 仅用于找最近折线段；
+       里程换算改用 SEG_KM（真实 apiKm 分配），不再用单一缩放系数 */
+    var COSLAT = Math.cos(38 * Math.PI / 180);
+    function segLen(a, b) {
+        var dx = (b[1] - a[1]) * COSLAT, dy = b[0] - a[0];
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    var arcAcc = [0];
+    for (var i = 1; i < ROUTE_ALL.length; i++) {
+        arcAcc.push(arcAcc[i - 1] + segLen(ROUTE_ALL[i - 1], ROUTE_ALL[i]));
+    }
+
+    /* 点投影到路线：返回 {distKm, routeKm}
+       routeKm 沿真实累计里程插值（段内按弧长比例摊到该段的 apiKm） */
+    function projectRoute(p) {
+        var px = p[1] * COSLAT, py = p[0];
+        var best = { d: 1e18, i: 1, t: 0 };
+        for (var i = 1; i < ROUTE_ALL.length; i++) {
+            var A = ROUTE_ALL[i - 1], B = ROUTE_ALL[i];
+            var ax = A[1] * COSLAT, ay = A[0], bx = B[1] * COSLAT, by = B[0];
+            var abx = bx - ax, aby = by - ay;
+            var ab2 = abx * abx + aby * aby || 1e-12;
+            var t = ((px - ax) * abx + (py - ay) * aby) / ab2;
+            t = Math.max(0, Math.min(1, t));
+            var cx = ax + t * abx, cy = ay + t * aby;
+            var dx = px - cx, dy = py - cy;
+            var d = dx * dx + dy * dy;
+            if (d < best.d) best = { d: d, i: i, t: t };
+        }
+        var km0 = SEG_KM[best.i - 1], km1 = SEG_KM[best.i];
+        return {
+            dist: Math.sqrt(best.d) * 111.32,
+            routeKm: km0 + (km1 - km0) * best.t
+        };
+    }
+
+    /* ===== 拉取：按县级行政区穷举沿线所有区县 =====
+       三轮踩坑记录（都是实测出来的，别再走回头路）：
+       ① 用 region(地级市) 只覆盖建成区 → 大柴旦/茫崖等地 0 站，476km 空洞
+       ② rectangle(西南,东北) —— 语法合法但本代理下恒返回 count=0
+       ③ nearby(lat,lng,radius) —— 同样恒返回 count=0
+       只有 region() 走通。所以正确解法是：region + **县级**单位，
+       把沿线所有区县逐个列出（大柴旦行政委员会这种县级委员会也必须列）。 */
+    var REGIONS = [
+        // 甘肃段
+        '兰州市', '城关区', '七里河区', '安宁区', '西固区', '红古区', '永登县', '榆中县', '皋兰县',
+        '武威市', '天祝藏族自治县',
+        '张掖市', '甘州区', '民乐县', '临泽县', '高台县', '山丹县', '肃南裕固族自治县',
+        '酒泉市', '肃州区', '玉门市', '敦煌市', '瓜州县', '金塔县', '阿克塞哈萨克族自治县', '肃北蒙古族自治县',
+        '嘉峪关市',
+        // 青海段
+        '西宁市', '城东区', '城中区', '城西区', '城北区', '湟中区', '湟源县', '大通回族土族自治县',
+        '海东市', '乐都区', '平安区', '民和回族土族自治县', '互助土族自治县', '化隆回族自治县', '循化撒拉族自治县',
+        '海北藏族自治州', '门源回族自治县', '祁连县', '海晏县', '刚察县',
+        '海南藏族自治州', '共和县', '同德县', '贵德县', '兴海县', '贵南县',
+        '海西蒙古族藏族自治州', '德令哈市', '格尔木市', '茫崖市', '乌兰县', '都兰县', '天峻县',
+        '大柴旦行政委员会', '冷湖行政委员会', '茫崖行政委员会'
+    ];
+    var MAX_DIST = 35;  // 站点离路线超过这个距离就丢弃
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    async function main() {
+        var raw = { ev: [], fuel: [] };
+        var seen = {};
+        var stats = { req: 0, fail: 0, emptyRegion: [] };
+
+        // 直接用代理 HTTP 接口：TMap.service.Search 的 searchRegion 走 JSONP
+        // 回调，在本代理下恒返回 count=0；原始 HTTP 路径正常。故绕开 SDK。
+        var BASE = (window._TMapSecurityConfig && window._TMapSecurityConfig.serviceHost || '')
+            .replace(/\/$/, '') + '/service/place/v1/search';
+
+        async function search(keyword, boundary, pageIndex) {
+            var us = new URLSearchParams({
+                keyword: keyword,
+                boundary: boundary,
+                output: 'json',
+                page_size: '20',
+                page_index: String(pageIndex)
+            });
+            var res = await fetch(BASE + '?' + us.toString());
+            return await res.json();
+        }
+
+        function push(bucket, item) {
+            if (!item.location) return;
+            var pr = projectRoute([item.location.lat, item.location.lng]);
+            if (pr.dist > MAX_DIST) return;
+            var key = (item.title || '') + '|' + item.location.lat.toFixed(2) + ',' + item.location.lng.toFixed(2);
+            if (seen[key]) return;
+            seen[key] = 1;
+            // 从 POI 分类里解析运营商（category 形如 "汽车:充电站:特来电"）
+            var cat = item.category || '';
+            var op = '';
+            var parts = cat.split(':');
+            if (parts.length >= 3) op = parts[2] || '';
+            raw[bucket].push({
+                t: item.title || '未命名站点',
+                a: item.address || '',
+                tel: item.tel || '',
+                lat: +item.location.lat.toFixed(5),
+                lng: +item.location.lng.toFixed(5),
+                km: +pr.routeKm.toFixed(1),
+                d: +pr.dist.toFixed(1),
+                op: op,
+                cat: cat
+            });
+        }
+
+        var jobs = [
+            { kw: '充电站', bucket: 'ev' },
+            { kw: '加油站', bucket: 'fuel' }
+        ];
+
+        for (var j = 0; j < jobs.length; j++) {
+            var job = jobs[j];
+            for (var r = 0; r < REGIONS.length; r++) {
+                var rg = REGIONS[r];
+                var got = 0;
+                for (var pg = 1; pg <= 6; pg++) {   // 单区最多 6 页 = 120 条
+                    try {
+                        var res = await search(job.kw, 'region(' + rg + ',0)', pg);
+                        stats.req++;
+                        if (res.status !== 0) {
+                            stats.fail++;
+                            if (stats.fail <= 5) log('  ⚠ ' + rg + ' ' + job.kw + ' status=' + res.status + ' ' + (res.message || ''));
+                            break;
+                        }
+                        var n = (res.data || []).length;
+                        got += n;
+                        (res.data || []).forEach(function (item) { push(job.bucket, item); });
+                        if (n < 20) break;           // 已到末页
+                    } catch (e) {
+                        stats.fail++;
+                        if (stats.fail <= 5) log('  ⚠ ' + rg + ' ' + job.kw + ' 异常: ' + (e && e.message));
+                        break;
+                    }
+                    await sleep(70);
+                }
+                if (got === 0) stats.emptyRegion.push(job.kw + '@' + rg);
+                if (r % 12 === 0) log('  ' + job.kw + ' 进度 ' + r + '/' + REGIONS.length +
+                    '（累计 ' + raw[job.bucket].length + ' 条）');
+            }
+            log(job.kw + ' 抓取完成：' + raw[job.bucket].length + ' 条');
+        }
+        log('请求 ' + stats.req + ' / 失败 ' + stats.fail +
+            ' / 零结果区县 ' + stats.emptyRegion.length);
+        if (stats.emptyRegion.length) log('  零结果：' + stats.emptyRegion.slice(0, 20).join('、'));
+
+
+
+        // ===== 配额筛选：按沿线里程分段限流，保证覆盖均匀 =====
+        // 旧做法是"按距路线远近排序后截断"，结果城里站密全部留下、
+        // 无人区站稀反而被砍掉 —— 30km 内挤 44 个点，同时出现 476km 无站。
+        // 新做法：把全程切成 BUCKET_KM 的桶，每桶限制上限，且强制保留关键站。
+        function quota(list, opt) {
+            var BUCKET_KM = opt.bucketKm;      // 每桶里程长度
+            var PER_BUCKET = opt.perBucket;    // 每桶最多保留几个
+            var CRITICAL_GAP = opt.criticalGap;// 超过这个间隔必须保留（防无人区归零）
+            var buckets = {};
+            list.forEach(function (s) {
+                var b = Math.floor(s.km / BUCKET_KM);
+                (buckets[b] = buckets[b] || []).push(s);
+            });
+            var kept = [];
+            Object.keys(buckets).forEach(function (b) {
+                var arr = buckets[b];
+                // 桶内排序：离路线越近越优先，同距离时快充/品牌站优先
+                arr.sort(function (x, y) { return x.d - y.d; });
+                kept = kept.concat(arr.slice(0, PER_BUCKET));
+            });
+            // 补漏洞：任意相邻保留站之间若超过 CRITICAL_GAP，把中间被砍的站捞回来
+            kept.sort(function (a, b) { return a.km - b.km; });
+            var all = list.slice().sort(function (a, b) { return a.km - b.km; });
+            var result = kept.slice();
+            for (var i = 0; i < result.length; i++) {
+                var cur = result[i];
+                var next = result[i + 1];
+                var limit = next ? next.km : TOTAL_KM;
+                if (limit - cur.km > CRITICAL_GAP) {
+                    // 在 (cur, limit) 之间找最靠中间的被砍站补上
+                    var cands = all.filter(function (s) {
+                        return s.km > cur.km && s.km < limit && result.indexOf(s) < 0;
+                    });
+                    if (cands.length) {
+                        cands.sort(function (a, b) {
+                            return Math.abs(a.km - (cur.km + limit) / 2) - Math.abs(b.km - (cur.km + limit) / 2);
+                        });
+                        result.push(cands[0]);
+                        result.sort(function (a, b) { return a.km - b.km; });
+                        i = -1; // 重扫，可能引出新的漏洞
+                    }
+                }
+            }
+            return result.sort(function (a, b) { return a.km - b.km; });
+        }
+
+        var before = { ev: raw.ev.length, fuel: raw.fuel.length };
+        raw.ev = quota(raw.ev, { bucketKm: 25, perBucket: 5, criticalGap: 120 });
+        raw.fuel = quota(raw.fuel, { bucketKm: 25, perBucket: 3, criticalGap: 100 });
+        log('配额筛选：充电站 ' + before.ev + '→' + raw.ev.length +
+            '，加油站 ' + before.fuel + '→' + raw.fuel.length);
+
+        // 体检：打印最大无站间隔（这是"能不能到下一个站"的硬指标）
+        function maxGap(list) {
+            var g = 0, prev = 0, at = 0;
+            list.forEach(function (s) { if (s.km - prev > g) { g = s.km - prev; at = s.km; } prev = s.km; });
+            if (TOTAL_KM - prev > g) { g = TOTAL_KM - prev; at = TOTAL_KM; }
+            return { gap: g, at: at };
+        }
+        var ge = maxGap(raw.ev), gf = maxGap(raw.fuel);
+        log('最大无桩间隔 ' + ge.gap.toFixed(1) + 'km（止于 ' + ge.at.toFixed(0) + '）');
+        log('最大无油间隔 ' + gf.gap.toFixed(1) + 'km（止于 ' + gf.at.toFixed(0) + '）');
+
+        // 覆盖体检：每 25km 是否有站（这是"能不能撑到下一站"的硬指标）
+        function coverage(list, label) {
+            var blind = [];
+            for (var k = 0; k < TOTAL_KM; k += 25) {
+                var hit = list.some(function (s) { return Math.abs(s.km - k) <= 12.5; });
+                if (!hit) blind.push(k);
+            }
+            if (!blind.length) { log('  ' + label + '：全程 25km 网格全覆盖 ✅'); return; }
+            var runs = [], st = blind[0], pv = blind[0];
+            blind.slice(1).forEach(function (k) { if (k - pv > 25) { runs.push([st, pv]); st = k; } pv = k; });
+            runs.push([st, pv]);
+            var bad = runs.filter(function (r) { return r[1] - r[0] >= 25; });
+            log('  ' + label + '：盲区 ' + blind.length + ' 格 / ' + Math.ceil(TOTAL_KM / 25) +
+                '，其中长盲区 ' + bad.length + ' 段');
+            bad.forEach(function (r) {
+                log('    ⚠ km' + r[0] + '–' + (r[1] + 25) + '（约 ' + (r[1] + 25 - r[0]) + 'km）');
+            });
+        }
+        log('覆盖体检：');
+        coverage(raw.ev, '充电站');
+        coverage(raw.fuel, '加油站');
+
+        // 按沿线里程排序输出
+        raw.ev.sort(function (a, b) { return a.km - b.km; });
+        raw.fuel.sort(function (a, b) { return a.km - b.km; });
+
+        var now = new Date();
+        var builtAt = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+        window.__STATION_DATA__ = { builtAt: builtAt, totalKm: TOTAL_KM, xnStart: XN_START_KM, xnEnd: XN_END_KM, ev: raw.ev, fuel: raw.fuel };
+        // 分块导出支持（绕过终端输出长度限制）
+        var s = JSON.stringify(window.__STATION_DATA__);
+        window.__CH__ = [];
+        for (var ci = 0; ci < s.length; ci += 6000) window.__CH__.push(s.slice(ci, ci + 6000));
+        log('=== 完成 ===');
+        log('充电站 ' + raw.ev.length + ' / 加油站 ' + raw.fuel.length);
+        log('JSON 长度 ' + s.length + '，分块数 ' + window.__CH__.length + '（读 window.__CH__[i]，i < ' + window.__CH__.length + '）');
+    }
+    main();
+</script>
+</body>
+</html>

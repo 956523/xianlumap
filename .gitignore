@@ -1,0 +1,23 @@
+# 依赖与构建产物
+node_modules/
+*.log
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# 临时与中间产物
+_*
+.tmp/
+*.tmp
+
+# 大型测试截图（如需要请单独上传）
+*.png
+!docs/**/*.png
+
+# 本地环境
+.env
+.env.local
