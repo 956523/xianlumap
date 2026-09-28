@@ -1,6 +1,6 @@
 /* ============================================================
    probe-check.js — S1.5 探针验收：两条线数据包都能被引擎加载且不崩
-   做法与 c4-test.js 相同（mock TMap + DOM，node vm 跑主脚本），
+   做法与 c4-test.js 相同（mock AMap + DOM，node vm 跑主脚本），
    差异：按页面 loader 的方式先选数据包（?route= 参数 → route-defs/<key>.js），
    再拼主脚本执行。只查「不崩 + 基本渲染」，不查像素级行为。
    用法：node tools/probe-check.js
@@ -11,9 +11,15 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-// 主脚本：S8 起由 loader 按 ?route= 分支 document.write 按需加载；按页面顺序拼接执行
-//（正则兼容 "<\/script>" 转义写法；只认真实文件名，避开 loader 里的模板串）
-const engineSrcs = Array.from(html.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)"><\\?\/script>/g)).map(m => m[1]);
+// 主脚本（S9）：index.html loader 引用 boot-route.js / picker.js；线路页引擎清单在
+// boot-route.js 内部，把 boot-route.js 在序列中展开，保持页面执行顺序。
+const bootSrc = fs.readFileSync(path.join(ROOT, 'engine', 'boot-route.js'), 'utf8');
+const bootList = Array.from(bootSrc.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)">/g)).map(m => m[1]);
+const engineSrcs = [];
+Array.from(html.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)"><\\?\/script>/g)).forEach(m => {
+    if (m[1] === 'engine/boot-route.js') engineSrcs.push('engine/boot-route.js', ...bootList);
+    else engineSrcs.push(m[1]);
+});
 const mainScript = engineSrcs.map(s => fs.readFileSync(path.join(ROOT, s), 'utf8')).join('\n').trim();
 // 选线器专用（S8）：manifest + picker，单独 boot 验证
 const manifestSrc = fs.readFileSync(path.join(ROOT, 'route-defs', 'manifest.js'), 'utf8');
@@ -28,17 +34,15 @@ function FakeLayer(kind, opts) {
     if (kind === 'marker') calls.markers.push(opts);
     if (kind === 'label') calls.labels.push(opts);
 }
-const TMap = {
-    Map: function () { this.on = function () {}; this.easeTo = function () {}; this.setCenter = function () {}; this.fitBounds = function () {}; this.destroy = function () {}; },
-    LatLng: function (lat, lng) { this.lat = lat; this.lng = lng; },
-    InfoWindow: function (o) { globalThis.__lastIW = o; this.open = function () {}; this.close = function () {}; this.setPosition = function () {}; },
-    MultiMarker: function (o) { FakeLayer.call(this, 'marker', o); },
-    MultiLabel: function (o) { FakeLayer.call(this, 'label', o); },
-    MultiPolyline: function (o) { FakeLayer.call(this, 'polyline', o); },
-    MarkerStyle: function (o) { this.o = o; },
-    LabelStyle: function (o) { this.o = o; },
-    PolylineStyle: function (o) { this.o = o; },
-    LatLngBounds: function () { this.extend = function () {}; }
+// AMap mock（S9）：形状对齐 engine/map-adapter.js 用到的高德原语（单实例记录 opts）
+const AMap = {
+    Map: function () { this.on = function () {}; this.getZoom = function () { return 7.3; }; this.resize = function () {}; this.setZoomAndCenter = function () {}; },
+    LngLat: function (lng, lat) { this.lng = lng; this.lat = lat; },
+    Pixel: function (x, y) { this.x = x; this.y = y; },
+    Marker: function (o) { FakeLayer.call(this, 'marker', o); this.setMap = function () {}; this.on = function () {}; },
+    Text: function (o) { FakeLayer.call(this, 'label', o); this.setMap = function () {}; this.on = function () {}; },
+    Polyline: function (o) { FakeLayer.call(this, 'polyline', o); this.setMap = function () {}; this.on = function () {}; this.setOptions = function () {}; },
+    InfoWindow: function (o) { globalThis.__lastIW = o; FakeLayer.call(this, 'iw', o); this.open = function () {}; this.close = function () {}; this.on = function () {}; }
 };
 const created = [];
 function fakeEl(id) {
@@ -90,7 +94,7 @@ function bootRoute(routeKey) {
     created.length = 0;
     let err = null;
     const sandbox = {
-        TMap, document, window, console, localStorage: localStorageMock,
+        AMap, document, window, console, localStorage: localStorageMock,
         setTimeout: (fn) => { try { fn(); } catch (e) {} return 0; }, clearTimeout: () => {},
         encodeURIComponent, parseFloat, parseInt, getComputedStyle,
         ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; }
@@ -111,7 +115,7 @@ ok('总里程 chip ≈2164（日行程合计口径）', Math.abs(parseInt(elCach
 ok('最高海拔 chip >3700（祁连段去噪后）', parseInt(elCache['chipMaxAlt'].textContent, 10) > 3700, elCache['chipMaxAlt'].textContent);
 ok('续航规划输出 + 长盲区上图（无桩段渲染为图层）',
     elCache['planBox'].innerHTML.includes('全程需充电') &&
-    calls.polyline.some(function (p) { return (p.geometries || []).some(function (g) { return String(g.id).indexOf('warn') === 0; }); }),
+    calls.labels.some(function (l) { const t = (l.opts && l.opts.text) || l.text || ''; return /km\d+–\d+ .*（[\d.]+km）/.test(t); }),
     '');
 // 信息窗站点来源日期透出（S4）：站点信息窗统一拼 stationSourceNote()（数据包 sourceShort/builtAt）
 let srcNote = '';

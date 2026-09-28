@@ -118,45 +118,41 @@
         return out;
     })();
 
-    /* ============ 初始化地图 ============
-       初始视角取主基准出发地包围盒的中心（S2 起由数据算出；boot 后 fitAll 会精算） */
+    /* ============ 初始化地图（S9：高德 JS API v2） ============
+       初始视角取主基准出发地包围盒的中心（数据算出；boot 后 fitAll 会精算）。
+       高德中心坐标序为 [lng,lat]，与数据/引擎的 [lat,lng] 相反，此处显式调换。 */
     var _b0 = LOOP_BBOX[STARTS[0].id];
-    var map = new TMap.Map('map', {
+    var map = new AMap.Map('map', {
         zoom: 6.2,
-        center: new TMap.LatLng((_b0.latMin + _b0.latMax) / 2, (_b0.lngMin + _b0.lngMax) / 2),
+        center: [(_b0.lngMin + _b0.lngMax) / 2, (_b0.latMin + _b0.latMax) / 2],
         minZoom: 5,
-        maxZoom: 15
+        maxZoom: 15,
+        viewMode: '2D'
     });
 
-    var curIW = null;
     function openInfo(lat, lng, tags, title, body) {
-        if (curIW) curIW.close();
         var tagHtml = tags.map(function (t) { return '<span class="tag ' + t[1] + '">' + t[0] + '</span>'; }).join('');
-        curIW = new TMap.InfoWindow({
-            map: map,
-            position: new TMap.LatLng(lat, lng),
-            offset: { x: 0, y: -30 },
-            content: '<div class="iw"><h3>' + title + '</h3>' + tagHtml + '<p>' + body + '</p></div>'
-        });
+        openInfoWindow(map, lat, lng,
+            '<div class="iw"><h3>' + title + '</h3>' + tagHtml + '<p>' + body + '</p></div>', -30);
     }
 
     /* --- 标注层（一次性创建） --- */
-    var cityMarkers = new TMap.MultiMarker({
+    var cityMarkers = createMarkerLayer({
         map: map,
-        styles: { city: new TMap.MarkerStyle({ src: IC.city, width: 24, height: 32, anchor: { x: 12, y: 32 } }) },
+        styles: { city: ({ src: IC.city, width: 24, height: 32, anchor: { x: 12, y: 32 } }) },
         geometries: CITIES.map(function (c, i) {
-            return { id: 'c' + i, styleId: 'city', position: new TMap.LatLng(c.p[0], c.p[1]) };
+            return { id: 'c' + i, styleId: 'city', position: LL(c.p[0], c.p[1]) };
         })
     });
     cityMarkers.on('click', function (e) {
         var c = CITIES[parseInt(e.geometry.id.slice(1), 10)];
         openInfo(c.p[0], c.p[1], [['城镇', 'c']], c.n, c.d);
     });
-    var spotMarkers = new TMap.MultiMarker({
+    var spotMarkers = createMarkerLayer({
         map: map,
-        styles: { spot: new TMap.MarkerStyle({ src: IC.spot, width: 22, height: 30, anchor: { x: 11, y: 30 } }) },
+        styles: { spot: ({ src: IC.spot, width: 22, height: 30, anchor: { x: 11, y: 30 } }) },
         geometries: SPOTS.map(function (s, i) {
-            return { id: 's' + i, styleId: 'spot', position: new TMap.LatLng(s.p[0], s.p[1]) };
+            return { id: 's' + i, styleId: 'spot', position: LL(s.p[0], s.p[1]) };
         })
     });
     spotMarkers.on('click', function (e) {
@@ -172,17 +168,17 @@
     /* --- 地名标注层 --- */
     function labelGeos(arr) {
         return arr.map(function (it, i) {
-            return { id: 'l' + i, position: new TMap.LatLng(it.p[0], it.p[1]), content: it.n };
+            return { id: 'l' + i, position: LL(it.p[0], it.p[1]), content: it.n };
         });
     }
-    var cityLabels = new TMap.MultiLabel({
+    var cityLabels = createLabelLayer({
         map: map,
-        styles: { default: new TMap.LabelStyle({ color: '#1f2937', size: 12, offset: { x: 0, y: 20 } }) },
+        styles: { default: ({ color: '#1f2937', size: 12, offset: { x: 0, y: 20 } }) },
         geometries: labelGeos(CITIES)
     });
-    var spotLabels = new TMap.MultiLabel({
+    var spotLabels = createLabelLayer({
         map: map,
-        styles: { default: new TMap.LabelStyle({ color: '#6d28d9', size: 11, offset: { x: 0, y: 20 } }) },
+        styles: { default: ({ color: '#6d28d9', size: 11, offset: { x: 0, y: 20 } }) },
         geometries: labelGeos(SPOTS)
     });
     spotLabels.setMap(null);
@@ -192,12 +188,12 @@
     var hasClassic = !!(typeof CLASSIC !== 'undefined' && CLASSIC && CLASSIC.simplified && CLASSIC.simplified.length);
     var classicLine = null;
     if (hasClassic) {
-        classicLine = new TMap.MultiPolyline({
+        classicLine = createPolylineLayer({
             map: map,
-            styles: { default: new TMap.PolylineStyle({ color: '#c026d3', width: 3, dashArray: [10, 7], lineCap: 'round' }) },
+            styles: { default: ({ color: '#c026d3', width: 3, dashArray: [10, 7], lineCap: 'round' }) },
             geometries: [{
                 id: 'classic', styleId: 'default',
-                paths: CLASSIC.simplified.map(function (p) { return new TMap.LatLng(p[0], p[1]); })
+                paths: CLASSIC.simplified.map(function (p) { return LL(p[0], p[1]); })
             }]
         });
         classicLine.setMap(null); // 默认关闭，由图层开关控制
@@ -210,12 +206,12 @@
 
     /* --- 固定支线（虚线；坐标收在数据包 EXTRA_LINES，引擎不写死） --- */
     (typeof EXTRA_LINES !== 'undefined' ? EXTRA_LINES : []).forEach(function (br) {
-        new TMap.MultiPolyline({
+        createPolylineLayer({
             map: map,
-            styles: { default: new TMap.PolylineStyle({ color: br.color || '#94a3b8', width: br.width || 3, dashArray: br.dash || [10, 8], lineCap: 'round' }) },
+            styles: { default: ({ color: br.color || '#94a3b8', width: br.width || 3, dashArray: br.dash || [10, 8], lineCap: 'round' }) },
             geometries: [{
                 id: br.id || 'branch', styleId: 'default',
-                paths: br.pts.map(function (p) { return new TMap.LatLng(p[0], p[1]); })
+                paths: br.pts.map(function (p) { return LL(p[0], p[1]); })
             }]
         });
     });
@@ -223,11 +219,11 @@
     /* ============ 出发地 & 每日路线构建 ============
        S2：出发地差异全部由数据包 ROUTE_STARTS 声明（接入轨迹/海拔点/首末日文案），
        引擎按契约拼接；无接入段的出发地直接返回 CORE+TAIL。 */
-    var NORMAL = new TMap.PolylineStyle({
+    var NORMAL = ({
         color: '#0d9488', width: 4, borderWidth: 2, borderColor: '#ffffff',
         lineCap: 'round', arrowOptions: { width: 8 }
     });
-    var ACTIVE = new TMap.PolylineStyle({
+    var ACTIVE = ({
         color: '#ea580c', width: 7, borderWidth: 2, borderColor: '#ffffff',
         lineCap: 'round', arrowOptions: { width: 10 }
     });
@@ -265,12 +261,12 @@
         DAYS = buildDays(start);
         DAYS.forEach(function (d) {
             if (!d.path) { dayLines.push(null); return; }
-            dayLines.push(new TMap.MultiPolyline({
+            dayLines.push(createPolylineLayer({
                 map: map,
                 styles: { default: NORMAL },
                 geometries: [{
                     id: 'day' + d.id, styleId: 'default',
-                    paths: d.path.map(function (pt) { return new TMap.LatLng(pt[0], pt[1]); })
+                    paths: d.path.map(function (pt) { return LL(pt[0], pt[1]); })
                 }]
             }));
         });
@@ -336,20 +332,20 @@
             var seg = table.filter(function (t) { return t[0] >= a && t[0] <= b; });
             if (seg.length < 2) return;
             var color = w.type === 'fuel' ? '#b45309' : '#dc2626';
-            warnLines.push(new TMap.MultiPolyline({
+            warnLines.push(createPolylineLayer({
                 map: map,
-                styles: { default: new TMap.PolylineStyle({ color: color, width: 6, borderWidth: 2, borderColor: '#ffffff', lineCap: 'round' }) },
+                styles: { default: ({ color: color, width: 6, borderWidth: 2, borderColor: '#ffffff', lineCap: 'round' }) },
                 geometries: [{
                     id: 'warn' + wi, styleId: 'default',
-                    paths: seg.map(function (t) { return new TMap.LatLng(t[1], t[2]); })
+                    paths: seg.map(function (t) { return LL(t[1], t[2]); })
                 }]
             }));
             var mid = seg[Math.floor(seg.length / 2)];
-            warnLabels.push(new TMap.MultiLabel({
+            warnLabels.push(createLabelLayer({
                 map: map,
-                styles: { default: new TMap.LabelStyle({ color: color, size: 11, offset: { x: 0, y: -16 } }) },
+                styles: { default: ({ color: color, size: 11, offset: { x: 0, y: -16 } }) },
                 geometries: [{
-                    id: 'warnlb' + wi, position: new TMap.LatLng(mid[1], mid[2]),
+                    id: 'warnlb' + wi, position: LL(mid[1], mid[2]),
                     content: 'km' + Math.round(a) + '–' + Math.round(b) + ' ' + (w.label || '') + '（' + w.km + 'km）'
                 }]
             }));
@@ -369,12 +365,14 @@
             if (pl) pl.setStyles({ default: j === i ? ACTIVE : NORMAL });
         });
         var center, zoom = d.zoom;
-        if (d.center) { center = new TMap.LatLng(d.center[0], d.center[1]); }
+        if (d.center) { center = d.center; }
         else {
             var mid = d.path[Math.floor(d.path.length / 2)];
-            center = new TMap.LatLng(mid[0], mid[1]);
+            center = [mid[0], mid[1]];
         }
-        map.easeTo({ center: center, zoom: zoom, duration: 600 });
+        // 高德 setZoomAndCenter(zoom, [lng,lat])：对应原 easeTo({center, zoom}) 语义，
+        // 动画时长由地图全局动画设置接管
+        map.setZoomAndCenter(zoom, [center[1], center[0]]);
         document.getElementById('curEnergy').innerHTML = '<b>D' + d.id + ' ' + d.title + '（' + (d.km || 0) + 'km）：</b>' + d.energy;
         // 点了某天却看不到剖面是反直觉的 → 抽屉收起时自动展开
         if (!isOpen()) openDrawer(300);
@@ -460,7 +458,7 @@
         var cy = (bbox.lngMin + bbox.lngMax) / 2;
         var pxPerDegLng = 256 * Math.pow(2, z) / 360;
 
-        // 地图容器的几何中心（TMap 的 center 落在容器的正中心）
+        // 地图容器的几何中心（AMap 的 center 同样落在容器的正中心）
         var mapH = box.vh - 46;
         var midY = mapH / 2;
 
@@ -490,10 +488,8 @@
             cy -= shiftPx / pxPerDegLng;
         }
 
-        map.easeTo({
-            center: new TMap.LatLng(cx, cy),
-            zoom: z, duration: 600
-        });
+        // cx=纬度 cy=经度（引擎内部口径）；高德 center=[lng,lat]
+        map.setZoomAndCenter(z, [cy, cx]);
         document.getElementById('curEnergy').textContent = '点选上方任意一天，看这段的海拔与能耗提示。';
         if (redraw !== false) drawProfile();
         if (window.__fitDebug) window.__fitDebug = { z: z, box: box, bbox: bbox };

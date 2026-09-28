@@ -1,4 +1,4 @@
-// C4 回归测试：mock TMap + DOM，在 node vm 中跑完整引擎 + 指定线路包（S6 参数化）
+// C4 回归测试：mock AMap + DOM，在 node vm 中跑完整引擎 + 指定线路包（S9 底图=高德）
 // 跑法：node tools/c4-test.js [routeId]   缺省 = 轮跑 route-defs/ 下全部线路包
 // 每条线路 94 项断言：期望数值全部按包内容推导（天数/出发地/站点），
 // 不再硬编码青甘语义；仅构建工具链检查（【12】【13】）针对参数化后的 tools/ 源码。
@@ -10,15 +10,21 @@ const dir = __dirname;
 const ROOT = path.resolve(dir, '..');
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-// 主脚本：S8 起引擎由 loader 按 ?route= 分支 document.write 按需加载（线路页 5 个引擎；
-// 选线器页只有 picker.js）。此处按页面相同顺序拼接注入；正则兼容 document.write
-// 字符串里的 "<\/script>" 转义写法，新增引擎文件自动跟随。
-const engineSrcs = Array.from(html.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)"><\\?\/script>/g)).map(m => m[1]);
+// 引擎加载链（S9）：index.html 的 loader 只引用 boot-route.js / picker.js；线路页的 6 个引擎
+// 清单在 boot-route.js 内部。把 boot-route.js 在序列中展开，保持页面执行顺序。
+const bootSrc = fs.readFileSync(path.join(ROOT, 'engine', 'boot-route.js'), 'utf8');
+const bootList = Array.from(bootSrc.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)">/g)).map(m => m[1]);
+const engineSrcs = [];
+Array.from(html.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)"><\\?\/script>/g)).forEach(m => {
+    if (m[1] === 'engine/boot-route.js') engineSrcs.push('engine/boot-route.js', ...bootList);
+    else engineSrcs.push(m[1]);
+});
 const mainScript = engineSrcs.map(s => fs.readFileSync(path.join(ROOT, s), 'utf8')).join('\n').trim();
-// 线路登记清单（选线器用；runRoute 里有「manifest 与包一致」交叉断言防漂移）
+// 线路登记清单（选线器用；有「manifest 与包一致」的交叉断言，防漂移）
 const manifestSb = {};
 vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'route-defs', 'manifest.js'), 'utf8'), manifestSb);
 const MANIFEST = manifestSb.ROUTE_MANIFEST || [];
+const gitignoreSrc = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
 // 路线无关的仓库级检查对象（每个线路包运行时各计一次断言）
 const htmlSrc = html;
 const cssOnly = htmlSrc.replace(/\/\*[\s\S]*?\*\//g, '');   // 剥掉 CSS 注释
@@ -32,25 +38,25 @@ function ok(name, cond, extra) {
 }
 
 /* ---------- mock（状态在每次运行前重置） ---------- */
-const calls = { polyline: [], markers: [], labels: [] };
+const calls = { polyline: [], markers: [], labels: [], iw: [] };
 function FakeLayer(kind, opts) {
     this.kind = kind; this.opts = opts || {};
     this.setMap = function () {}; this.on = function () {}; this.setStyles = function () {}; this.setGeometries = function () { return this; };
     if (kind === 'polyline') calls.polyline.push(opts);
     if (kind === 'marker') calls.markers.push(opts);
     if (kind === 'label') calls.labels.push(opts);
+    if (kind === 'iw') calls.iw.push(opts);
 }
-const TMap = {
-    Map: function () { this.on = function () {}; this.easeTo = function () {}; this.setCenter = function () {}; this.fitBounds = function () {}; this.destroy = function () {}; },
-    LatLng: function (lat, lng) { this.lat = lat; this.lng = lng; },
-    InfoWindow: function () { this.open = function () {}; this.close = function () {}; this.setPosition = function () {}; },
-    MultiMarker: function (o) { FakeLayer.call(this, 'marker', o); },
-    MultiLabel: function (o) { FakeLayer.call(this, 'label', o); },
-    MultiPolyline: function (o) { FakeLayer.call(this, 'polyline', o); },
-    MarkerStyle: function (o) { this.o = o; },
-    LabelStyle: function (o) { this.o = o; },
-    PolylineStyle: function (o) { this.o = o; },
-    LatLngBounds: function () { this.extend = function () {}; }
+// AMap mock（S9）：形状对齐 engine/map-adapter.js 用到的高德原语；
+// Marker/Text/Polyline 以「单实例」记录 opts，断言按 opts 字段比对（行为而非厂商）
+const AMap = {
+    Map: function () { this.on = function () {}; this.getZoom = function () { return 7.3; }; this.resize = function () {}; this.setZoomAndCenter = function () {}; },
+    LngLat: function (lng, lat) { this.lng = lng; this.lat = lat; },
+    Pixel: function (x, y) { this.x = x; this.y = y; },
+    Marker: function (o) { FakeLayer.call(this, 'marker', o); this.setMap = function () {}; this.on = function () {}; },
+    Text: function (o) { FakeLayer.call(this, 'label', o); this.setMap = function () {}; this.on = function () {}; },
+    Polyline: function (o) { FakeLayer.call(this, 'polyline', o); this.setMap = function () {}; this.on = function () {}; this.setOptions = function () {}; },
+    InfoWindow: function (o) { FakeLayer.call(this, 'iw', o); this.open = function () {}; this.close = function () {}; this.on = function () {}; }
 };
 const created = []; // 记录 createElement 产物（dayList li / 出发地按钮等）
 function fakeEl(id) {
@@ -114,7 +120,7 @@ function runRoute(routeId) {
     const syncTimeout = (fn) => { try { fn(); } catch (e) {} return 0; };
     let bootErr = null, sandbox = null;
     try {
-        sandbox = vm.createContext({ TMap, document, window, console, setTimeout: syncTimeout, clearTimeout: () => {}, encodeURIComponent, parseFloat, parseInt, getComputedStyle, ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; } });
+        sandbox = vm.createContext({ AMap, document, window, console, setTimeout: syncTimeout, clearTimeout: () => {}, encodeURIComponent, parseFloat, parseInt, getComputedStyle, ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; } });
         vm.runInContext(routeDefs + '\n' + mainScript, sandbox);
     } catch (e) { bootErr = e; }
     ok('主脚本执行无异常', !bootErr, bootErr ? bootErr.message.slice(0, 120) : '');
@@ -122,7 +128,7 @@ function runRoute(routeId) {
 
     /* 数据注入验证（通过弱化层标记数量反映） */
     const startMarkers = calls.markers.slice();
-    const geomCount = l => ((l && (l.geometries || (l.opts && l.opts.geometries))) || []).length;
+    const geomCount = l => (l && l.position) ? 1 : (((l && (l.geometries || (l.opts && l.opts.geometries))) || []).length);
     const totalMarkerGeoms = startMarkers.reduce((a, l) => a + geomCount(l), 0);
     if (stationsOn) {
         ok('站点已上图（启动后 marker 层有几何）', totalMarkerGeoms > 0, totalMarkerGeoms + ' 个');
@@ -193,13 +199,10 @@ function runRoute(routeId) {
     const badSegs = [];
     calls.polyline.forEach((p, i) => {
         const o = p.opts || p;
-        const geoms = o.geometries || [];
-        const bad = geoms.length === 0 || geoms.some(g => Object.prototype.hasOwnProperty.call(g, 'path')
-            || !Array.isArray(g.paths) || g.paths.length === 0);
-        if (bad) badSegs.push('段' + i + '(geoms=' + geoms.length + ')');
+        if (!Array.isArray(o.path) || o.path.length === 0) badSegs.push('段' + i);
     });
-    ok('MultiPolyline 几何使用 paths 字段', calls.polyline.length > 0 && badSegs.length === 0, calls.polyline.length + ' 段' + (badSegs.length ? ' 异常: ' + badSegs.join('; ') : ''));
-    ok('PolylineStyle 无小数 borderWidth', calls.polyline.every(l => Object.values(l.styles || {}).every(s => s.borderWidth === undefined || Number.isInteger(s.borderWidth))));
+    ok('Polyline 几何使用 path 字段', calls.polyline.length > 0 && badSegs.length === 0, calls.polyline.length + ' 段' + (badSegs.length ? ' 异常: ' + badSegs.join('; ') : ''));
+    ok('折线描边宽度为整数（borderWeight）', calls.polyline.every(l => { const o = l.opts || l; return o.borderWeight === undefined || Number.isInteger(o.borderWeight); }));
 
     console.log('\n【6】按天海拔图像化');
     const lis = created.filter(el => el.id === 'dyn:li');
@@ -400,7 +403,7 @@ function runRoute(routeId) {
         '全览时"哪里有加油站"信息量极低，会跟充电站抢视觉权重');
     ok('地图 zoom 变化会触发站点重绘',
         /function onStationsZoomChange\s*\(/.test(mainScript) &&
-        /map\.on\('zoom',\s*onStationsZoomChange\)/.test(mainScript),
+        /map\.on\('zoomchange',\s*onStationsZoomChange\)/.test(mainScript),
         '否则拉近点不增加、拉远点不减少');
     ok('缩放重绘有防抖 + 变化量阈值',
         /Z_REDRAW_EPS\s*=\s*0\.25/.test(mainScript) &&
@@ -429,8 +432,8 @@ function runRoute(routeId) {
         /activeStations\('fuel',\s*z,\s*planKeys\)/.test(mainScript),
         '否则远景下必充站可能被普通站挤出屏幕');
     ok('已删除旧的手打站点图层（防两套数据叠加）',
-        !/var\s+fuelMarkers\s*=\s*new\s+TMap\.MultiMarker/.test(mainScript) &&
-        !/var\s+evMarkers\s*=\s*new\s+TMap\.MultiMarker/.test(mainScript),
+        !/var\s+fuelMarkers\s*=/.test(mainScript) &&
+        !/var\s+evMarkers\s*=/.test(mainScript),
         'FUELS/EVS 曾与 STATION_DATA 同时打点，同一个站两个位置');
     ok('站点图层开关改走状态位（不再持有 marker 引用）',
         /var layerOn = \{ fuel: true, ev: true \}/.test(mainScript) &&
@@ -455,17 +458,17 @@ function runRoute(routeId) {
     console.log('\n【17】地图 Key 预检（部署必读）');
     ok('有 Key 预检逻辑',
         /地图 Key 预检/.test(html) && /function show\(\)/.test(html), '缺 key 时给出可操作的指路，不是灰屏');
-    ok('预检在 gljs 标签之前执行',
-        html.indexOf('地图 Key 预检') < html.indexOf('map.qq.com/api/gljs'), '否则取不到 script 的 src');
-    ok('按 src 找 gljs 标签判断 key',
-        /getElementsByTagName\('script'\)/.test(html) && /indexOf\('map\.qq\.com\/api\/gljs'\)/.test(html), '');
+    ok('预检在 loader 之前执行（head 先于 body 的 key.local.js 引用）',
+        html.indexOf('地图 Key 预检') < html.indexOf('key.local.js'), '否则读不到 __KEY_LOCAL__');
+    ok('按 __KEY_LOCAL__.amapKey 判断 Key（S9：高德）',
+        /__KEY_LOCAL__/.test(html) && /amapKey/.test(html), '');
     ok('识别 file:// 协议并给出起服务指引',
         /location\.protocol === 'file:'/.test(html) && /python -m http\.server/.test(html),
-        '腾讯 GL JS 已不支持 file://');
+        '高德 JS API 在 file:// 下不稳定');
     ok('提示里写清「数据本身是完整的」',
         /路线、海拔、补能点都已内联/.test(html), '防止误解为数据丢失/加载失败');
-    ok('旁边有注释提醒部署时要删掉密钥代理',
-        /部署时请删除本段/.test(html) && /127\.0\.0\.1 = 打开者自己的电脑/.test(html),
+    ok('key.local.js 不入 git（gitignore 登记）且无腾讯残留',
+        /key\.local\.js/.test(gitignoreSrc) && !/TMapSecurityConfig|map\.qq\.com/.test(html),
         '本地代理指向 127.0.0.1，换环境必然失效');
 }
 

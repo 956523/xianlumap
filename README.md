@@ -5,7 +5,7 @@
 一条线路一页：路线轨迹、海拔剖面、补能点（充电站 + 加油站）、途经城镇与景点、逐日行程卡
 —— **这些数据全部固化在页面里**，不需要登录、不需要联网搜索、不需要点按钮等它加载。
 
-> **前提**：底图由腾讯地图提供，**需要自配一个 Key**（见「配置地图 Key」）。
+> **前提**：底图由高德地图提供，**需要自配一个「Web 端(JS API)」Key**（见「配置地图 Key」）。
 > 业务数据不需要联网，但底图瓦片必须实时拉取 —— 这是两回事。
 
 > **当前状态**：平台化 S0–S8 全部完成。已有三条线——**青甘大环线、川西小环线、
@@ -15,10 +15,10 @@
 
 ## 打开看看
 
-> ⚠️ **需要先配一个自己的腾讯地图 Key**（见下方「配置地图 Key」）。
-> 地图底图由腾讯位置服务提供，**必须带 key 才能显示**。
+> ⚠️ **需要先配一个自己的高德「Web 端(JS API)」Key**（见下方「配置地图 Key」）。
+> 地图底图由高德开放平台提供，**必须带 key 才能显示**。
 
-在仓库根目录起一个静态服务（**不能直接双击打开** —— 腾讯 GL JS 已不支持 `file://` 协议）：
+在仓库根目录起一个静态服务（**不能直接双击打开** —— 高德 JS API 在 `file://` 下不稳定）：
 
 ```bash
 python -m http.server 8000
@@ -29,38 +29,38 @@ python -m http.server 8000
 也可以直接带参数打开某条线：`http://localhost:8000/index.html?route=chuanxi`。
 
 **注意**：路线、海拔、补能点等数据**全部已内联在线路包里**，页面运行时**不调用任何
-WebService 接口** —— 它只依赖腾讯底图瓦片。所以只要底图能出来，整个页面就是完整可用的。
+WebService 接口** —— 它只依赖高德底图瓦片。所以只要底图能出来，整个页面就是完整可用的。
 （选线器页本身不加载任何线路包，没配 Key 也能看到卡片。）
 
 ### 配置地图 Key
 
-1. 到 [腾讯位置服务控制台](https://lbs.qq.com/dev/console/application/mine) 注册并创建 Key
-   - 应用类型选 **浏览器端**
-   - 勾选 **JavaScript API**（WebService 不需要，本页面运行时不用）
-   - **域名白名单**：本地调试填 `localhost` 或 `127.0.0.1`；部署后填你的域名
-2. 打开 `index.html`，把顶部的加载地址补上 key：
+1. 到 [高德开放平台](https://lbs.amap.com/dev/) 控制台 → 应用管理 → 创建应用 → 添加 Key：
+   - **服务平台选「Web端(JS API)」**
+   - 同一个应用里拿到 **Key** 和 **安全密钥（securityJsCode）** 两个值
+   - **域名白名单**：本地调试填 `localhost`；部署后填你的域名（浏览器端 Key 必然出现在
+     页面源码里，白名单是主要防护，别放空）
+2. 把两个值写进仓库根 `.env.local`：
 
-```html
-<script src="https://map.qq.com/api/gljs?v=1.exp&libraries=service&key=你的KEY"></script>
+```
+AMAP_JS_KEY=你的KEY
+AMAP_JS_SECURITY_CODE=你的安全密钥
 ```
 
-3. 把上面那个代理配置块**整段删掉**（它是本地调试用的，见下方说明）
+3. 生成浏览器可用的 Key 文件（已被 gitignore，**不会进 git**）：
 
-### 关于原先的密钥代理配置
-
-`index.html` 顶部有一段：
-
-```javascript
-window._TMapSecurityConfig = {
-    serviceHost: 'http://127.0.0.1:__WB_HTTP_PORT__/_TMapService/_wbt/__WB_TMAP_SECRET__',
-};
+```bash
+node tools/make-key-local.js   # 从 .env.local 生成 key.local.js
 ```
 
-这是**开发环境（WorkBuddy 客户端）的密钥代理**，两个 `__WB_*__` 占位符在客户端预览时才会被替换。
-**它指向 `127.0.0.1`，也就是"打开者自己的电脑"** —— 换到任何其他环境都不成立。
+页面加载时会读 `key.local.js`（`window.__KEY_LOCAL__`）初始化高德底图；
+没有它时页面会显示明确的配置指引（选线器不受影响）。
 
-所以如果你在 GitHub Pages 或其他地方部署，**必须按上面的步骤换成自己的 Key**。
-（保留这段是为了本地开发时不用往代码里写真实密钥；真要部署请删除。）
+### 关于 Key 的安全边界
+
+- 浏览器端 Key **运行时必然出现在页面源码里**——这是所有 JS 地图厂商的常态，
+  防滥用靠的是高德控制台的**域名白名单**，不是藏 Key
+- 仓库（git 历史）里一个 Key 字符都不该有：`.env.local` 与 `key.local.js` 都已 gitignore；
+  构建脚本（`tools/`）只从这两个文件读 Key，日志一律脱敏（前 4 位）
 
 ---
 
@@ -180,7 +180,7 @@ node tools/validate.js qinghai-gansu   # 数据体检 V1–V4（--fix 可修复�
 
 ## 技术说明
 
-- **地图**：腾讯地图 GL JS（代理模式，无需 API Key）
+- **地图**：高德地图 JS API v2（Key 从本地 key.local.js 读取，不入 git）
 - **构建**：纯 Node，零第三方依赖
 - **页面**：index.html + engine/*.js + route-defs/*.js，纯 script 标签加载，零构建工具链 —— 改完刷新即可看到效果
 

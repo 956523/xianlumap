@@ -21,3 +21,6 @@ _*
 # 本地环境
 .env
 .env.local
+
+# 浏览器端地图 Key（本地生成，绝不入库）
+key.local.js

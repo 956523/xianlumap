@@ -19,6 +19,7 @@
 - S7（318 川藏南线，不闭合单线边界压测）已完成并验收 ✅（见 §13）
 - S8（多线路入口：选线器 + 按需加载 + 导入编辑层）已完成并验收 ✅（见 §14）
 - **平台化 S0–S8 全部完成** 🎓
+- S9（底图迁移腾讯 GL JS → 高德 JS API v2，Key 本地化注入）已完成并验收 ✅（见 §15）
 - 已知待清理项（与平台化并行处理，不阻塞）：
   - `routes/qinghai-gansu/stations-new.json`（2026-09-26 新抓取，多 `op/slow/cat` 字段）未回写 `stations-data.js`
   - `tools/write-real-route.js` 引用旧文件名 `qinghai-gansu-loop.html`，疑似死代码
@@ -509,3 +510,59 @@ A 日合计 vs TOTAL_XN（同口径，取整差）；B TOTAL_XN vs ΣapiKm（跨
 ROUTE_BUILD + 两条构建命令 + validate + manifest 一行；回归与冒烟全自动。
 剩余已知边界：底图需自配腾讯 Key（无 Key 时页面给出可操作指引，数据链完整可用）；
 充电枪数无开放数据源（已降级）；高德 POI 单区 200 条分页上限（截断如实透出）。
+
+## 15. S9 实测结论：底图迁移 TMap → 高德 JS API v2（2026-09-28）
+
+> 平台化收官后的最后一块拼图：用户只要配一个高德浏览器端 Key 就能完整体验产品。
+
+### 验收结果
+
+1. `node tools/c4-test.js` → **282 pass / 0 fail**；`node tools/probe-check.js` → **33 pass / 0 fail**
+   （数量不变；TMap mock 全面换为 AMap mock，断言语义对齐行为而非厂商）✅
+2. `tools/make-key-local.js` 生成 key.local.js 后，headless Chrome 真实渲染冒烟：
+   - 选线器页：三张线路卡片正常（不加载地图/线路包）✅
+   - `?route=chengdu-lhasa-318`：高德底图 + 8 天轨迹 + 站点分级 + 必充站 + 长盲区标注
+     （km2180–2383 无快充 203.7km 等）全部渲染 ✅
+   - `?route=qinghai-gansu`：环线全览取景、西宁/兰州双出发地按钮、经典线图例、
+     km747–947 无快充（199.9km）盲区染色 + 标注 ✅
+3. 全仓 Key 泄漏扫描：两把高德浏览器端 Key 仅存在于 `.env.local` / `key.local.js`
+   （均已 gitignore）；腾讯旧 Key/代理残留零命中 ✅
+4. 未执行 git 提交 ✅
+
+### 改动结构
+
+- **`engine/map-adapter.js`（新）**：高德原语 → 引擎惯用 layer 接口（setMap/on，
+  点击回调保持 `{geometry:{id}}` 形状）。厂商差异在适配层吸收并注释留痕：
+  坐标序（数据 [lat,lng] → LngLat(lng,lat)）、borderWeight/borderColor、showDir、
+  strokeDasharray、AMap.Text 默认白底需显式透明、setZoomAndCenter 对应 easeTo。
+  **两家同为 GCJ-02，所有线路数据零改动**（三条线 route-defs 文件未动）。
+- **`engine/boot-route.js`（新）**：线路页加载序——key.local.js → 安全密钥注入
+  （`window._AMapSecurityConfig`）→ 高德 SDK v2 → 线路包 → 引擎。无 Key 时全跳过，
+  页面只显示引导遮罩，不产生半加载状态。
+- **`index.html`**：删除 WorkBuddy 腾讯密钥代理块（S9 起由 key.local.js 取代）；
+  Key 预检改为读 `__KEY_LOCAL__.amapKey`（顺带修复了预检永远在标签写入前扫描的
+  潜伏 bug 的剩余部分——现在数据源是 key.local.js，DOMContentLoaded 时必然已加载）；
+  引导文案改为高德申请指引。
+- **route-engine.js / planner.js**：图层构造全面换适配层；easeTo→setZoomAndCenter；
+  缩放事件 zoom/idle → zoomchange/moveend（引擎自带防抖逻辑不变）。
+- **c4-test / probe-check**：AMap mock（单实例 opts 记录）；「paths 字段」「borderWidth
+  整数」等厂商形状断言对齐高德（path/borderWeight）；加载链解析升级——loader 只引用
+  boot-route.js，引擎清单在 boot-route.js 内部，测试按页面执行顺序展开拼接。
+- **`tools/make-key-local.js`（新）**：从 `.env.local` 生成 key.local.js（日志脱敏）；
+  `.gitignore` 新增 `key.local.js`。
+
+### 数据史说明（不造假）
+
+青甘 `STATION_DATA.sourceShort` 仍标「腾讯地图 POI · 2026-09-26」——那是该线站点数据的
+真实来源（腾讯时期抓取固化），底图换高德不影响数据来源事实，信息窗的来源+日期透出保持原样。
+
+### 部署到 GitHub Pages 的 Key 处理建议
+
+浏览器端 Key 运行时必然公开（JS 地图厂商的常态），防护靠**高德控制台的域名白名单**：
+1. 控制台给 Key 配白名单 = 你的 Pages 域名（如 `xxx.github.io`），本地开发另加 `localhost`
+2. 部署环境没有 `.env.local` 这一步——Pages 上直接手写一份 `key.local.js` 放进仓库？
+   **不要**：那份文件会带着 Key 进 git。两个合规选项：
+   - 推荐：Pages 部署后用 CI（GitHub Actions）在构建步骤从 Secrets 生成 `key.local.js`
+     （Secret 存高德 Key，仓库历史依然干净）
+   - 或：该 Key 是白名单限域的公开 Key，接受它出现在仓库里（高德官方对 Web 端 Key 的
+     默认用法就是白名单防护，很多开源项目直接提交）——团队自己拍板，本仓库选择不提交

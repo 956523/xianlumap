@@ -336,22 +336,22 @@
         dimDataFuel = (tier.fuel && onFuel)
             ? activeStations('fuel', z, planKeys).filter(function (s) { return !planKeys[s.t + '|' + s.km.toFixed(1)]; })
             : [];
-        dimEvM = new TMap.MultiMarker({
+        dimEvM = createMarkerLayer({
             map: onEv ? map : null,
-            styles: { d: new TMap.MarkerStyle({ src: circleDim('#16a34a'), width: 24, height: 24, anchor: { x: 12, y: 12 } }) },
+            styles: { d: ({ src: circleDim('#16a34a'), width: 24, height: 24, anchor: { x: 12, y: 12 } }) },
             geometries: dimDataEv.map(function (s, i) {
-                return { id: 'd' + i, styleId: 'd', position: new TMap.LatLng(s.lat, s.lng) };
+                return { id: 'd' + i, styleId: 'd', position: LL(s.lat, s.lng) };
             })
         });
         dimEvM.on('click', function (e) {
             var s = dimDataEv[parseInt(e.geometry.id.slice(1), 10)];
             if (s) openInfo(s.lat, s.lng, [['⚡ 充电站', 'e']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : '') + stationSourceNote());
         });
-        dimFuelM = new TMap.MultiMarker({
+        dimFuelM = createMarkerLayer({
             map: (tier.fuel && onFuel) ? map : null,
-            styles: { d: new TMap.MarkerStyle({ src: circleDim('#dc2626'), width: 24, height: 24, anchor: { x: 12, y: 12 } }) },
+            styles: { d: ({ src: circleDim('#dc2626'), width: 24, height: 24, anchor: { x: 12, y: 12 } }) },
             geometries: dimDataFuel.map(function (s, i) {
-                return { id: 'd' + i, styleId: 'd', position: new TMap.LatLng(s.lat, s.lng) };
+                return { id: 'd' + i, styleId: 'd', position: LL(s.lat, s.lng) };
             })
         });
         dimFuelM.on('click', function (e) {
@@ -362,11 +362,11 @@
         // 计划层（必充/必加站）
         planData = plan.filter(function (p) { return p.st; });
         var isFuel = evState.mode === 'fuel';
-        planM = new TMap.MultiMarker({
+        planM = createMarkerLayer({
             map: map,
-            styles: { p: new TMap.MarkerStyle({ src: IC_PLAN[isFuel ? 'fuel' : 'ev'], width: 38, height: 38, anchor: { x: 19, y: 19 } }) },
+            styles: { p: ({ src: IC_PLAN[isFuel ? 'fuel' : 'ev'], width: 38, height: 38, anchor: { x: 19, y: 19 } }) },
             geometries: planData.map(function (p, i) {
-                return { id: 'p' + i, styleId: 'p', position: new TMap.LatLng(p.st.lat, p.st.lng) };
+                return { id: 'p' + i, styleId: 'p', position: LL(p.st.lat, p.st.lng) };
             })
         });
         planM.on('click', function (e) {
@@ -376,12 +376,12 @@
                 p.st.a + (p.st.tel ? '<br>☎ ' + p.st.tel : '') + stationSourceNote() +
                 '<br><b style="color:#ea580c">D' + dayOf(p.st.km) + ' · 到达剩 ' + Math.round(p.arrive * 100) + '% · ' + (isFuel ? '建议加满' : '建议充至 ' + Math.round(p.target * 100) + '%') + '</b>');
         });
-        planLb = new TMap.MultiLabel({
+        planLb = createLabelLayer({
             map: map,
-            styles: { p: new TMap.LabelStyle({ color: '#c2410c', size: 11, offset: { x: 0, y: -26 } }) },
+            styles: { p: ({ color: '#c2410c', size: 11, offset: { x: 0, y: -26 } }) },
             geometries: planData.map(function (p, i) {
                 var isF = evState.mode === 'fuel';
-                return { id: 'pl' + i, position: new TMap.LatLng(p.st.lat, p.st.lng), content: '▲ ' + (isF ? '加满' : '充至 ' + Math.round(p.target * 100) + '%') };
+                return { id: 'pl' + i, position: LL(p.st.lat, p.st.lng), content: '▲ ' + (isF ? '加满' : '充至 ' + Math.round(p.target * 100) + '%') };
             })
         });
 
@@ -414,9 +414,9 @@
         }, 120);
     }
     if (typeof map.on === 'function') {
-        try { map.on('zoom', onStationsZoomChange); } catch (e) {}
-        // 拖动结束也要补一次（easeTo 动画结束后 zoom 才稳定）
-        try { map.on('idle', onStationsZoomChange); } catch (e) {}
+        try { map.on('zoomchange', onStationsZoomChange); } catch (e) {}
+        // 拖动结束也要补一次（视野动画结束后 zoom 才稳定）
+        try { map.on('moveend', onStationsZoomChange); } catch (e) {}
     }
 
     function renderPlanPanel(plan) {

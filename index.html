@@ -295,62 +295,49 @@
     .day-seg-sel { font-size: 10.5px; max-width: 96px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; color: #475569; }
 </style>
 <script>
-    // WorkBuddy 腾讯地图密钥代理（运行时自动替换占位符，前端零密钥）
-    // ⚠️ 这是【本地开发环境】专用的密钥代理。指向 127.0.0.1 = 打开者自己的电脑，
-    //    换到 GitHub Pages / 任何其他环境都不成立。
-    //    部署时请删除本段，并在下面的 gljs 地址里补上自己的 key=。
-    window._TMapSecurityConfig = {
-        serviceHost: 'http://127.0.0.1:__WB_HTTP_PORT__/_TMapService/_wbt/__WB_TMAP_SECRET__',
-    };
-</script>
-<script>
-    /* ============ 地图 Key 预检 ============
-       腾讯 GL JS 必须带 key 才能渲染底图。缺 key 时表现为「灰屏 / 空白」，
-       且控制台只有一句模糊的报错，很容易被当成代码 bug。
-       这里主动检测并给出明确指引，而不是让人对着灰屏猜。 */
+    /* ============ 地图 Key 预检（S9：高德 JS API） ============
+       线路页底图由高德地图提供，需要「Web 端(JS API)」Key + 安全密钥（见 key.local.js，
+       由 tools/make-key-local.js 从 .env.local 生成）。缺 Key 时表现为灰屏/空白，
+       这里主动给出明确指引。选线器页（无 ?route= 参数）没有地图，整段跳过。 */
     (function () {
         // 选线器页（无 ?route= 参数）没有地图，跳过 Key 检查
         if (!/[?&]route=/.test(location.search)) return;
-        // 扫描推迟到 DOMContentLoaded：gljs 标签由下方 loader 用 document.write 写入，
-        // 解析早期扫描看不到它（S8 修复：原实现永远在标签写入之前扫描，等于没检）。
+        // 扫描推迟到 DOMContentLoaded：key.local.js 由 loader document.write 写入，
+        // 解析早期 window.__KEY_LOCAL__ 还不存在。
         var problems = null;
         function scan() {
             if (problems) return;
             problems = [];
-            var tags = document.getElementsByTagName('script');
-            var url = '';
-            for (var i = 0; i < tags.length; i++) {
-                var s = tags[i].getAttribute('src') || '';
-                if (s.indexOf('map.qq.com/api/gljs') >= 0) { url = s; break; }
-            }
-            var hasKey = /[?&]key=[^&#\s]+/.test(url);
+            var K = (typeof window !== 'undefined' && window.__KEY_LOCAL__) || {};
+            var hasKey = !!K.amapKey;
             var isFile = (location.protocol === 'file:');
 
             if (isFile) {
                 problems.push({
                     t: '用了 file:// 直接打开',
-                    d: '腾讯 GL JS 已不支持 file:// 协议。请起一个本地服务：<code>python -m http.server 8000</code>，' +
-                       '然后访问 <code>http://localhost:8000/index.html</code>。'
+                    d: '高德 JS API 在 file:// 下不稳定。请起一个本地服务：<code>python -m http.server 8000</code>，' +
+                       '然后访问 <code>http://localhost:8000/index.html?route=线路id</code>。'
                 });
             }
             if (!hasKey) {
                 problems.push({
                     t: '地图 Key 缺失',
-                    d: '本页面的底图由腾讯位置服务提供，必须带 key。<br>' +
-                       '去 <a href="https://lbs.qq.com/dev/console/application/mine" target="_blank" rel="noopener">' +
-                       '腾讯位置服务控制台</a> 建一个「浏览器端」Key（勾选 JavaScript API，域名白名单填你的域名），' +
-                       '然后把加载地址改成：<br>' +
-                       '<code>https://map.qq.com/api/gljs?v=1.exp&libraries=service&amp;key=你的KEY</code>'
+                    d: '本页面的底图由高德地图提供，需要「Web 端(JS API)」Key + 安全密钥。<br>' +
+                       '去 <a href="https://lbs.amap.com/dev/" target="_blank" rel="noopener">高德开放平台</a>' +
+                       ' 控制台 → 应用管理 → 创建应用 → 添加 Key（服务平台选 <b>Web端(JS API)</b>），' +
+                       '把 Key 和安全密钥写进仓库根 <code>.env.local</code>（<code>AMAP_JS_KEY</code> / ' +
+                       '<code>AMAP_JS_SECURITY_CODE</code>），再运行 <code>node tools/make-key-local.js</code>。' +
+                       '<br>（key.local.js 已 gitignore，不会进 git。）'
                 });
             }
         }
 
-        window.__tmapKeyProblem = null;
+        window.__keyProblem = null;
 
         function show() {
             scan();
             if (!problems || !problems.length) return;
-            window.__tmapKeyProblem = problems;
+            window.__keyProblem = problems;
             if (document.getElementById('__keyHint')) return;
             var box = document.createElement('div');
             box.id = '__keyHint';
@@ -473,13 +460,10 @@
         // 未登记的 id：回选线器（不产生半加载状态）
         location.replace(location.pathname);
     } else if (ROUTE_VALID) {
-        document.write('<script src="route-defs/' + ROUTE_KEY + '.js"><\/script>');
-        document.write('<script src="https://map.qq.com/api/gljs?v=1.exp&libraries=service"><\/script>');
-        document.write('<script src="engine/route-engine.js"><\/script>');
-        document.write('<script src="engine/planner.js"><\/script>');
-        document.write('<script src="engine/profile.js"><\/script>');
-        document.write('<script src="engine/edit.js"><\/script>');
-        document.write('<script src="engine/ui.js"><\/script>');
+        // 线路页加载序交給 boot-route.js：key.local.js（本地 Key）→ 安全密钥 →
+        // 底图 SDK（高德 JS API v2）→ 线路包 → 引擎。无 Key 时全跳过，只留引导遮罩。
+        document.write('<script src="key.local.js"><\/script>');
+        document.write('<script src="engine/boot-route.js"><\/script>');
     } else {
         document.write('<script src="engine/picker.js"><\/script>');
     }
