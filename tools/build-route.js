@@ -135,16 +135,21 @@ async function fetchElevations(points) {
         const lng = batch.map(p => p[1].toFixed(5)).join(',');
         const url = `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lng}`;
         let j = null;
-        for (let r = 0; r < 4 && !j; r++) {
+        for (let r = 0; r < 6 && !j; r++) {
             try {
                 const o = await getJSON(url, 1);
                 if (o && o.elevation && o.elevation.length === batch.length) j = o;
+                else if (o && o.error && /limit/i.test(String(o.reason || ''))) {
+                    // open-meteo 免费档有【每分钟请求限额】：整分钟等待后再试，不占快速重试次数
+                    console.error('\n  ⏳ open-meteo 分钟限额（批 ' + i + '），等待 65s…');
+                    await sleep(65000);
+                }
             } catch (e) { /* retry */ }
-            if (!j) await sleep(1200);
+            if (!j) await sleep(1500);
         }
         if (j) j.elevation.forEach((e, n) => { out[i + n] = Math.round(e); });
         process.stdout.write('\r  高程采样 ' + Math.min(i + 50, points.length) + '/' + points.length + '   ');
-        await sleep(450);
+        await sleep(1200);   // 批间礼让：压到分钟限额内
     }
     console.log('');
     return out;

@@ -289,8 +289,8 @@ function runRoute(routeId) {
         /mercY/.test(mainScript) &&
         /Math\.log2\(availW \/ \(256 \* xSpan\)\)/.test(mainScript),
         '不再用经验常数');
-    ok('包围盒从 CORE 轨迹算出（非写死）',
-        /var LOOP_BBOX = \(function/.test(mainScript) && /CORE\.forEach/.test(mainScript), '');
+    ok('包围盒从 CORE+TAIL 全程轨迹算出（非写死；TAIL 并防止单线末段被裁）',
+        /var LOOP_BBOX = \(function/.test(mainScript) && /CORE\.concat\(\[TAIL\]\)\.forEach/.test(mainScript), '');
     ok('fitAll 对侧栏做横向中心补偿',
         /box\.panelRight > 0/.test(mainScript), '环线落在可见区中心');
     const vbSrc = (mainScript.match(/function visibleBox[\s\S]*?\n\s{4}\}/) || [''])[0];

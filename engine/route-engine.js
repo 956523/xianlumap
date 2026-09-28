@@ -91,7 +91,8 @@
     }
     function curStart() { return startById(start); }
 
-    /* 环线地理包围盒（从 CORE 轨迹现算）。带接入段的出发地要并入其接入轨迹，
+    /* 线路地理包围盒（从 CORE+TAIL 全程轨迹现算；TAIL 必须并入——不闭合单线的
+       末段会伸出 CORE 范围）。带接入段的出发地另并入其接入轨迹，
        否则切到该出发地时按主基准 bbox 算 zoom 会装不下接入段。 */
     var LOOP_BBOX = (function () {
         function eatBox(b, pts) {
@@ -104,7 +105,10 @@
             return b;
         }
         var base = { latMin: 99, latMax: -99, lngMin: 999, lngMax: -999 };
-        CORE.forEach(function (d) { eatBox(base, d.path); });
+        // S7：不闭合单线的末段（TAIL）会伸出 CORE 范围（如 318 的拉萨端），
+        // 包围盒必须含全程，否则 fitAll 把终点裁出视野。环线 TAIL 回到起点附近，
+        // 并入后 bbox 不变（实测两条环线 zoom 恒被 7.6 上限钳住，行为零变化）。
+        CORE.concat([TAIL]).forEach(function (d) { eatBox(base, d.path); });
         var out = {};
         STARTS.forEach(function (s) {
             out[s.id] = (s.leadPath && s.leadPath.length)

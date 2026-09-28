@@ -82,9 +82,21 @@ async function searchAmap(keyword, region, page) {
 /* 腾讯保留路径（无 Key 未验证）：代理地址全部走环境变量 */
 const TSECRET = process.env.TMAP_SECRET || '';
 const TPORT = process.env.TMAP_PORT || '49234';
-/* 源分发器：amap 默认 / tencent 保留 */
+/* 源分发器：amap 默认 / tencent 保留。所有请求过并发闸门（CUQPS 上限内） */
+let gateInFlight = 0;
+const gateQueue = [];
+function gatePump() {
+    while (gateInFlight < 4 && gateQueue.length) {
+        const item = gateQueue.shift();
+        gateInFlight++;
+        item.fn().then(item.resolve).finally(() => { gateInFlight--; gatePump(); });
+    }
+}
+function gate(fn) {
+    return new Promise(resolve => { gateQueue.push({ fn, resolve }); gatePump(); });
+}
 function search(keyword, region, page) {
-    return SOURCE === 'amap' ? searchAmap(keyword, region, page) : searchTencent(keyword, region, page);
+    return gate(() => SOURCE === 'amap' ? searchAmap(keyword, region, page) : searchTencent(keyword, region, page));
 }
 function searchTencent(keyword, region, page) {
     if (!TSECRET) return Promise.resolve({ status: -1, message: 'tencent 源需要环境变量 TMAP_SECRET/TMAP_PORT（无 Key 未验证）' });
@@ -121,7 +133,9 @@ async function main() {
         const pr = projectRoute(lat, lng);
         if (pr.dist > MAX_DIST) return;
         const title = item.name || item.title || '未命名站点';
-        const key = title + '|' + lat.toFixed(2) + ',' + lng.toFixed(2);
+        // 全精度去重键：跨区重复的同一 POI 坐标逐位一致，保留哪份内容都相同 →
+        // 并发完成顺序不影响最终结果（内容级确定性）
+        const key = title + '|' + lat.toFixed(5) + ',' + lng.toFixed(5);
         if (seen.has(key)) return;
         seen.add(key);
         const op = BRANDS.filter(b => title.indexOf(b) >= 0)[0] || '';
@@ -144,45 +158,49 @@ async function main() {
         console.log(`${job.kw} 完成：${raw[job.bucket].length} 条`);
     }
     async function fetchKeyword(job) {
-        for (let r = 0; r < REGIONS.length; r++) {
-            const rg = REGIONS[r];
-            let got = 0, count = null;
-            const maxPage = SOURCE === 'amap' ? 8 : 6; // amap offset=25×8=200 上限；tencent 20×6=120
-            const per = SOURCE === 'amap' ? 25 : 20;
-            // 第 1 页先行：拿到 count 才知道要翻几页
-            const res1 = await search(job.kw, rg, 1);
+        // 两阶段全并发：阶段 1 所有区县的第 1 页过闸门并发（拿 count）；
+        // 阶段 2 把全部后续页一次性过闸门并发。单请求 ~3s 是服务器延迟，
+        // 并发度靠闸门压在 CUQPS 上限内（S7 实测；瞬时超限退避重试兜住）。
+        const maxPage = SOURCE === 'amap' ? 8 : 6; // amap offset=25×8=200 上限；tencent 20×6=120
+        const per = SOURCE === 'amap' ? 25 : 20;
+        const regions = REGIONS.map(rg => ({ rg, got: 0, count: null, ok: true }));
+
+        await Promise.all(regions.map(async slot => {
+            const res1 = await search(job.kw, slot.rg, 1);
             stats.req++;
             if (String(res1.status) !== '1' && res1.status !== 0) {
                 stats.fail++;
-                if (stats.fail <= 6) console.log(`  ⚠ ${rg} ${job.kw} status=${res1.status} ${res1.message || res1.info || ''}`);
-                stats.empty.push(job.kw + '@' + rg);
-                continue;
+                slot.ok = false;
+                if (stats.fail <= 6) console.log(`  ⚠ ${slot.rg} ${job.kw} status=${res1.status} ${res1.message || res1.info || ''}`);
+                return;
             }
             const p1 = res1.pois || res1.data || [];
-            count = +(res1.count != null ? res1.count : p1.length);
-            got += p1.length;
+            slot.count = +(res1.count != null ? res1.count : p1.length);
+            slot.got += p1.length;
             p1.forEach(it => push(job.bucket, it));
-            // 其余页 3 路并发（实测该 Key CUQPS 上限内；瞬时超限由 amapGet 退避重试兜住）。
-            // 单请求 ~3.2s 是服务器延迟，并发是唯一的提速手段——S6 前单线构建 6.6 分钟超 A3 预算。
-            const totalPages = Math.min(maxPage, Math.max(1, Math.ceil(count / per)));
-            for (let pg = 2; pg <= totalPages; pg += 3) {
-                const pages = [];
-                for (let p = pg; p < Math.min(pg + 3, totalPages + 1); p++) pages.push(p);
-                const results = await Promise.all(pages.map(p => search(job.kw, rg, p)));
-                results.forEach(res => {
-                    stats.req++;
-                    if (String(res.status) !== '1' && res.status !== 0) { stats.fail++; return; }
-                    const pois = res.pois || res.data || [];
-                    got += pois.length;
-                    pois.forEach(it => push(job.bucket, it));
-                });
-                if (pg + 3 <= totalPages) await sleep(500);   // 批间礼让，压 QPS
-            }
-            if (count != null && got < count) truncated.push(job.kw + '@' + rg + '（' + got + '/' + count + '）');
-            if (got === 0) stats.empty.push(job.kw + '@' + rg);
+        }));
+
+        const pageJobs = [];
+        regions.forEach(slot => {
+            if (!slot.ok) return;
+            const totalPages = Math.min(maxPage, Math.max(1, Math.ceil(slot.count / per)));
+            for (let pg = 2; pg <= totalPages; pg++) pageJobs.push([slot, pg]);
+        });
+        await Promise.all(pageJobs.map(async ([slot, pg]) => {
+            const res = await search(job.kw, slot.rg, pg);
+            stats.req++;
+            if (String(res.status) !== '1' && res.status !== 0) { stats.fail++; return; }
+            const pois = res.pois || res.data || [];
+            slot.got += pois.length;
+            pois.forEach(it => push(job.bucket, it));
+        }));
+
+        regions.forEach((slot, r) => {
+            if (!slot.ok) { stats.empty.push(job.kw + '@' + slot.rg); return; }
+            if (slot.count != null && slot.got < slot.count) truncated.push(job.kw + '@' + slot.rg + '（' + slot.got + '/' + slot.count + '）');
+            if (slot.got === 0) stats.empty.push(job.kw + '@' + slot.rg);
             if (r % 8 === 0) console.log(`  ${job.kw} ${r}/${REGIONS.length}（累计 ${raw[job.bucket].length}）`);
-            await sleep(300);
-        }
+        });
     }
     console.log(`请求 ${stats.req} / 失败 ${stats.fail} / 零结果区县 ${stats.empty.length}`);
     if (truncated.length) console.log(`⚠️ 未抓全（分页上限截断）：${truncated.join('，')}`);
@@ -197,7 +215,7 @@ async function main() {
         });
         let kept = [];
         Object.keys(buckets).forEach(b => {
-            kept = kept.concat(buckets[b].slice().sort((x, y) => x.d - y.d).slice(0, perBucket));
+            kept = kept.concat(buckets[b].slice().sort((x, y) => x.d - y.d || x.km - y.km || (x.t < y.t ? -1 : 1)).slice(0, perBucket));
         });
         kept.sort((a, b) => a.km - b.km);
         const all = list.slice().sort((a, b) => a.km - b.km);
@@ -209,7 +227,7 @@ async function main() {
                 const cands = all.filter(s => s.km > cur.km && s.km < limit && result.indexOf(s) < 0);
                 if (cands.length) {
                     cands.sort((a, b) =>
-                        Math.abs(a.km - (cur.km + limit) / 2) - Math.abs(b.km - (cur.km + limit) / 2));
+                        Math.abs(a.km - (cur.km + limit) / 2) - Math.abs(b.km - (cur.km + limit) / 2) || a.km - b.km || (a.t < b.t ? -1 : 1));
                     result.push(cands[0]);
                     result.sort((a, b) => a.km - b.km);
                     i = -1;

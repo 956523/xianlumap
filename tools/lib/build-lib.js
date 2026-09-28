@@ -76,6 +76,7 @@ async function resolveAmapIp() {
 const RETRYABLE_INFOCODES = { '10004': 1, '10009': 1, '10021': 1, '10044': 1 };
 
 /* 高德 GET：path 以 / 开头且已含 query（不含 key，key 由本函数追加，绝不外泄） */
+const amapAgent = new https.Agent({ keepAlive: true, maxSockets: 8 });   // 复用连接：单请求服务器延迟 ~1.4s，握手别白掏
 async function amapGet(pathWithQuery, key, retries) {
     retries = retries === undefined ? 3 : retries;
     const { ip, via } = await resolveAmapIp();
@@ -86,6 +87,7 @@ async function amapGet(pathWithQuery, key, retries) {
             host: 'restapi.amap.com',
             path: full,
             method: 'GET',
+            agent: amapAgent,
             headers: { 'User-Agent': 'xianlumap-builder/1.0' },
             lookup: (h, o, cb) => {
                 // Node 20+ autoSelectFamily 会以 all:true 调用，需返回数组
@@ -109,7 +111,12 @@ async function amapGet(pathWithQuery, key, retries) {
                 reject(new Error(msg));
             });
         });
-        req.on('timeout', () => { req.destroy(); reject(new Error('amap 请求超时')); });
+        req.on('timeout', () => {
+            req.destroy();
+            // 超时与网络错误同等待遇：退避重试（keep-alive 池可能交出僵死连接，销毁后不再复用）
+            if (retries > 0) setTimeout(() => amapGet(pathWithQuery, key, retries - 1).then(resolve, reject), 900);
+            else reject(new Error('amap 请求超时'));
+        });
         req.on('error', e => {
             if (retries > 0) setTimeout(() => amapGet(pathWithQuery, key, retries - 1).then(resolve, reject), 900);
             else reject(e);

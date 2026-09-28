@@ -97,7 +97,8 @@ window._TMapSecurityConfig = {
 │   └── ui.js                       # 元信息注入/启动序列
 ├── route-defs/                     # 线路包（每线一个文件）
 │   ├── qinghai-gansu.js            # 青甘大环线（含 ROUTE_BUILD 输入契约）
-│   └── chuanxi.js                  # 川西小环线
+│   ├── chuanxi.js                  # 川西小环线
+│   └── chengdu-lhasa-318.js        # 318 川藏南线（成都→拉萨，不闭合单线）
 ├── docs/
 │   ├── PROJECT.md                  # 青甘线产品文档（需求 / 数据 / 迭代记录）
 │   ├── PLATFORM.md                 # 平台化规划（怎么让它服务所有线路）
@@ -134,7 +135,7 @@ window._TMapSecurityConfig = {
 ```bash
 node tools/c4-test.js            # 轮跑 route-defs/ 下全部线路包，每包 94 项
 node tools/c4-test.js chuanxi    # 只跑指定线路包
-# 结果: 188 pass / 0 fail（2 包 × 94）
+# 结果: 282 pass / 0 fail（3 包 × 94）
 ```
 
 ```bash

@@ -11,13 +11,12 @@
      V3 投影自洽    站点存储 km 与用同源轨迹重投影的 km 偏差 >5km → FAIL
                     （防轨迹重建后站点表过期）；站点与其最近途经点的
                     里程差 >30km（且坐标距离 <30km）→ 警告。
-     V4 里程对账    三个口径分别核对，超 2% → FAIL：
-                    A 逐日 km 合计 vs ΣapiKm（日界取整差，容差放宽到 max(5,2%)）
-                    B TOTAL_XN（契约环线长）vs ΣapiKm
-                    C STATION_DATA.totalKm vs datumStartKm + ΣapiKm
+     V4 里程对账    按口径分别核对：
+                    A 逐日 km 合计 vs TOTAL_XN（同口径：轨迹线累计，只该有取整差）
+                    B TOTAL_XN（轨迹线累计）vs ΣapiKm（路网里程）——跨口径，
+                      长线弦长累计系统性低估 ~2%，容差 3%；抓的是陈旧常量（青甘曾差 13%）
+                    C STATION_DATA.totalKm vs datumStartKm + ΣapiKm（同 apiKm 投影口径）
                     D datumEndKm vs totalKm − datumStartKm
-                    注：川西 TOTAL_XN=850 是轨迹线累计、totalKm=851.8 是
-                    apiKm 缩放投影长，口径并存正常，按口径分别核对。
    退出码：有 FAIL → 1；仅 warnings → 0（有明确标注的算过）。
    --fix：应用 V1 修复并把重算的长盲区写回 STATION_DATA.warnings。
    ============================================================ */
@@ -163,12 +162,13 @@ console.log('\nV4 里程对账（分口径）');
     const totalXn = pkg.TOTAL_XN;
     console.log('  口径：日km合计 ' + sumDayKm + ' / ΣapiKm ' + sumApiKm + ' / TOTAL_XN ' + totalXn + ' / STATION_DATA.totalKm ' + (sd.totalKm || '—') + ' / datumStartKm ' + (sd.datumStartKm != null ? sd.datumStartKm : sd.xnStart != null ? sd.xnStart : '—'));
     const tol = x => Math.max(5, x * 0.02);
-    // A：逐日 km（界面口径，整数取整）vs ΣapiKm
-    if (Math.abs(sumDayKm - sumApiKm) <= tol(sumApiKm)) ok('A 日km合计 ≈ ΣapiKm', (sumDayKm - sumApiKm).toFixed(1) + 'km');
-    else fail('A 日km合计与 ΣapiKm 差 ' + (sumDayKm - sumApiKm).toFixed(1) + 'km（超 2%）');
-    // B：契约环线长 TOTAL_XN vs ΣapiKm
-    if (Math.abs(totalXn - sumApiKm) <= tol(sumApiKm)) ok('B TOTAL_XN ≈ ΣapiKm', (totalXn - sumApiKm).toFixed(1) + 'km');
-    else fail('B TOTAL_XN（' + totalXn + '）与 ΣapiKm（' + sumApiKm + '）差 ' + (totalXn - sumApiKm).toFixed(1) + 'km（超 2%，常量陈旧？）');
+    const tolX = x => Math.max(10, x * 0.03);   // 跨口径容差：折线弦长累计 vs 路网里程，长线系统性低估 ~2%
+    // A：逐日 km（界面口径，整数取整）vs 轨迹累计 TOTAL_XN —— 同口径，只该有取整差
+    if (Math.abs(sumDayKm - totalXn) <= tol(totalXn)) ok('A 日km合计 ≈ TOTAL_XN（同口径，取整差）', (sumDayKm - totalXn).toFixed(1) + 'km');
+    else fail('A 日km合计与 TOTAL_XN 差 ' + (sumDayKm - totalXn).toFixed(1) + 'km（同口径不该超取整量）');
+    // B：契约总长 TOTAL_XN（轨迹线累计）vs ΣapiKm（路网里程）—— 跨口径，容差放宽到 3%
+    if (Math.abs(totalXn - sumApiKm) <= tolX(sumApiKm)) ok('B TOTAL_XN ≈ ΣapiKm（跨口径：弦长累计 vs 路网里程）', (totalXn - sumApiKm).toFixed(1) + 'km');
+    else fail('B TOTAL_XN（' + totalXn + '）与 ΣapiKm（' + sumApiKm + '）差 ' + (totalXn - sumApiKm).toFixed(1) + 'km（超 3%，常量陈旧？）');
     // C/D：站点表口径
     if (sd.totalKm) {
         const dStart = sd.datumStartKm != null ? sd.datumStartKm : (sd.xnStart != null ? sd.xnStart : 0);
