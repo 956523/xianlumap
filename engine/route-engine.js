@@ -278,7 +278,7 @@
             li.title = d.energy;
             li.innerHTML = '<span class="day-tag">D' + d.id + '</span>' +
                 '<span class="day-meta"><span class="day-title">' + d.title + '</span>' +
-                '<span class="day-note">' + d.note + '</span></span>' +
+                '<span class="day-note">' + d.note + (d.stay ? ' · 住' + d.stay : '') + '</span></span>' +
                 sparkSVG(d) +
                 '<span class="day-km">' + (d.km ? d.km + 'km' : '—') + '</span>';
             li.onclick = function () { focusDay(i); };

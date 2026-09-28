@@ -74,13 +74,20 @@ function ok(name, cond, extra) {
 }
 
 /* ---------- 按页面 loader 的方式选数据包并执行 ---------- */
+// 编辑模式断言需要 localStorage（overlay 存这里；跨 boot 共享，模拟真实浏览器）
+const lsStore = {};
+const localStorageMock = {
+    getItem: k => (k in lsStore ? lsStore[k] : null),
+    setItem: (k, v) => { lsStore[k] = String(v); },
+    removeItem: k => { delete lsStore[k]; }
+};
 function bootRoute(routeKey) {
     // 与 index.html 内联 loader 等价：?route=<key> → route-defs/<key>.js，先于主脚本加载
     const dataSrc = fs.readFileSync(path.join(ROOT, 'route-defs', routeKey + '.js'), 'utf8');
     created.length = 0;
     let err = null;
     const sandbox = {
-        TMap, document, window, console,
+        TMap, document, window, console, localStorage: localStorageMock,
         setTimeout: (fn) => { try { fn(); } catch (e) {} return 0; }, clearTimeout: () => {},
         encodeURIComponent, parseFloat, parseInt, getComputedStyle,
         ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; }
@@ -132,6 +139,30 @@ let focusErr = null;
 try { cxDays[0].onclick(); } catch (e) { focusErr = e; }
 ok('聚焦 D1 不崩（zoom/center/剖面）', !focusErr, focusErr ? focusErr.message.slice(0, 120) : '');
 ok('聚焦后能耗提示为川西文案', elCache['curEnergy'].innerHTML.includes('四姑娘山'), elCache['curEnergy'].innerHTML.slice(0, 60));
+
+/* ---------- 编辑模式（S5：overlay 改 → 存 → 刷新仍在 → 恢复） ---------- */
+console.log('\n【3】编辑模式（overlay 架构）');
+const ed = bootRoute('chuanxi');
+ok('编辑模式默认关闭（非编辑用户无编辑态）', !ed.err && ed.sandbox.Edit && ed.sandbox.Edit.isOn() === false, ed.err ? ed.err.message.slice(0, 80) : '');
+ed.sandbox.Edit.enter();
+ed.sandbox.Edit.setDayField(2, 'title', '测试标题');
+const titleNow = ed.sandbox.DAYS.filter(d => d.id === 2)[0].title;
+ok('改标题即时生效（DAYS 更新）', titleNow === '测试标题', titleNow);
+ok('改动写入 localStorage（overlay 按 routeId 隔离）', /测试标题/.test(lsStore['xianlumap.overlay.chuanxi'] || ''), (lsStore['xianlumap.overlay.chuanxi'] || '').slice(0, 60));
+const ed2 = bootRoute('chuanxi');   // 模拟刷新：线路包 + overlay 合并生效
+ok('刷新后 overlay 仍在（合并生效）', ed2.sandbox.DAYS.filter(d => d.id === 2)[0].title === '测试标题');
+ed2.sandbox.Edit.setMarkName('折多山垭口', '折多山口');
+ok('地名显示名可改（ALT_MARKS 更新）', ed2.sandbox.ALT_MARKS.some(m => m.n === '折多山口'));
+ed2.sandbox.Edit.setSeg(2, 250, 320);
+const segDay = ed2.sandbox.DAYS.filter(d => d.id === 2)[0];
+ok('分段可改（选地名重切区间/里程）', segDay.altKm[0] === 250 && segDay.altKm[1] === 320 && segDay.km === 70,
+    JSON.stringify(segDay.altKm) + ' ' + segDay.km + 'km path=' + (segDay.path || []).length + '点');
+ed2.sandbox.Edit.reset();
+ok('恢复原始数据（pristine 写回 + 清 overlay）',
+    ed2.sandbox.DAYS.filter(d => d.id === 2)[0].title === '四姑娘山镇 → 丹巴' &&
+    ed2.sandbox.ALT_MARKS.some(m => m.n === '折多山垭口') &&
+    !lsStore['xianlumap.overlay.chuanxi'],
+    '');
 
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

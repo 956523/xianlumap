@@ -274,6 +274,25 @@
         #elev .head b { font-size: 13px; }
         #elevTitle { display: none; }
     }
+    /* ============ 编辑模式（S5）：默认零痕迹；body.editing 才出现可点改提示 ============ */
+    body.editing .day-title, body.editing .day-note, body.editing .day-stay,
+    body.editing #routeSub, body.editing #evNotice {
+        cursor: pointer;
+        border-bottom: 1px dashed #f59e0b;
+    }
+    body.editing .day-stay {
+        display: inline-block; margin-top: 2px; font-size: 10.5px; color: #b45309;
+        background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 5px; padding: 0 5px;
+    }
+    .edit-toggle { background: #475569; margin-top: 6px; }
+    .edit-toggle:hover { background: #334155; }
+    body.editing .edit-toggle { background: #b45309; }
+    .edit-bar { margin-top: 8px; padding: 8px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 9px; font-size: 11px; color: #92400e; line-height: 1.6; }
+    .edit-hint { display: block; margin-bottom: 6px; }
+    .edit-mini { border: none; background: #0f766e; color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 11px; cursor: pointer; margin-right: 6px; font-family: inherit; }
+    .edit-mini:hover { background: #0d9488; }
+    .day-seg { display: block; margin-top: 2px; }
+    .day-seg-sel { font-size: 10.5px; max-width: 96px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; color: #475569; }
 </style>
 <script>
     // WorkBuddy 腾讯地图密钥代理（运行时自动替换占位符，前端零密钥）
@@ -445,6 +464,7 @@
 <script src="engine/route-engine.js"></script>
 <script src="engine/planner.js"></script>
 <script src="engine/profile.js"></script>
+<script src="engine/edit.js"></script>
 <script src="engine/ui.js"></script>
 </body>
 </html>
