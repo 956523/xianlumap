@@ -1,8 +1,9 @@
 # ============================================================
 # build.yml — 云端构建器（S11 任务 2）
 # 手动触发（workflow_dispatch）：指定线路包跑完整构建
-#   build-route（轨迹+高程）→ build-stations（查库优先）→ validate（不 --fix，
-#   有问题就失败，不提交半成品）→ c4-test + probe-check 全绿才提交。
+#   build-route（轨迹+高程）→ build-stations（查库优先）→ validate --fix
+#   （重建几何会引入 open-meteo DEM 尖峰，--fix 中值滤波是既定流程，见 EXECUTION §12）
+#   → c4-test + probe-check 全绿才提交。
 # 定时触发（schedule）：每年 3/6/9/12 月 1 日 02:00 UTC 季度刷新——manifest 全部
 #   线路 build-stations --refresh + validate --fix（DEM 尖峰按既定流程修复写回）。
 # 提交用 github-actions[bot] 身份；提交信息注明触发来源；无变化不提交。
@@ -59,7 +60,7 @@ jobs:
           else
             echo "ids=${{ inputs.routeId }}" >> "$GITHUB_OUTPUT"
             echo "refresh=${{ inputs.refresh_stations && '--refresh' || '' }}" >> "$GITHUB_OUTPUT"
-            echo "fix=" >> "$GITHUB_OUTPUT"
+            echo "fix=--fix" >> "$GITHUB_OUTPUT"
           fi
 
       # 手动构建才重抓几何（途经点可能改过）；季度刷新不动轨迹
