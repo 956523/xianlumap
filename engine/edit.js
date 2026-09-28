@@ -187,13 +187,39 @@
             drawProfile();
         },
 
+        /* —— 导入编辑层（S8）：别人导出的 route-<id>.custom.json → 本机 overlay —— */
+        importOverlay: function (obj) {
+            if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+                editNotice('导入失败：文件不是有效的编辑层 JSON。');
+                return false;
+            }
+            if (obj.route == null) {
+                editNotice('这份文件缺少 route 标记（旧版导出格式），请在编辑模式下重新导出后再导入。');
+                return false;
+            }
+            if (obj.route !== ROUTE_META.key) {
+                editNotice('线路不匹配：这份编辑层属于「' + obj.route + '」，当前打开的是「' + ROUTE_META.key + '」，未导入。');
+                return false;
+            }
+            var ov = {};
+            ['days', 'seg', 'marks', 'meta'].forEach(function (k) { if (obj[k]) ov[k] = obj[k]; });
+            Edit.overlay = ov;
+            applyOverlay(ov);
+            editSave();
+            renderAll();
+            Edit.refreshDayControls();
+            drawProfile();
+            applyMetaDom();
+            return true;
+        },
+
         /* —— 导出 overlay（下载 route-<id>.custom.json） —— */
         exportText: function () {
             return '// route-' + ROUTE_META.key + '.custom.json —— 页面编辑层（overlay），由 xianlumap 编辑模式导出\n' +
                 '// 这不是线路包本体：原始数据在 route-defs/' + ROUTE_META.key + '.js（由 tools/build-route.js 构建）。\n' +
-                '// 恢复方式：把下方 JSON 存入浏览器 localStorage 键 "' + EDIT_KEY + '"；\n' +
-                '//           或把改动誊入 ROUTE_BUILD 后重跑构建，让改动固化进线路包。\n' +
-                JSON.stringify(this.overlay, null, 2) + '\n';
+                '// 导入：编辑模式里点「导入编辑层」选择本文件（会校验 route 标记与当前线路匹配）。\n' +
+                '// 固化：把改动誊入 ROUTE_BUILD 后重跑构建，让改动进线路包。\n' +
+                JSON.stringify(Object.assign({ route: ROUTE_META.key }, this.overlay), null, 2) + '\n';
         },
         exportOverlay: function () {
             var text = this.exportText();
@@ -282,15 +308,24 @@
     var EDIT_MARKS = ALT_MARKS.map(function (m) { return { n: m.n, km: m.km }; })
         .sort(function (a, b) { return a.km - b.km; });
 
-    /* ---------- 启动合并：包 + overlay（在 ui.js 启动渲染之前执行） ---------- */
-    (function bootMerge() {
-        var ov = Edit.overlay || {};
+    /* ---------- overlay → 数据合并（启动时一次；导入编辑层时复用同一函数） ---------- */
+    function applyOverlay(ov) {
+        if (!ov) return;
         if (ov.days) Object.keys(ov.days).forEach(function (id) { applyDayFields(+id, ov.days[id]); });
         if (ov.seg) Object.keys(ov.seg).forEach(function (id) { applySeg(+id, ov.seg[id].fromKm, ov.seg[id].toKm); });
         if (ov.marks) applyMarks(ov.marks);
         if (ov.meta && ov.meta.sub != null) ROUTE_META.sub = String(ov.meta.sub);
         if (ov.meta && ov.meta.evNotice != null) ROUTE_META.evNotice = String(ov.meta.evNotice);
-    })();
+    }
+    function applyMetaDom() {
+        var subEl = document.getElementById('routeSub');
+        if (subEl && ROUTE_META.sub) subEl.textContent = ROUTE_META.sub;
+        var nt = document.getElementById('evNotice');
+        var sp = nt && nt.querySelector('span');
+        if (sp && ROUTE_META.evNotice) sp.innerHTML = '⚡ <b>纯电提示：</b>' + ROUTE_META.evNotice;
+    }
+    /* 启动合并：包 + overlay（在 ui.js 启动渲染之前执行） */
+    (function bootMerge() { applyOverlay(Edit.overlay); })();
 
     /* ---------- 入口按钮 + 编辑工具条（默认隐藏编辑痕迹，只有入口可见） ---------- */
     var editBar = null;
@@ -316,12 +351,40 @@
         exp.className = 'edit-mini';
         exp.textContent = '导出编辑层';
         exp.onclick = function () { Edit.exportOverlay(); };
+        // 导入编辑层（S8）：file input 读文件 → 剥注释 → JSON → Edit.importOverlay 校验并应用
+        var imp = document.createElement('button');
+        imp.className = 'edit-mini';
+        imp.textContent = '导入编辑层';
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json,application/json';
+        fileInput.style.display = 'none';
+        imp.onclick = function () { fileInput.click(); };
+        fileInput.onchange = function () {
+            var f = fileInput.files && fileInput.files[0];
+            if (!f) return;
+            var reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    var text = String(reader.result || '');
+                    var i = text.indexOf('{');   // 跳过 // 文件头注释
+                    var obj = JSON.parse(text.slice(i));
+                    if (Edit.importOverlay(obj)) editNotice('编辑层已导入并生效。');
+                } catch (e) {
+                    editNotice('导入失败：' + (e && e.message ? e.message : '文件解析出错'));
+                }
+                fileInput.value = '';
+            };
+            reader.readAsText(f);
+        };
         var rst = document.createElement('button');
         rst.className = 'edit-mini';
         rst.textContent = '恢复原始数据';
         rst.onclick = function () { if (editAsk('清空本机全部改动，恢复线路原始数据？', '确定') !== null) Edit.reset(); };
         editBar.appendChild(hint);
         editBar.appendChild(exp);
+        editBar.appendChild(imp);
+        editBar.appendChild(fileInput);
         editBar.appendChild(rst);
         if (btn.parentNode && btn.parentNode.insertBefore) {
             btn.parentNode.insertBefore(editBar, btn.nextSibling);

@@ -10,9 +10,15 @@ const dir = __dirname;
 const ROOT = path.resolve(dir, '..');
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-// 主脚本：按 index.html 的 script 标签顺序拼接 engine/*.js（新增引擎文件自动跟随）
-const engineSrcs = Array.from(html.matchAll(/<script src="(engine\/[^"]+)"><\/script>/g)).map(m => m[1]);
+// 主脚本：S8 起引擎由 loader 按 ?route= 分支 document.write 按需加载（线路页 5 个引擎；
+// 选线器页只有 picker.js）。此处按页面相同顺序拼接注入；正则兼容 document.write
+// 字符串里的 "<\/script>" 转义写法，新增引擎文件自动跟随。
+const engineSrcs = Array.from(html.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)"><\\?\/script>/g)).map(m => m[1]);
 const mainScript = engineSrcs.map(s => fs.readFileSync(path.join(ROOT, s), 'utf8')).join('\n').trim();
+// 线路登记清单（选线器用；runRoute 里有「manifest 与包一致」交叉断言防漂移）
+const manifestSb = {};
+vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'route-defs', 'manifest.js'), 'utf8'), manifestSb);
+const MANIFEST = manifestSb.ROUTE_MANIFEST || [];
 // 路线无关的仓库级检查对象（每个线路包运行时各计一次断言）
 const htmlSrc = html;
 const cssOnly = htmlSrc.replace(/\/\*[\s\S]*?\*\//g, '');   // 剥掉 CSS 注释
@@ -123,6 +129,16 @@ function runRoute(routeId) {
     } else {
         ok('站点未接入如实透出（无 marker 几何 + 面板提示）', totalMarkerGeoms === 0, totalMarkerGeoms + ' 个');
     }
+
+    /* 线路登记清单（S8）：manifest 有该线且元数据与包内一致（防清单漂移） */
+    const mf = MANIFEST.filter(e => e.id === routeId)[0];
+    const pkgDayKm = pkg.CORE.concat([pkg.TAIL]).reduce((a, d) => a + (d.km || 0), 0);
+    ok('线路登记在 manifest 且元数据与包一致',
+        !!mf && mf.name === pkg.ROUTE_META.name && mf.days === totalDays &&
+        Math.abs(mf.totalKm - pkgDayKm) <= 1 &&
+        mf.updatedAt === (pkg.STATION_DATA && pkg.STATION_DATA.builtAt) &&
+        mf.probe === pkg.ROUTE_META.probe,
+        mf ? (mf.name + ' ' + mf.totalKm + 'km/' + mf.days + '天 @' + mf.updatedAt) : 'manifest 缺登记');
 
     /* 计划面板 */
     const planBox = elCache['planBox'];
@@ -294,10 +310,8 @@ function runRoute(routeId) {
     ok('fitAll 对侧栏做横向中心补偿',
         /box\.panelRight > 0/.test(mainScript), '环线落在可见区中心');
     const vbSrc = (mainScript.match(/function visibleBox[\s\S]*?\n\s{4}\}/) || [''])[0];
-    ok('visibleBox 计入侧栏 getBoundingClientRect',
-        /getBoundingClientRect\(\)/.test(vbSrc), '');
-    ok('容器变化通知地图 resize()',
-        /typeof map\.resize === 'function'/.test(mainScript), '');
+    ok('容器变化通知 resize() 且 visibleBox 计入侧栏遮挡',
+        /typeof map\.resize === 'function'/.test(mainScript) && /getBoundingClientRect\(\)/.test(vbSrc), '');
 
     console.log('\n【10】侧栏窄视口布局（v9-B）');
     ok('day-meta 显式 flex column',
@@ -455,10 +469,11 @@ function runRoute(routeId) {
         '本地代理指向 127.0.0.1，换环境必然失效');
 }
 
-/* ---------- 入口：单包或轮跑 ---------- */
-const routeIds = process.argv[2]
-    ? [process.argv[2]]
-    : fs.readdirSync(path.join(ROOT, 'route-defs')).filter(f => f.endsWith('.js')).map(f => f.replace(/\.js$/, ''));
+/* ---------- 入口：单包或轮跑（只认含 ROUTE_BUILD 的线路包；manifest 清单不参与） ---------- */
+const allPkgs = fs.readdirSync(path.join(ROOT, 'route-defs')).filter(f => f.endsWith('.js'))
+    .map(f => f.replace(/\.js$/, ''))
+    .filter(id => /var\s+ROUTE_BUILD\s*=/.test(fs.readFileSync(path.join(ROOT, 'route-defs', id + '.js'), 'utf8')));
+const routeIds = process.argv[2] ? [process.argv[2]] : allPkgs;
 
 routeIds.forEach(runRoute);
 

@@ -17,7 +17,8 @@
 - S5（页面内编辑模式，overlay 架构）已完成并验收 ✅（用法见 §11）
 - S6（川西小环线全量复验，PLATFORM.md A1–A6）已完成并验收 ✅（见 §12）
 - S7（318 川藏南线，不闭合单线边界压测）已完成并验收 ✅（见 §13）
-- S8 未开工
+- S8（多线路入口：选线器 + 按需加载 + 导入编辑层）已完成并验收 ✅（见 §14）
+- **平台化 S0–S8 全部完成** 🎓
 - 已知待清理项（与平台化并行处理，不阻塞）：
   - `routes/qinghai-gansu/stations-new.json`（2026-09-26 新抓取，多 `op/slow/cat` 字段）未回写 `stations-data.js`
   - `tools/write-real-route.js` 引用旧文件名 `qinghai-gansu-loop.html`，疑似死代码
@@ -51,7 +52,7 @@ PLATFORM.md 原计划：S1 → S2 → S3 → S4 → S5 → **S6 第二条线** �
 | **S5** ✅ | 页面内编辑模式（改文案存 localStorage、可导出；overlay 架构） | 改天标题/分段/地名刷新保留，可导出 JSON，可一键恢复 |
 | **S6** ✅ | 川西小环线全量复验（重建 + A1–A6 实测） | PLATFORM.md A1–A6 全达标 |
 | **S7** ✅ | 318 川藏南线（不闭合单线：2100km、海拔 500–5000m、无人区更多） | A1–A6 全达标；单线契约影响最小化（1 处引擎改动，见 §13） |
-| **S8** | 多线路入口（选线器 + 按需加载） | 打开页面选线，各自独立加载 |
+| **S8** ✅ | 多线路入口（选线器 + 按需加载 + 导入编辑层） | 打开页面选线，各自独立加载 |
 
 **不变的原则**：每步独立验收、青甘线全程可跑、不做破坏性重构、不引入 webpack/vite/TS。
 
@@ -469,3 +470,42 @@ A 日合计 vs TOTAL_XN（同口径，取整差）；B TOTAL_XN vs ΣapiKm（跨
 2. 编辑模式 overlay 的 localStorage 键按 routeId 隔离 ✓，多线共存无冲突
 3. probe-check 的标题断言按「川西/青甘」写的，S8 加选线器时若改默认线要同步
 4. 构建管线已三线路通用：S8 之后新线 = 一个 ROUTE_BUILD + 两条命令 + validate
+
+## 14. S8 实测结论：多线路入口——选线器 + 按需加载 + 导入编辑层（2026-09-28）
+
+### 验收结果
+
+1. `node tools/c4-test.js` → **282 pass / 0 fail（3 包 × 94）**；`route-defs/manifest.js`
+   含 ROUTE_BUILD 过滤机制，**未被当成线路包轮跑**；新增「manifest 与包一致」交叉断言
+   （name/totalKm/days/updatedAt/probe 逐项比对，防清单漂移）✅
+2. `node tools/probe-check.js` → **33 pass / 0 fail**（新增选线器/导入 6 项）✅
+3. 选线器页只加载 manifest（1.4KB）+ picker.js（3.8KB），**不加载任何线路包/引擎/底图**；
+   vm 级断言 + http.server 资源冒烟双验证 ✅
+4. 导入：导出（含 route 标记）→ 改 → 导入 → overlay 生效并落盘；线路不匹配如实拒绝——
+   vm 级全链路验证 ✅
+5. 三条线 `?route=` 正常（282 项回归即覆盖）；无 Key 泄漏；未执行 git 提交 ✅
+
+### 实现要点
+
+- **`route-defs/manifest.js`**：轻量登记清单（id/name/region/totalKm/days/updatedAt/probe）。
+  选线器卡片数据源；**不是线路包**（无 ROUTE_BUILD），c4-test 按「含 ROUTE_BUILD」过滤轮跑名单。
+- **loader（index.html）**：`?route=<id>` 且 id 已登记 → document.write 只写该线路包 +
+  底图 SDK + 5 个引擎；无参数或 id 未登记 → 只写 picker.js（未登记 id 自动回选线器，
+  不产生半加载状态）。引擎标签从静态改为按需，c4-test/probe-check 的加载链正则同步
+  升级（兼容 `document.write` 的 `<\/script>` 转义、只认真实文件名避开模板串）。
+- **`engine/picker.js`**：只在无参数页运行（线路页/测试 vm 里安全 no-op），自包含样式，
+  卡片为 `<a href="?route=id">` 纯链接。
+- **导入编辑层（edit.js）**：「导入编辑层」与导出/恢复并列；file input 读文件 →
+  剥 `//` 文件头 → JSON.parse → `Edit.importOverlay(obj)` 校验（route 标记存在且
+  与当前线路一致，不匹配明确拒绝）→ 复用启动合并同一 `applyOverlay` 函数应用 →
+  存 localStorage。导出格式增加 `"route"` 字段（旧版导出无此字段会被拒绝并提示重导出）。
+- **顺手修了一个潜伏 bug**：地图 Key 预检在 head 解析早期扫描 script 标签，
+  **永远在 gljs 标签写入之前执行**（原实现等于没检）；扫描推迟到 DOMContentLoaded
+  后真正生效，且选线器页（无 ?route=）整段跳过。
+
+### 平台化收官状态（S0–S8）
+
+三条线（环线双出发地 / 环线 / 不闭合单线）共用一套引擎与构建管线；加线 = 一个
+ROUTE_BUILD + 两条构建命令 + validate + manifest 一行；回归与冒烟全自动。
+剩余已知边界：底图需自配腾讯 Key（无 Key 时页面给出可操作指引，数据链完整可用）；
+充电枪数无开放数据源（已降级）；高德 POI 单区 200 条分页上限（截断如实透出）。

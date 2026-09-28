@@ -11,10 +11,13 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-// 主脚本：S2 起引擎拆分为 engine/*.js（index.html 按序以 <script src> 加载），
-// 此处按页面相同顺序拼接执行
-const engineSrcs = Array.from(html.matchAll(/<script src="(engine\/[^"]+)"><\/script>/g)).map(m => m[1]);
+// 主脚本：S8 起由 loader 按 ?route= 分支 document.write 按需加载；按页面顺序拼接执行
+//（正则兼容 "<\/script>" 转义写法；只认真实文件名，避开 loader 里的模板串）
+const engineSrcs = Array.from(html.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)"><\\?\/script>/g)).map(m => m[1]);
 const mainScript = engineSrcs.map(s => fs.readFileSync(path.join(ROOT, s), 'utf8')).join('\n').trim();
+// 选线器专用（S8）：manifest + picker，单独 boot 验证
+const manifestSrc = fs.readFileSync(path.join(ROOT, 'route-defs', 'manifest.js'), 'utf8');
+const pickerSrc = fs.readFileSync(path.join(ROOT, 'engine', 'picker.js'), 'utf8');
 
 /* ---------- mock（与 c4-test 同构，精简注释） ---------- */
 const calls = { polyline: [], markers: [], labels: [] };
@@ -114,7 +117,7 @@ ok('续航规划输出 + 长盲区上图（无桩段渲染为图层）',
 let srcNote = '';
 try { srcNote = qh.sandbox.stationSourceNote(); } catch (e) { srcNote = 'ERR ' + e.message; }
 ok('站点来源日期透出（来源+快照日期）', /POI · \d{4}-\d{2}-\d{2}/.test(srcNote), srcNote);
-ok('标题来自 ROUTE_META', document.title.includes('青甘'), document.title);
+ok('标题来自 ROUTE_META', !!qh.sandbox.ROUTE_META && document.title === qh.sandbox.ROUTE_META.title && document.title.length > 0, document.title);
 ok('纯电提示来自 ROUTE_META（青甘文案）', elCache['evNotice'].querySelector('span').innerHTML.includes('大柴旦'), '');
 ok('出发地切换按钮保留（青甘）', !elCache['startSeg'] || elCache['startSeg'].style.display !== 'none', '');
 
@@ -130,7 +133,7 @@ ok('最高海拔 chip ≈4298（折多山）', Math.abs(parseInt(elCache['chipMa
 ok('续航规划输出真实结果 + 截断透出（快照声明含截断提示）',
     elCache['planBox'].innerHTML.includes('全程需充电') && /截断/.test(elCache['dataCaveat'].textContent),
     elCache['dataCaveat'].textContent.slice(0, 60));
-ok('标题来自 ROUTE_META', document.title.includes('川西'), document.title);
+ok('标题来自 ROUTE_META', !!cx.sandbox.ROUTE_META && document.title === cx.sandbox.ROUTE_META.title && document.title.length > 0, document.title);
 ok('副标题如实描述真实数据口径（不再是探针包）', elCache['routeSub'].textContent.includes('真实数据') && !elCache['routeSub'].textContent.includes('探针包'), elCache['routeSub'].textContent);
 ok('纯电提示标注山区盲区', elCache['evNotice'].querySelector('span').innerHTML.includes('无快充'), '');
 ok('单出发地按钮与经典支线行均隐藏', elCache['startSeg'].style.display === 'none' && elCache['classicRow'].style.display === 'none', '');
@@ -163,6 +166,48 @@ ok('恢复原始数据（pristine 写回 + 清 overlay）',
     ed2.sandbox.ALT_MARKS.some(m => m.n === '折多山垭口') &&
     !lsStore['xianlumap.overlay.chuanxi'],
     '');
+// 导入编辑层（S8）：导出 → 改 → 导入 → 生效；线路不匹配拒绝
+const expText = ed2.sandbox.Edit.exportText();
+ok('导出含 route 标记与文件头说明', /\/\/ route-chuanxi\.custom\.json/.test(expText) && /"route": "chuanxi"/.test(expText), '');
+const expJson = JSON.parse(expText.slice(expText.indexOf('{')));
+expJson.days = Object.assign({}, expJson.days, { '2': { title: '导入的标题' } });
+ok('导入编辑层生效（校验通过 → 应用 → 落盘）',
+    ed2.sandbox.Edit.importOverlay(expJson) === true &&
+    ed2.sandbox.DAYS.filter(d => d.id === 2)[0].title === '导入的标题' &&
+    /导入的标题/.test(lsStore['xianlumap.overlay.chuanxi'] || ''),
+    '');
+ok('导入拒绝线路不匹配（route 标记校验）',
+    ed2.sandbox.Edit.importOverlay({ route: 'some-other-line', days: { '2': { title: '不应生效' } } }) === false &&
+    ed2.sandbox.DAYS.filter(d => d.id === 2)[0].title === '导入的标题',
+    '');
+
+/* ---------- 选线器（S8：只加载 manifest + picker，不加载任何线路包/引擎） ---------- */
+console.log('\n【4】选线器（按需加载）与入口结构');
+// 静态结构：线路包/引擎/底图只出现在 ROUTE_VALID 分支的 document.write 里，无静态标签
+ok('选线器分支存在且按需加载（无静态 engine/线路包标签）',
+    /ROUTE_VALID/.test(html) &&
+    /document\.write\('<script src="engine\/picker\.js">/.test(html) &&
+    !/<script src="engine\/[a-z0-9-]+\.js"><\/script>/.test(html),
+    '');
+// vm 级：picker 页（ROUTE_KEY=''）渲染出全部线路卡片
+created.length = 0;
+const pickerSb = vm.createContext({ document, console, ROUTE_KEY: '' });
+let pickerErr = null;
+try {
+    vm.runInContext(manifestSrc + '\n' + pickerSrc, pickerSb);
+} catch (e) { pickerErr = e; }
+const pickerRoot = created.filter(el => el.id === 'pickerRoot')[0];
+ok('选线器渲染全部线路卡片（数据只来自 manifest）',
+    !pickerErr && !!pickerRoot &&
+    pickerRoot.innerHTML.indexOf('?route=qinghai-gansu') >= 0 &&
+    pickerRoot.innerHTML.indexOf('?route=chuanxi') >= 0 &&
+    pickerRoot.innerHTML.indexOf('?route=chengdu-lhasa-318') >= 0,
+    pickerErr ? pickerErr.message.slice(0, 80) : '3 张卡片');
+// 线路页不渲染选线器：ROUTE_KEY 已设时 picker 是 no-op
+created.length = 0;
+const pickerSb2 = vm.createContext({ document, console, ROUTE_KEY: 'chuanxi' });
+vm.runInContext(manifestSrc + '\n' + pickerSrc, pickerSb2);
+ok('线路页 picker 安全 no-op（不抢渲染）', created.filter(el => el.id === 'pickerRoot').length === 0, '');
 
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail ? 1 : 0);
