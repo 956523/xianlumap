@@ -178,12 +178,38 @@
         });
     }
     var SPOT_LABEL_STYLE = { color: '#6d28d9', size: 13, bold: true, badge: true, offset: { x: 0, y: 22 } };
-    var cityLabels = createLabelLayer({
-        map: map,
-        zIndex: 120,
-        styles: { default: ({ color: '#1f2937', size: 12, offset: { x: 0, y: 20 } }) },
-        geometries: labelGeos(CITIES)
-    });
+    /* --- 城名分级（S18：与景点胶囊同构） ---
+       CITIES 无沿线里程字段，用与景点同一个「最近路线点」表折算；手机全览（窄容器
+       z<7）按 60km 桶只留主要城镇（数据顺序即沿线顺序，每桶取首个），近景全显。
+       重建走状态位模式（S0 教训：开关不得持有图层引用）。 */
+    var cityLabels = null;
+    var cityLabelOn = true;
+    var cityKmCache = [];
+    function renderCityLabels(zoom) {
+        if (cityLabels) { cityLabels.setMap(null); cityLabels = null; }
+        if (!cityLabelOn || typeof CITIES === 'undefined' || !CITIES) return;
+        var z = (zoom == null) ? 7.3 : zoom;
+        try { if (typeof map.getZoom === 'function') z = map.getZoom(); } catch (e) {}
+        var mapW = 0;
+        try { var me2 = document.getElementById('map'); mapW = (me2 && me2.clientWidth) || 0; } catch (e) {}
+        var picked = CITIES;
+        if (mapW > 0 && mapW < NARROW_MAP_PX && z < SPOT_FAR_Z - 1 && cityKmCache.length) {
+            var buckets = {}, idx = [];
+            CITIES.forEach(function (c, i) {
+                var b = Math.floor((cityKmCache[i] || 0) / SPOT_FAR_MOB_BUCKET_KM);
+                (buckets[b] = buckets[b] || []).push(i);
+            });
+            Object.keys(buckets).forEach(function (b) { idx.push(buckets[b][0]); });   // 数据顺序=沿线顺序
+            picked = idx.sort(function (a, c) { return a - c; }).map(function (i) { return CITIES[i]; });
+        }
+        try { window.__cityFarN = (picked === CITIES) ? CITIES.length : picked.length; } catch (e) {}
+        cityLabels = createLabelLayer({
+            map: map,
+            zIndex: 120,
+            styles: { default: ({ color: '#1f2937', size: 12, offset: { x: 0, y: 20 } }) },
+            geometries: labelGeos(picked)
+        });
+    }
 
     /* --- 景点胶囊分级（S0 同构 + S17 移动远景降密） ---
        远景 z<8：每 25km 桶 1 个；中景 8≤z<10：每桶 2 个；近景 z≥10：全显。
@@ -213,6 +239,7 @@
     }
     function rebuildSpotKm() {
         // 环线 km→经纬度表（与 renderWarnings 同法：天 path 按 altKm 线性插值）
+        // 景点与城名共用这张表折算沿线里程（S18 城名分级）
         var table = [];
         DAYS.forEach(function (d) {
             if (!d.path || !d.altKm) return;
@@ -232,6 +259,14 @@
             spotKmCache.push(best);
             spotOffKm.push(Math.sqrt(bd) * 95);   // 度²→km 近似；只做相对排序，不追求精确
         });
+        cityKmCache = (typeof CITIES !== 'undefined' && CITIES) ? CITIES.map(function (c) {
+            var best = 0, bd = 1e9;
+            for (var i = 0; i < table.length; i++) {
+                var dd = (table[i][1] - c.p[0]) * (table[i][1] - c.p[0]) + (table[i][2] - c.p[1]) * (table[i][2] - c.p[1]);
+                if (dd < bd) { bd = dd; best = table[i][0]; }
+            }
+            return best;
+        }) : [];
     }
     function renderSpotLabels(zoom) {
         if (spotLabels) { spotLabels.setMap(null); spotLabels = null; }
@@ -392,8 +427,9 @@
         fitAll();
         renderStations();
         renderWarnings();
-        rebuildSpotKm();        // 景点胶囊分级的里程基准（随出发地重算）
+        rebuildSpotKm();        // 景点胶囊/城名分级的里程基准（随出发地重算，S18 共用表）
         renderSpotLabels();
+        renderCityLabels();
     }
 
     /* --- 长盲区上图（S4 可信度透出）---
@@ -497,13 +533,16 @@
         var panelEl = document.getElementById('panel');
         var w = vw, h = vh, panelRight = 0, panelBottom = 0;
         var narrow = vw <= 768;
+        var titleH = 0;   // S18：窄屏取景扣除标题条高度（fitAll 纵向居中同口径）
 
         if (panelEl && !panelEl.classList.contains('collapsed')) {
             var pr = panelEl.getBoundingClientRect();
             if (narrow) {
-                // 窄屏：可见高度 = 视口 − 行程单抽屉露出的 peek（mobile.js 的 MOBILE_PEEK），宽度用整屏
+                // 窄屏：可见高度 = 视口 − 行程单抽屉露出的 peek（mobile.js 的 MOBILE_PEEK）− 标题条，宽度用整屏
+                // S18：标题条（48px）压在地图顶部，取景时扣除，不再顶栏压图（桌面 titleH=0，零变化）
+                titleH = 48;
                 panelBottom = (typeof MOBILE_PEEK === 'number') ? MOBILE_PEEK : 112;
-                h = vh - Math.max(panelBottom, 0) - 14;
+                h = vh - Math.max(panelBottom, 0) - 14 - titleH;
                 w = vw - 28;
             } else {
                 panelRight = pr.right;
@@ -519,7 +558,7 @@
         return {
             w: Math.max(200, w), h: Math.max(200, h),
             vw: vw, vh: vh, panelRight: panelRight, panelBottom: panelBottom,
-            narrow: narrow
+            narrow: narrow, titleH: titleH
         };
     }
 
@@ -576,9 +615,9 @@
         var ppxY = 256 * Math.pow(2, z);   // 墨卡托 y 的像素比（每单位），与经度同为这个世界宽度
 
         if (box.narrow) {
-            // 窄屏：横向占满，纵向要让环线整体落在 [panelBottom, vh] 内居中。
+            // 窄屏：横向占满，纵向要让环线整体落在 [抽屉顶+标题条, 视口底] 内居中。
             // 可见区中心的屏幕 y（用 vh 口径，因为它是相对视口的 CSS 像素）
-            var visTop = box.panelBottom + 6;
+            var visTop = box.panelBottom + 6 + (box.titleH || 0);   // S18：标题条占位从可见区顶部再让 48px
             var visBot = box.vh - 6;
             var visMid = (visTop + visBot) / 2;
             // 反解：让 bbox 中心纬线落在 visMid → center.lat 使 mercY(lat) 满足下式
@@ -641,12 +680,12 @@
        tgFuel / tgEv 不绑到固定的 marker 变量上：它们控制的是【renderStations() 里
        动态重建的】dimEvM/dimFuelM，而每次重建都会 new 一个新的 MultiMarker →
        不能再持有旧引用。做法：开关只改一个状态位，然后触发重绘 → 重绘时按状态决定 setMap。 */
-    function bindToggle(inputId, layers) {
-        document.getElementById(inputId).addEventListener('change', function (e) {
-            layers.forEach(function (l) { l.setMap(e.target.checked ? map : null); });
-        });
-    }
-    bindToggle('tgCity', [cityMarkers, cityLabels]);
+    // 城名开关改走状态位（S18）：标签按 zoom 整层重建，开关不得持有旧图层引用（S0 教训）
+    document.getElementById('tgCity').addEventListener('change', function (e) {
+        cityLabelOn = e.target.checked;
+        cityMarkers.setMap(e.target.checked ? map : null);
+        renderCityLabels();
+    });
     // 景点开关改走状态位：胶囊标签按 zoom 整层重建，不能持有旧图层引用（同 S0 站点开关模式）
     document.getElementById('tgSpot').addEventListener('change', function (e) {
         spotLabelOn = e.target.checked;

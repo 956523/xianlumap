@@ -446,6 +446,7 @@
             renderStations();
             // 同一条防抖链顺带刷新景点胶囊分级（不另起监听，S0 复用）
             if (typeof renderSpotLabels === 'function') renderSpotLabels(_lastZoomForStations);
+            if (typeof renderCityLabels === 'function') renderCityLabels(_lastZoomForStations);
         }, 120);
     }
     if (typeof map.on === 'function') {

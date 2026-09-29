@@ -431,8 +431,8 @@ function runRoute(routeId) {
         '否则拉近点不增加、拉远点不减少');
     ok('缩放重绘有防抖 + 变化量阈值（同一防抖链顺带刷新景点胶囊分级）',
         /Z_REDRAW_EPS\s*=\s*0\.25/.test(mainScript) &&
-        /setTimeout\(function \(\) \{[\s\S]{0,300}renderStations\(\);[\s\S]{0,220}renderSpotLabels\([\s\S]{0,60}\},\s*120\)/.test(mainScript),
-        'MultiMarker 整层重建，每帧重建会卡；胶囊分级复用同一条链，不另起监听');
+        /setTimeout\(function \(\) \{[\s\S]{0,300}renderStations\(\);[\s\S]{0,220}renderSpotLabels\([\s\S]{0,160}\},\s*120\)/.test(mainScript),
+        'MultiMarker 整层重建，每帧重建会卡；胶囊/城名分级复用同一条链，不另起监听');
     ok('远景隐加油站时有 UI 提示',
         /fuelTierHint/.test(html) && /（放大后显示）/.test(mainScript),
         '否则用户以为图层开关坏了');

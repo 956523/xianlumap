@@ -545,6 +545,35 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             if (!(peek === '46px' && hasC)) return 'peek=' + peek + ' hasC=' + hasC + ' svglen=' + svg.length;
             return true;
         })(), '');
+
+    /* ---------- S18 打磨轮：城名分级 / 几何全览判定 / 首帧把手 / 菜单遮罩 ---------- */
+    console.log('\n【13】S18 打磨轮');
+    ok('首帧即全览语义：<body> 静态带 elev-hide（把手不闪现）',
+        /<body[^>]*class="[^"]*elev-hide"/.test(html), '');
+    // 城名分级：与景点同构（__cityFarN 钩子）；mock zoom 可变换口径
+    MOCK_ZOOM = 6.0;
+    elCache['map'].clientWidth = 390;
+    var cnMob = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+    var mobCityN = cnMob.sandbox.window.__cityFarN;
+    elCache['map'].clientWidth = 1280;
+    var cnDesk = bootRoute('qinghai-gansu');
+    var deskCityN = cnDesk.sandbox.window.__cityFarN;
+    elCache['map'].clientWidth = 1200;
+    MOCK_ZOOM = 7.3;
+    ok('城名同构分级：手机全览稀疏（< 全量）· 桌面宽屏全量',
+        !cnMob.err && !cnDesk.err && mobCityN > 0 && mobCityN < deskCityN &&
+        deskCityN === cnDesk.sandbox.CITIES.length,
+        '手机 ' + mobCityN + ' / 桌面 ' + deskCityN + ' 个城名');
+    // 几何判定路径：mock 无 getBounds → 走近似回退，不崩且不误亮
+    var fitB = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    ok('全览判定升级：无 getBounds 时近似回退可用（初始不亮、checkFit 可触发）',
+        !fitB.err && fitB.sandbox.window.__fitOut === undefined &&
+        fitB.sandbox.window.__mobile.fitDeviated() === false &&
+        (fitB.sandbox.window.__mobile.checkFit(), true), '');
+    // 菜单遮罩
+    ok('⋯菜单遮罩接线（点外部关闭，对齐图层弹层）',
+        typeof elCache['mobMenuBk'].onclick === 'function' &&
+        typeof elCache['mobMenuBtn'].onclick === 'function', '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

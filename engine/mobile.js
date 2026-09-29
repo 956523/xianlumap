@@ -130,6 +130,43 @@ function bindSheetTouch(el) {
 bindSheetTouch(sheetGrip);
 bindSheetTouch(sheetPanel && typeof sheetPanel.querySelector === 'function' ? sheetPanel.querySelector('h1') : null);
 
+/* --- S18：抽屉内容滚动与 snap 手势的边界 ---
+   full 态下手柄/标题行照旧驱动 snap（上面的绑定）；日卡列表区原生滚动优先，
+   唯一接管场景：内容已滚到顶、继续下拉 → 接管为抽屉下拉（商业地图惯例），
+   松手按既有阈值 snap。把手区域的 touchstart 先冒泡到子元素并把 drag 置位，
+   这里以 drag 非空识别并跳过，两边不抢。 */
+var scrollTake = null;
+function onPanelScrollStart(e) {
+    if (!mobActive || sheetState !== 'full' || drag) return;
+    var t = e.touches && e.touches[0];
+    if (!t || !sheetPanel) return;
+    scrollTake = { y0: t.clientY, active: false, top0: sheetPanel.scrollTop || 0 };
+}
+function onPanelScrollMove(e) {
+    if (!scrollTake) return;
+    var t = e.touches && e.touches[0];
+    if (!t) return;
+    if (!scrollTake.active) {
+        if (!(scrollTake.top0 <= 0 && scrollTake.y0 - t.clientY < -8)) return;   // 未到顶部或不是下拉：原生滚动继续
+        scrollTake.active = true;
+        drag = { y0: t.clientY, h: sheetPanel.offsetHeight || 1, lastY: t.clientY, lastT: sheetNow(), vy: 0, moved: true, st0: 'full' };
+        if (document.body && document.body.classList) document.body.classList.add('mob-drag');
+    }
+    onSheetMove(e);   // 复用既有跟手 + preventDefault（passive:false 才能拦下原生滚动）
+}
+function onPanelScrollEnd() {
+    if (!scrollTake) return;
+    var was = scrollTake.active;
+    scrollTake = null;
+    if (was) onSheetEnd();
+}
+if (sheetPanel && typeof sheetPanel.addEventListener === 'function') {
+    sheetPanel.addEventListener('touchstart', onPanelScrollStart, { passive: true });
+    sheetPanel.addEventListener('touchmove', onPanelScrollMove, { passive: false });
+    sheetPanel.addEventListener('touchend', onPanelScrollEnd);
+    sheetPanel.addEventListener('touchcancel', onPanelScrollEnd);
+}
+
 /* 点地图（非抽屉）时 full → peek，把地图让出来 */
 if (typeof map !== 'undefined' && map && typeof map.on === 'function') {
     map.on('click', function () {
@@ -206,12 +243,14 @@ function buildIA() {
     bar.appendChild(mobEl('button', 'mobMenuBtn', null, '⋯'));
     iaRoot.appendChild(bar);
 
-    /* ⋯菜单 */
+    /* ⋯菜单 + 遮罩（S18：点外部关闭，对齐图层弹层） */
     var menu = mobEl('div', 'mobMenu');
     menu.appendChild(mobEl('button', 'mobMenuEdit', null, '✏️ 编辑模式'));
     menu.appendChild(mobEl('button', 'mobMenuSync', null, '☁️ 云同步'));
     menu.appendChild(mobEl('button', 'mobMenuData', null, 'ℹ️ 数据来源说明'));
     iaRoot.appendChild(menu);
+    var menuBk = mobEl('div', 'mobMenuBk');
+    iaRoot.appendChild(menuBk);
 
     /* 图层弹层 + 遮罩 */
     var bk = mobEl('div', 'mobLayersBk');
@@ -255,6 +294,8 @@ function buildIA() {
     /* 菜单 */
     var menuBtn = document.getElementById('mobMenuBtn');
     if (menuBtn) menuBtn.onclick = function () { toggleClass('mob-menu'); };
+    var menuBkEl = document.getElementById('mobMenuBk');   // 遮罩经 getElementById 接线（mock 可断言）
+    if (menuBkEl) menuBkEl.onclick = function () { toggleClass('mob-menu', false); };
     var mEdit = document.getElementById('mobMenuEdit');
     if (mEdit) mEdit.onclick = function () {
         toggleClass('mob-menu', false);
@@ -317,24 +358,61 @@ function toggleClass(cls, force) {
     if (on) b.classList.add(cls); else b.classList.remove(cls);
 }
 
-/* --- 「全览」条件出现：视野偏离 LOOP_BBOX 全览位（fitAll 的落点）才亮 ---
-   复用防抖链：zoomchange/moveend 后比对 __fitDebug（fitAll 写入 zoom+中心） */
+/* --- 「全览」条件出现：视野矩形 vs 环线包围盒的真实几何包含（S18 升级版） ---
+   判定口径：LOOP_BBOX 任一侧超出当前视野的比例 outFrac（0=完全包含）。
+   滞回防抖动：亮钮阈值 1%、灭钮阈值 0.3%（进出不同，卡在中间的抖动不会翻转状态）。
+   map.getBounds 不可用时（老适配/mock）退回 S16 的 Δz/中心距近似。 */
 var fitDevTimer = null;
 var fitDeviated = false;
+var FIT_ENTER_FRAC = 0.01, FIT_EXIT_FRAC = 0.003;   // 滞回：亮钮 1% / 灭钮 0.3%（占包围盒跨度比例）
+function viewBounds() {
+    try {
+        if (typeof map !== 'undefined' && map && typeof map.getBounds === 'function') {
+            var b = map.getBounds();
+            if (b && b.southWest && b.northEast &&
+                typeof b.southWest.lng === 'number' && typeof b.northEast.lng === 'number') {
+                return { lngMin: b.southWest.lng, latMin: b.southWest.lat, lngMax: b.northEast.lng, latMax: b.northEast.lat };
+            }
+        }
+    } catch (e) {}
+    return null;
+}
+function loopBBox() {
+    try {
+        if (typeof LOOP_BBOX !== 'undefined' && LOOP_BBOX && typeof STARTS !== 'undefined' && STARTS && STARTS.length) {
+            var k = (typeof start !== 'undefined' && LOOP_BBOX[start]) ? start : STARTS[0].id;
+            var b = LOOP_BBOX[k] || LOOP_BBOX[STARTS[0].id];
+            if (b && typeof b.lngMin === 'number') return b;
+        }
+    } catch (e) {}
+    return null;
+}
 function checkFit() {
     if (!mobActive) return;
     var btn = document.getElementById('mobFit');
     if (!btn || !btn.classList) return;
-    var fit = null, c = null, z = null;
-    try { fit = (typeof window !== 'undefined' && window.__fitDebug) || null; } catch (e) {}
-    try { if (typeof map !== 'undefined' && map && typeof map.getCenter === 'function') c = map.getCenter(); } catch (e) {}
-    try { if (typeof map !== 'undefined' && map && typeof map.getZoom === 'function') z = map.getZoom(); } catch (e) {}
-    var dev = false;
-    if (fit && fit.c && c && typeof c.lng === 'number' && typeof c.lat === 'number') {
-        var dz = (z == null) ? 0 : Math.abs(z - fit.z);
-        var dKm = Math.sqrt(Math.pow(Math.abs(c.lat - fit.c[0]) * 111, 2) +
-                            Math.pow(Math.abs(c.lng - fit.c[1]) * 95, 2));
-        dev = dz > 0.5 || dKm > 12;
+    var vb = viewBounds(), lb = loopBBox();
+    var dev;
+    if (vb && lb) {
+        // 视野必须【盖住】包围盒：盒伸出视野的量（占盒跨度比例），全可见 = 0
+        var overLng = Math.max(0, vb.lngMin - lb.lngMin, lb.lngMax - vb.lngMax) / ((lb.lngMax - lb.lngMin) || 1);
+        var overLat = Math.max(0, vb.latMin - lb.latMin, lb.latMax - vb.latMax) / ((lb.latMax - lb.latMin) || 1);
+        var outFrac = Math.max(overLng, overLat);
+        try { window.__fitOut = outFrac; } catch (e) {}
+        dev = fitDeviated ? (outFrac > FIT_EXIT_FRAC) : (outFrac > FIT_ENTER_FRAC);   // 滞回
+    } else {
+        // —— 近似回退（无 getBounds）：Δz/中心距阈值 ——
+        var fit = null, c = null, z = null;
+        try { fit = (typeof window !== 'undefined' && window.__fitDebug) || null; } catch (e) {}
+        try { if (typeof map !== 'undefined' && map && typeof map.getCenter === 'function') c = map.getCenter(); } catch (e) {}
+        try { if (typeof map !== 'undefined' && map && typeof map.getZoom === 'function') z = map.getZoom(); } catch (e) {}
+        dev = false;
+        if (fit && fit.c && c && typeof c.lng === 'number' && typeof c.lat === 'number') {
+            var dz = (z == null) ? 0 : Math.abs(z - fit.z);
+            var dKm = Math.sqrt(Math.pow(Math.abs(c.lat - fit.c[0]) * 111, 2) +
+                                Math.pow(Math.abs(c.lng - fit.c[1]) * 95, 2));
+            dev = dz > 0.5 || dKm > 12;
+        }
     }
     if (dev !== fitDeviated) {
         fitDeviated = dev;

@@ -198,6 +198,8 @@
     }
     /* 展开态：完整露出，高度由 --drawer-h 控制 */
     #elev.open { transform: translateY(0); height: var(--drawer-h, 300px); }
+    /* S18 首帧护栏：初始即全览语义（body 静态带 elev-hide），JS 变量机制生效前把手也不可见 */
+    body.elev-hide #elev { transform: translateY(calc(100% + 14px)); }
     /* 拖拽中禁用过渡，跟手 */
     #elev.dragging { transition: none; }
 
@@ -351,7 +353,9 @@
         .mob-evsw button { border: none; background: none; min-width: 44px; min-height: 34px; border-radius: 7px; font-size: 12.5px; cursor: pointer; color: #64748b; font-weight: 600; font-family: inherit; }
         .mob-evsw button.on { background: #0f766e; color: #fff; }
         #mobMenuBtn { margin-left: auto; flex: none; width: 44px; min-height: 40px; border: none; background: #f1f5f9; border-radius: 9px; font-size: 20px; color: #475569; cursor: pointer; font-family: inherit; }
-        /* ⋯菜单（下拉） */
+        /* ⋯菜单（下拉）+ 遮罩（点外部关闭，S18） */
+        #mobMenuBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
+        body.mob-menu #mobMenuBk { display: block; }
         #mobMenu { position: fixed; top: calc(52px + env(safe-area-inset-top)); right: 8px; z-index: var(--z-guide); background: #fff; border-radius: 12px; box-shadow: 0 10px 32px rgba(15,23,42,.22); padding: 6px; display: none; min-width: 190px; }
         body.mob-menu #mobMenu { display: block; }
         #mobMenu button { display: block; width: 100%; text-align: left; border: none; background: none; min-height: 44px; padding: 0 12px; font-size: 14px; color: #1f2937; border-radius: 8px; cursor: pointer; font-family: inherit; }
@@ -507,7 +511,9 @@
     })();
 </script>
 </head>
-<body>
+<body class="elev-hide">
+<!-- S18：首帧即全览语义（剖面把手隐藏）——profile.js 加载到首次 fitAll 之间不再闪现把手；
+     聚焦某天（focusDay）时由 route-engine 撤掉此 class。 -->
 <div id="map"></div>
 <button id="panelHandle" title="展开行程面板">☰ 行程</button>
 
