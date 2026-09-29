@@ -316,9 +316,10 @@ function runRoute(routeId) {
         /function visibleBox\s*\(/.test(mainScript) &&
         /w = vw - pr\.right - 14/.test(mainScript) &&
         /h = Math\.min\(h, vh - occ - 14\)/.test(mainScript) &&
-        /var narrow = vw <= 720/.test(mainScript) &&
-        /h = vh - Math\.max\(panelBottom, 0\) - 14/.test(mainScript),
-        '宽屏=视口−侧栏宽，窄屏=视口−侧栏底，两者都与抽屉占用高度取更紧值');
+        /var narrow = vw <= 768/.test(mainScript) &&
+        /h = vh - Math\.max\(panelBottom, 0\) - 14/.test(mainScript) &&
+        /MOBILE_PEEK/.test(mainScript),
+        '宽屏=视口−侧栏宽，窄屏=视口−抽屉 peek 高，两者都与抽屉占用高度取更紧值');
     ok('zoom 由地理包围盒反算（墨卡托）',
         /function zoomToFit\s*\(/.test(mainScript) &&
         /mercY/.test(mainScript) &&
@@ -337,8 +338,10 @@ function runRoute(routeId) {
         /\.day-meta\s*\{[^}]*flex-direction:\s*column/.test(cssOnly), '标题与备注纵向排列');
     ok('窄视口隐藏 sparkline 让位',
         /max-width:\s*860px[\s\S]{0,120}\.day-spark\s*\{\s*display:\s*none/.test(cssOnly), '');
-    ok('窄视口侧栏宽度一并收缩',
-        /max-width:\s*720px[\s\S]{0,160}width:\s*calc\(100vw\s*-\s*28px\)/.test(cssOnly), '不再只改 max-height');
+    ok('窄视口侧栏变底部抽屉（S14：peek 露手柄概要 / mob-full 全展）',
+        /max-width:\s*768px[\s\S]{0,500}#panel\s*\{[^}]*transform:\s*translateY\(calc\(100%\s*-\s*var\(--sheet-peek/.test(cssOnly) &&
+        /body\.mob-full\s+#panel\s*\{[^}]*transform:\s*none/.test(cssOnly),
+        '抽屉贴底全宽，不再是窄条侧栏');
     ok('中等视口侧栏收窄',
         /min-width:\s*721px[\s\S]{0,80}max-width:\s*1000px[\s\S]{0,80}width:\s*252px/.test(cssOnly), '');
     ok('面板自绘滚动条',

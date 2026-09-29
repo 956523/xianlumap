@@ -109,7 +109,11 @@
         .day-tag { width: 32px; }
     }
     .legend { border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; }
+    .legend > summary { display: none; }              /* 桌面：summary 隐藏，图例行常显（details 保持 open） */
     .legend .row { display: flex; align-items: center; justify-content: space-between; padding: 3px 2px; font-size: 12px; color: #475569; }
+    .legend > summary { cursor: pointer; font-size: 12px; color: #475569; padding: 4px 2px; font-weight: 600; list-style: none; }
+    .legend > summary::before { content: '▸ '; color: #94a3b8; }
+    .legend[open] > summary::before { content: '▾ '; }
     .legend .row .name { display: flex; align-items: center; gap: 7px; }
     /* S0 分级提示：远景时加油站被自动隐藏，得让用户知道"不是我关的，是放大了才出现"，
        否则会以为图层开关坏了。 */
@@ -144,10 +148,7 @@
     .warn { color: #b91c1c; font-size: 11.5px; padding: 3px 0; }
     .tip { font-size: 11px; color: #94a3b8; margin-top: 8px; line-height: 1.5; }
     @media (max-width: 720px) {
-        /* 宽度必须一起收：只改 max-height 会留出右侧空白 + 原生滚动条 */
-        /* 46vh 而不是 52vh：窄屏高度本来就紧张，面板占太高地图就完全看不见。
-           留出 ≥ 一半屏给地图，同时面板内部可滚动。 */
-        #panel { width: calc(100vw - 28px); max-height: 46vh; }
+        /* 面板形态由下方 768 抽屉系统接管（bottom sheet）；此处只留字号/间距档位 */
         /* chip 三块在 390px 宽下必须能挤下：字号降一档 + 内边距收紧。
            不改字体的话"最高海拔 m"会把第三块顶出面板右边界（被 overflow 裁掉）。 */
         .chips { gap: 5px; margin-bottom: 10px; }
@@ -275,6 +276,66 @@
         #elev .head b { font-size: 13px; }
         #elevTitle { display: none; }
     }
+    /* ============ 移动端底部抽屉系统（S14，≤768px；桌面零影响） ============
+       结构：#panel 变底部行程单抽屉（peek 露手柄+标题+chips / full 全高 / hidden 收起），
+       剖面抽屉 #elev 是第二张表（打开时盖住行程单）。手势/互斥逻辑在 engine/mobile.js。 */
+    @media (max-width: 768px) {
+        :root { --sheet-peek: 92px; }
+        #panel {
+            left: 0; right: 0; top: auto; bottom: 0; width: 100%;
+            max-height: none; height: auto;
+            border-radius: 18px 18px 0 0;
+            padding: 6px 14px calc(10px + env(safe-area-inset-bottom));
+            transform: translateY(calc(100% - var(--sheet-peek)));
+            transition: transform .28s cubic-bezier(.32,.72,0,1);
+        }
+        #panel { overflow: hidden; }                             /* 非全展态内容不滚，避免 peek 里手势变成滚内容 */
+        body.mob-full #panel { transform: none; height: calc(100vh - 24px); max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        body.mob-hidden #panel { transform: translateY(100%); }
+        body.mob-elev #panel { transform: translateY(100%); }   /* 剖面抽屉打开时行程单让位 */
+        /* 两张表上下叠放（地图软件惯例）：行程单 peek 时，剖面把手贴在行程单下沿之上，
+           地图容器相应缩短，三带互不重叠（--sheet-visible 由 mobile.js 按档位写入） */
+        #map { height: calc(100vh - var(--elev-occupy, 0px) - var(--sheet-visible, 0px)); }
+        #elev { transform: translateY(calc(100% - var(--peek, 46px) + 14px - var(--sheet-visible, 0px))); }
+        #elev.open { transform: translateY(calc(-1 * var(--sheet-visible, 0px))); }
+        body.mob-elev { --sheet-visible: 0px; }                 /* 剖面成为主表：落回贴底 */
+        body.mob-full #elev { visibility: hidden; }              /* 全展看行程单时，不被剖面把手压住 */
+        /* 手柄（mobile.js 注入 #sheetGrip）：手指友好的拖拽区 */
+        .sheet-grip { display: flex; align-items: center; justify-content: center; height: 28px; margin: 0 -14px; cursor: grab; touch-action: none; }
+        .sheet-grip::before { content: ''; width: 44px; height: 5px; border-radius: 3px; background: #cbd5e1; }
+        body.mob-drag #panel { transition: none; }               /* 跟手 */
+        /* 触控规范：可点元素 ≥44px */
+        .day-list li { min-height: 48px; padding: 10px 8px; }
+        .legend .row { min-height: 44px; }
+        .legend > summary { display: block; min-height: 44px; line-height: 36px; }
+        details.legend:not([open]) .row { display: none; }      /* 手机：图例行收进「图层」折叠区 */
+        .switch { width: 46px; height: 27px; }
+        .switch .knob { width: 21px; height: 21px; }
+        .switch input:checked ~ .knob { left: 23px; }
+        #panelFold { width: 34px; height: 34px; }
+        .btn-fit { padding: 12px 0; }
+        /* 标题/chips：chips 保持一行紧凑（三块在 390 宽下本就能挤下，已由 720 块降字号保证；
+           不做 overflow-x 横滑——滚动容器在列 flex 里会被 Chromium 算成 0 高） */
+        #panel h1 { font-size: 16px; }
+        .chips { flex-wrap: nowrap; }
+        /* 剖面抽屉把手加粗 */
+        #elevGrip { height: 26px; }
+        #elevGrip::before { width: 52px; height: 6px; }
+        /* 编辑模式弹层：手机改底部全宽弹出（输入框不被键盘顶飞的几何锚点） */
+        #wpGuide, #wpModal { top: auto; bottom: 0; left: 0; transform: none; width: 100%;
+            border-radius: 18px 18px 0 0; max-height: 88vh; overflow-y: auto;
+            padding-bottom: calc(14px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+        #wpModal input[type=text], #wpModal input[type=password] { min-height: 40px; }
+        #wpModal textarea { height: 120px; }
+        /* 横屏不强制适配但不破版：抽屉限高 */
+        @media (orientation: landscape) {
+            body.mob-full #panel { height: 82vh; }
+        }
+    }
+    @media (min-width: 769px) {
+        .sheet-grip { display: none; }
+    }
+
     /* ============ 编辑模式（S5）：默认零痕迹；body.editing 才出现可点改提示 ============ */
     body.editing .day-title, body.editing .day-note, body.editing .day-stay,
     body.editing #routeSub, body.editing #evNotice {
@@ -405,14 +466,15 @@
         <div class="chip"><b id="chipMaxAlt">—</b>最高海拔 m</div>
     </div>
     <ul class="day-list" id="dayList"></ul>
-    <div class="legend">
+    <details class="legend" id="legendBox" open>
+        <summary>图层 · 站点开关</summary>
         <div class="row"><span class="name"><span class="dot line"></span>主路线</span><span id="dirNote">沿线方向</span></div>
         <div class="row"><span class="name"><span class="dot city"></span>城镇 / 补给点</span><label class="switch"><input type="checkbox" id="tgCity" checked><span class="track"></span><span class="knob"></span></label></div>
         <div class="row"><span class="name"><span class="dot spot"></span>景点 / 垭口</span><label class="switch"><input type="checkbox" id="tgSpot" checked><span class="track"></span><span class="knob"></span></label></div>
         <div class="row"><span class="name"><span class="dot fuel"></span>加油站（关键段）<span class="tierHint" id="fuelTierHint"></span></span><label class="switch"><input type="checkbox" id="tgFuel" checked><span class="track"></span><span class="knob"></span></label></div>
         <div class="row"><span class="name"><span class="dot ev"></span>充电站（快充）</span><label class="switch"><input type="checkbox" id="tgEv" checked><span class="track"></span><span class="knob"></span></label></div>
         <div class="row" id="classicRow"><span class="name"><span class="dot cls"></span><span id="classicLabel">支线</span></span><label class="switch"><input type="checkbox" id="tgClassic"><span class="track"></span><span class="knob"></span></label></div>
-    </div>
+    </details>
         <div class="evcard">
         <div class="evrow">
             <span class="seg">

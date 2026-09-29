@@ -450,26 +450,28 @@
         // 点了某天却看不到剖面是反直觉的 → 抽屉收起时自动展开
         if (!isOpen()) openDrawer(300);
         else drawProfile();
-        if (window.innerWidth <= 720) setPanelOpenLater(false);
+        // 窄屏：行程单是底部抽屉，点日卡后回 peek（露概要），别把抽屉整栏藏掉
+        if (window.innerWidth <= 768 && typeof setSheet === 'function') setSheet('peek');
+        else if (window.innerWidth <= 768) setPanelOpenLater(false);
     }
 
     /* 地图"真正可见区域"的估算：扣掉被侧栏（横向）和抽屉（纵向）遮掉的部分。
        这两种遮挡的形态随视口宽度完全不同，必须分开处理：
-       · 宽屏（>720）：侧栏贴左、只占一条，地图可用区 = 视口减去侧栏右边缘 → 往【东】平移即可
-       · 窄屏（≤720）：侧栏几乎占满宽度且贴顶，横向根本没地方挪
-                       → 横向不补偿，改为把地图往下挤，用【下半屏】当可见区
+       · 宽屏（>768）：侧栏贴左、只占一条，地图可用区 = 视口减去侧栏右边缘 → 往【东】平移即可
+       · 窄屏（≤768）：侧栏变底部抽屉（mobile.js 三态），横向占满、只露 peek 概要
+                       → 横向不补偿，用【抽屉 peek 以上的上半屏】当可见区
        以前一刀切按横向补偿，窄屏上侧栏 right≈376 → 环线被推出屏幕外，地图一片空白。 */
     function visibleBox() {
         var vw = window.innerWidth, vh = window.innerHeight;
         var panelEl = document.getElementById('panel');
         var w = vw, h = vh, panelRight = 0, panelBottom = 0;
-        var narrow = vw <= 720;
+        var narrow = vw <= 768;
 
         if (panelEl && !panelEl.classList.contains('collapsed')) {
             var pr = panelEl.getBoundingClientRect();
             if (narrow) {
-                // 窄屏：按"侧栏底部以下"算可用高度，宽度用整屏
-                panelBottom = pr.bottom;
+                // 窄屏：可见高度 = 视口 − 行程单抽屉露出的 peek（mobile.js 的 MOBILE_PEEK），宽度用整屏
+                panelBottom = (typeof MOBILE_PEEK === 'number') ? MOBILE_PEEK : 92;
                 h = vh - Math.max(panelBottom, 0) - 14;
                 w = vw - 28;
             } else {

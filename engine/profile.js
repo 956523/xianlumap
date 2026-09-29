@@ -47,6 +47,8 @@
         elevEl.classList.add('open');
         foldHint.textContent = '向下拖到底收起';
         syncMapOccupy();
+        // S14 移动端：剖面是第二张底部表，打开时把行程单抽屉压出屏外（互斥）
+        if (document.body && document.body.classList) document.body.classList.add('mob-elev');
         // 等过渡走完再画，避免量到中间态尺寸
         setTimeout(function () { drawProfile(); }, 280);
     }
@@ -57,6 +59,7 @@
         foldHint.textContent = '拖动或点击标题展开';
         tipEl.style.display = 'none';
         syncMapOccupy();
+        if (document.body && document.body.classList) document.body.classList.remove('mob-elev');
     }
 
     function toggleDrawer() { isOpen() ? closeDrawer() : openDrawer(); }

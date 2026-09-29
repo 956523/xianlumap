@@ -88,13 +88,17 @@ const localStorageMock = {
     setItem: (k, v) => { lsStore[k] = String(v); },
     removeItem: k => { delete lsStore[k]; }
 };
-function bootRoute(routeKey) {
+function bootRoute(routeKey, opts) {
     // 与 index.html 内联 loader 等价：?route=<key> → route-defs/<key>.js，先于主脚本加载
     const dataSrc = fs.readFileSync(path.join(ROOT, 'route-defs', routeKey + '.js'), 'utf8');
     created.length = 0;
     let err = null;
+    const win = Object.assign({}, window, {
+        innerWidth: (opts && opts.innerWidth) || window.innerWidth,
+        innerHeight: (opts && opts.innerHeight) || window.innerHeight
+    });
     const sandbox = {
-        AMap, document, window, console, localStorage: localStorageMock,
+        AMap, document, window: win, console, localStorage: localStorageMock,
         setTimeout: (fn) => { try { fn(); } catch (e) {} return 0; }, clearTimeout: () => {},
         encodeURIComponent, parseFloat, parseInt, getComputedStyle,
         ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; }
@@ -336,6 +340,19 @@ const depLis2 = created.filter(el => el.id === 'dyn:li').slice(-5);
 ok('清除回纯序号态（无日期无星期）', !DS.ROUTE_META.departureDate &&
     depLis2.every(el => /^<span class="day-tag">D\d+<\/span>/.test(el.innerHTML)),
     depLis2[0] ? depLis2[0].innerHTML.slice(0, 30) : '无');
+
+/* ---------- 移动端底部抽屉（S14）：窄屏激活 + 三态档位 ---------- */
+console.log('\n【9】移动端底部抽屉（S14）');
+const mob = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+const M = mob.sandbox.window.__mobile;
+ok('窄屏 boot 后抽屉系统激活（__mobile.isMobile）', !mob.err && M && M.isMobile() === true,
+    mob.err ? mob.err.message.slice(0, 80) : '');
+ok('默认档位 peek（露手柄+概要）', M && M.state() === 'peek', M ? M.state() : '无 __mobile');
+ok('setSheet 切档状态机记账',
+    (M.setSheet('full'), M.state() === 'full') && (M.setSheet('hidden'), M.state() === 'hidden') && (M.setSheet('peek'), M.state() === 'peek'), '');
+const desk = bootRoute('chuanxi');
+ok('桌面 boot 不接管（isMobile=false，桌面渲染零变化）',
+    !desk.err && desk.sandbox.window.__mobile && desk.sandbox.window.__mobile.isMobile() === false, '');
 
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

@@ -867,3 +867,67 @@ apply-spots 仍只认 reviewed 状态。
 **顺手修了一个真 bug**：日期行插入用了 `insertBefore(depSec, sec)` 但 sec 当时还未
 挂载——真实浏览器抛 NotFoundError 导致 edit.js 尾部（含两个 autotest）静默失效，
 vm mock 因走 fallback 分支完全没暴露（浏览器冒烟的价值又一例证）。
+
+## 22. 移动端底部抽屉（2026-09-29，S14：商业产品级手机端适配）
+
+对主页面做手机端重组织（不是缩放），标杆高德/百度地图 App。**断点 768px**，桌面零变化。
+
+### 结构
+
+- **行程单抽屉**：`#panel` 在 ≤768px 变底部抽屉，三态 `peek`（默认，露 92px 手柄+标题+概要）
+  / `full`（全展，内容滚动）/ `hidden`（收起，只留「☰ 行程」悬浮钮）。body class
+  `mob-full` / `mob-hidden` 驱动 CSS transform（`--sheet-peek: 92px`）。
+- **第二张表**：剖面抽屉 `#elev` 打开时 profile.js 给 body 加 `mob-elev`（互斥，
+  行程单压出屏外）；平时两表**上下叠放**——`--sheet-visible`（mobile.js 按档位写入）
+  让地图容器缩短、剖面把手贴在行程单下沿，三带互不重叠。
+- **图例**包进 `<details class="legend">`：桌面 summary 隐藏且行常显（零变化），
+  手机端 44px「图层 · 站点开关」折叠头。
+- **触控 ≥44px**：日卡 48px、图例行 44px、编辑弹层改底部全宽弹出（键盘几何锚点）、
+  safe-area-inset 适配；横屏限高 82vh 不破版。
+
+### 手势与状态机（engine/mobile.js，profile.js 之后 / edit.js 之前加载）
+
+- 手柄（注入的 `#sheetGrip`）+ 面板标题行挂 touchstart/move/end：跟手改 transform
+  （`body.mob-drag` 关过渡），6px 死区保住标题里的按钮点击，松手按**最近档位 + 速度**
+  （±0.45px/ms 快滑直接 snap）落到相邻态；轻点手柄 = peek ↔ full。
+- 点地图（非抽屉）full → peek；窄屏点日卡（focusDay）回 peek 而非藏掉整栏
+  （`setSheet('peek')`，桌面仍走原 `setPanelOpenLater`）。
+- `setPanelOpen` 在窄屏被接管：true→peek、false→hidden。断点跨越（resize/横竖屏）
+  双向清理/应用 class。`?mobsheet=full|peek|hidden` 调试钩子（截图用）。
+- 全部 DOM/AMap 访问按 vm mock 安全模式守卫（typeof/存在性）。
+
+### 桌面零变化的验证方法
+
+S2 思路的 vm 逐字节对比（临时脚本，跑完即删）：git HEAD 引擎 vs 工作区引擎，
+1600px 宽 boot 三条线，对比日卡 HTML 序列（5–12KB）、chips、planBox、
+剖面 SVG、curEnergy——**三条线全部逐字节一致**。断言侧：c4-test【9】【10】两条
+720 断言改 768/抽屉语义（总数 282 不变）；probe-check 新增【9】4 项
+（窄屏激活/peek 默认/状态机记账/桌面不接管），56 全绿。
+
+### 过程中的两个真 bug（诚实记录）
+
+1. **Chromium 列 flex 陷阱**：`overflow-x:auto` 的滚动容器作为 column flex 子项会被
+   算成 **0 高**——chips 横滑方案整行消失。实验确认后改为不换行不横滑
+   （720 块字号压缩已保证三块挤得下）。
+2. **截图假阳性**：`--virtual-time-budget` 直出截图会在最终布局前 capture
+   （chips 第三块"空白"、几何与 DOM 不符），iframe+CDP 真实时序复核证明布局正确——
+   移动端截图结论均以 CDP 同刻几何 + 截图双证为准。
+
+### 移动端冒烟（CDP 真实时序，390×844）
+
+- peek：地图 + 剖面把手带 + 行程单 peek（手柄+标题）叠放 ✓
+  （/tmp/mob-peek.png）
+- full：手柄/标题/chips/日卡 D1–D5/图层折叠区全展可滚 ✓（/tmp/mob-full.png）
+- hidden：地图全屏 + 「☰ 行程」钮 + 底部剖面把手 ✓（/tmp/mob-hidden.png）
+- 桌面 1600×900：侧栏与 §21 前逐字节一致 ✓（/tmp/mob-desktop.png）
+
+### 还达不到商业水准的清单（诚实评估）
+
+1. **无惯性/阻尼**：只有阈值 snap，跟手是线性直拖；高德那种松手后的衰减滑动没做。
+2. **全展态关闭路径单一**：内容滚下去后手柄滚出视口，只能滚回顶再下滑
+   （没做「下滑内容到顶继续下拉收起」的联动）。
+3. **拖拽中地图不跟随**：`--sheet-visible` 在松手 snap 后才更新，拖动中三带布局不变。
+4. **抽屉与列表滚动手势边界**未细调（日卡列表在 full 态内部滚动 vs 抽屉拖动手感）。
+5. **编辑模式键盘遮挡**只做几何锚点（底部弹层），输入时抽屉状态未联动。
+6. **横屏**只保证不破版（限高 82vh），未做横屏专属两栏。
+7. 真机未测：无触屏设备可滑，手势全部为代码审查 + 状态机单测，未过真手。
