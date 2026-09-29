@@ -129,7 +129,11 @@ function runRoute(routeId) {
     /* 数据注入验证（通过弱化层标记数量反映） */
     const startMarkers = calls.markers.slice();
     const geomCount = l => (l && l.position) ? 1 : (((l && (l.geometries || (l.opts && l.opts.geometries))) || []).length);
-    const totalMarkerGeoms = startMarkers.reduce((a, l) => a + geomCount(l), 0);
+    if (sandbox.window.__layerState) {   // S26：站层默认关，统计前先按「用户已勾选」口径开层重绘
+        sandbox.window.__layerState({ ev: true, fuel: true });
+        if (typeof sandbox.renderStations === 'function') sandbox.renderStations();
+    }
+    const totalMarkerGeoms = calls.markers.slice(startMarkers.length).reduce((a, l) => a + geomCount(l), 0);
     if (stationsOn) {
         ok('站点已上图（启动后 marker 层有几何）', totalMarkerGeoms > 0, totalMarkerGeoms + ' 个');
     } else {
@@ -268,6 +272,13 @@ function runRoute(routeId) {
                 const t = (l.opts && l.opts.text) || l.text || '';
                 return t.charAt(0) !== '▲' && t.indexOf('km') !== 0 && /充电|加油/.test(t);
             });
+            if (badge.length === 0 && typeof sandbox.window.__spotLabels === 'function') {   // S26：默认关 → 模拟勾选
+                sandbox.window.__spotLabels(true);
+                badge.push.apply(badge, calls.labels.filter(function (l) {
+                    const st = (l.opts && l.opts.style) || l.style || {};
+                    return /rgba\(255,255,255/.test(st['background-color'] || '');
+                }));
+            }
             return badge.length > 0 && badge.length <= maxFar && noStationText;
         })(),
         '胶囊 ' + calls.labels.filter(function (l) {
@@ -328,7 +339,7 @@ function runRoute(routeId) {
     ok('包围盒从 CORE+TAIL 全程轨迹算出（非写死；TAIL 并防止单线末段被裁）',
         /var LOOP_BBOX = \(function/.test(mainScript) && /CORE\.concat\(\[TAIL\]\)\.forEach/.test(mainScript), '');
     ok('fitAll 对侧栏做横向中心补偿',
-        /box\.panelRight > 0/.test(mainScript), '环线落在可见区中心');
+        /(_fitBox|box)\.panelRight > 0/.test(mainScript), '环线落在可见区中心');
     const vbSrc = (mainScript.match(/function visibleBox[\s\S]*?\n\s{4}\}/) || [''])[0];
     ok('容器变化通知 resize() 且 visibleBox 计入侧栏遮挡',
         /typeof map\.resize === 'function'/.test(mainScript) && /getBoundingClientRect\(\)/.test(vbSrc), '');
@@ -431,7 +442,7 @@ function runRoute(routeId) {
         '否则拉近点不增加、拉远点不减少');
     ok('缩放重绘有防抖 + 变化量阈值（同一防抖链顺带刷新景点胶囊分级）',
         /Z_REDRAW_EPS\s*=\s*0\.25/.test(mainScript) &&
-        /setTimeout\(function \(\) \{[\s\S]{0,300}renderStations\(\);[\s\S]{0,220}renderSpotLabels\([\s\S]{0,160}\},\s*120\)/.test(mainScript),
+        /setTimeout\(function \(\) \{[\s\S]{0,300}renderStations\(\);[\s\S]{0,260}renderSpotLabels\([\s\S]{0,260}\},\s*120\)/.test(mainScript),
         'MultiMarker 整层重建，每帧重建会卡；胶囊/城名分级复用同一条链，不另起监听');
     ok('远景隐加油站时有 UI 提示',
         /fuelTierHint/.test(html) && /（放大后显示）/.test(mainScript),
@@ -459,15 +470,15 @@ function runRoute(routeId) {
         !/var\s+fuelMarkers\s*=/.test(mainScript) &&
         !/var\s+evMarkers\s*=/.test(mainScript),
         'FUELS/EVS 曾与 STATION_DATA 同时打点，同一个站两个位置');
-    ok('站点图层开关改走状态位（不再持有 marker 引用）',
-        /var layerOn = \{ fuel: true, ev: true \}/.test(mainScript) &&
+    ok('站点图层开关改走状态位（不再持有 marker 引用；S26 起默认关）',
+        /var layerOn = \{ fuel: false, ev: false \}/.test(mainScript) &&
         /layerOn\.fuel = e\.target\.checked/.test(mainScript) &&
         /layerOn\.ev = e\.target\.checked/.test(mainScript),
         '重建图层后旧引用会失效，必须改成状态位 + 重绘');
 
     console.log('\n【15】窄屏地图可见性（v9-C：390px 下地图全白）');
     ok('窄屏走纵向反解分支（非线性加偏量）',
-        /if \(box\.narrow\)/.test(mainScript) &&
+        /if \((_fitBox|box)\.narrow\)/.test(mainScript) &&
         /var mercTarget = mercY\(bboxMidLat\) \+ \(visMid - midY\) \/ ppxY/.test(mainScript),
         'mercY 目标值移位 → 再反解纬度');
     ok('有墨卡托纬度反函数（atan∘sinh）',

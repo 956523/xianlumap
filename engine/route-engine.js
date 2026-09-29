@@ -16,6 +16,7 @@
     }
     var IC = {
         city: pin('#1e3a5f'),
+        citySmall: pin('#64748b'),   // S26：城镇钉减重——灰阶身（白描边在 pin() 里），60% 尺寸
         spot: pin('#7c3aed'),
         fuel: icon('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="#dc2626" stroke="#fff" stroke-width="2.2"/><rect x="9.5" y="8" width="7" height="13" rx="1.4" fill="#fff"/><rect x="11.2" y="10" width="3.6" height="3.4" rx="0.6" fill="#dc2626"/><path d="M17.5 11h2.2c.7 0 1.3.6 1.3 1.3v5.2c0 .9.6 1.5 1.3 1.5s1.3-.6 1.3-1.5v-5.4l-1.8-1.8" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/><rect x="9.5" y="19.4" width="10" height="1.8" rx="0.9" fill="#fff"/></svg>'),
         ev:   icon('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="#16a34a" stroke="#fff" stroke-width="2.2"/><path d="M16.6 6.5L10 16.8h4.2l-1.2 6.7 6.8-10.5h-4.4l1.2-6.5z" fill="#fff"/></svg>')
@@ -137,19 +138,51 @@
     }
 
     /* --- 标注层（一次性创建） --- */
-    var cityMarkers = createMarkerLayer({
-        map: map,
-        styles: { city: ({ src: IC.city, width: 24, height: 32, anchor: { x: 12, y: 32 } }) },
-        geometries: CITIES.map(function (c, i) {
-            return { id: 'c' + i, styleId: 'city', position: LL(c.p[0], c.p[1]) };
-        })
-    });
-    cityMarkers.on('click', function (e) {
+    /* S26：城镇钉减重——60% 尺寸、灰阶身 + 白描边（IC.citySmall），与品牌灰阶一致；
+       重建走状态位模式（S0 教训），远景稀疏与城名同构（renderCityLabels 同一口径） */
+    var cityMarkerOn = true;
+    var cityMarkers = null;
+    function renderCityMarkers(zoom) {
+        if (cityMarkers) { cityMarkers.setMap(null); cityMarkers = null; }
+        if (!cityMarkerOn || typeof CITIES === 'undefined' || !CITIES) return;
+        var z = (zoom == null) ? 7.3 : zoom;
+        try { if (typeof map.getZoom === 'function') z = map.getZoom(); } catch (e) {}
+        var mapW = 0;
+        try { var me3 = document.getElementById('map'); mapW = (me3 && me3.clientWidth) || 0; } catch (e) {}
+        var picked = CITIES;
+        if (mapW > 0 && mapW < 700 && z < 8 && cityKmCache && cityKmCache.length) {   // 与城名同一 60km 桶口径（var 提升期可能未初始化）
+            var buckets = {}, idx = [];
+            CITIES.forEach(function (c, i) {
+                var b = Math.floor((cityKmCache[i] || 0) / 60);
+                (buckets[b] = buckets[b] || []).push(i);
+            });
+            Object.keys(buckets).forEach(function (b) { idx.push(buckets[b][0]); });
+            picked = idx.sort(function (a, c) { return a - c; }).map(function (i) { return CITIES[i]; });
+        }
+        var idOf = {};
+        CITIES.forEach(function (c, i) { idOf[c.n + '|' + c.p[0].toFixed(4)] = i; });
+        cityMarkers = createMarkerLayer({
+            map: map,
+            styles: { city: ({ src: IC.citySmall, width: 14, height: 19, anchor: { x: 7, y: 19 } }) },
+            geometries: picked.map(function (c) {
+                var i = idOf[c.n + '|' + c.p[0].toFixed(4)];
+                return { id: 'c' + (i == null ? 0 : i), styleId: 'city', position: LL(c.p[0], c.p[1]) };
+            })
+        });
+    }
+    renderCityMarkers();
+    var _cityClick = function (e) {
         var c = CITIES[parseInt(e.geometry.id.slice(1), 10)];
-        openInfo(c.p[0], c.p[1], [['城镇', 'c']], c.n, c.d);
-    });
+        if (c) openInfo(c.p[0], c.p[1], [['城镇', 'c']], c.n, c.d);
+    };
+    if (cityMarkers && typeof cityMarkers.on === 'function') cityMarkers.on('click', _cityClick);
+    var _renderCityMarkersBase = renderCityMarkers;
+    renderCityMarkers = function (zoom) {
+        _renderCityMarkersBase(zoom);
+        if (cityMarkers && typeof cityMarkers.on === 'function') cityMarkers.on('click', _cityClick);
+    };
     var spotMarkers = createMarkerLayer({
-        map: map,
+        map: null,   // S26：景点/垭口层默认关（图层弹层按需勾选）
         styles: { spot: ({ src: IC.spot, width: 22, height: 30, anchor: { x: 11, y: 30 } }) },
         geometries: SPOTS.map(function (s, i) {
             return { id: 's' + i, styleId: 'spot', position: LL(s.p[0], s.p[1]) };
@@ -222,7 +255,15 @@
     var SPOT_FAR_MOB_BUCKET_KM = 60, SPOT_FAR_CAP = 12, NARROW_MAP_PX = 700;
     var SPOT_STRONG = /雪山|冰川|湖|海子|垭口|国家|大峡谷|瀑布|丹霞|雅丹|石窟|古城|遗址|草原/;
     var spotLabels = null;
-    var spotLabelOn = true;      // tgSpot 图层开关状态位（整层重建后旧引用失效，同 S0 状态位模式）
+    var spotLabelOn = false;     // S26 默认关：tgSpot 按需勾选（整层重建后旧引用失效，同 S0 状态位模式）
+    /* 测试接缝：vm 断言用（模拟用户勾选图层弹层开关） */
+    try {
+        window.__spotLabels = function (on) { spotLabelOn = !!on; renderSpotLabels(); };
+        window.__layerState = function (o) {
+            if (o) { layerOn.ev = o.ev !== false; layerOn.fuel = o.fuel !== false; }
+            return { ev: layerOn.ev, fuel: layerOn.fuel };
+        };
+    } catch (e) {}
     var spotKmCache = [];        // 每个景点的沿线里程（renderAll 时按环线表最近点算，供分桶）
     var spotOffKm = [];          // 距主线的垂直距离（km 近似，仅作优先级 tiebreak）
     function spotHand(s) { return !!(s.d && !/候选库/.test(s.d)); }   // 手打文案 vs 候选库收录
@@ -438,9 +479,10 @@
         fitAll();
         renderStations();
         renderWarnings();
-        rebuildSpotKm();        // 景点胶囊/城名分级的里程基准（随出发地重算，S18 共用表）
+        rebuildSpotKm();        // 景点胶囊/城名/城钉分级的里程基准（随出发地重算，S18/S26 共用表）
         renderSpotLabels();
         renderCityLabels();
+        renderCityMarkers();
     }
 
     /* --- 长盲区上图（S4 可信度透出）---
@@ -457,6 +499,11 @@
         clearWarnings();
         var ws = (typeof STATION_DATA !== 'undefined' && STATION_DATA && STATION_DATA.warnings) || [];
         if (!ws.length || !DAYS.length) return;
+        /* S26：按车型过滤——电车模式只看无充电段，油车模式只看无加油段 */
+        var mode = 'ev';
+        try { mode = window.__evMode || 'ev'; } catch (e) {}
+        ws = ws.filter(function (w) { return (w.type || 'ev') === (mode === 'fuel' ? 'fuel' : 'ev'); });
+        if (!ws.length) return;
         // km → 经纬度表：每天 path 按 altKm 线性插值（画盲区带足够，精度 ~天/240 点）
         var table = [];
         DAYS.forEach(function (d) {
@@ -483,9 +530,10 @@
                 }]
             }));
             var mid = seg[Math.floor(seg.length / 2)];
-            warnLabels.push(createLabelLayer({
+            warnLabels.push(createLabelLayer({   /* S26：白底胶囊 + 加粗 + 高 z，不被钉/地名截断压盖 */
                 map: map,
-                styles: { default: ({ color: color, size: 11, offset: { x: 0, y: -16 } }) },
+                zIndex: 145,
+                styles: { default: ({ color: color, size: 11, bold: true, badge: true, offset: { x: 0, y: -18 } }) },
                 geometries: [{
                     id: 'warnlb' + wi, position: LL(mid[1], mid[2]),
                     content: 'km' + Math.round(a) + '–' + Math.round(b) + ' ' + (w.label || '') + '（' + w.km + 'km）'
@@ -599,9 +647,10 @@
 
         // zoom：按"环线真实地理包围盒"装进"真正可见的像素区"反算，不再用经验常数。
         // 以前只吃容器高度 → 窄视口下路线被横向压扁、环线右侧出画。
+        // S26：窄屏 padding 收紧（26→14），竖屏占比尽量吃满宽度口径。
         var box = visibleBox();
         var bbox = LOOP_BBOX[start] || LOOP_BBOX[STARTS[0].id];
-        var z = zoomToFit(box, bbox, 26);
+        var z = zoomToFit(box, bbox, box.narrow ? 14 : 26);
         z = Math.max(4.5, Math.min(7.6, z));
 
         /* 中心点：让【环线包围盒】在【真正可见的矩形】里居中。
@@ -610,47 +659,44 @@
            与"可见区中心"根本不是同一个点：地图容器高 = vh−抽屉，
            而窄屏下可见区是 [侧栏底, vh]）。
            正确做法：直接反解 —— 要把 bbox 的某个纬度对齐到屏幕某个 y。 */
-        var bboxMidLat = (bbox.latMin + bbox.latMax) / 2;
-        var cx = bboxMidLat;
-        var cy = (bbox.lngMin + bbox.lngMax) / 2;
-        var pxPerDegLng = 256 * Math.pow(2, z) / 360;
-
-        // 地图容器的几何中心（AMap 的 center 同样落在容器的正中心）
-        var mapH = box.vh - 46;
-        var midY = mapH / 2;
-
-        function mercY(lat) {
-            var s = Math.sin(lat * Math.PI / 180);
-            return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+        /* S26：中心解算独立成函数（midY 用真实容器高）；真机 AMap 渲染分数 zoom，
+           solve==render 天然精确；headless 的取整 artifact 见 docs §18/§34 留痕 */
+        var _fitBox = box, _fitBbox = bbox;
+        function solveCenter(zs) {
+            var bboxMidLat = (_fitBbox.latMin + _fitBbox.latMax) / 2;
+            var cx = bboxMidLat;
+            var cy = (_fitBbox.lngMin + _fitBbox.lngMax) / 2;
+            var pxPerDegLng = 256 * Math.pow(2, zs) / 360;
+            var mapH = _fitBox.vh;
+            try { var _mEl = document.getElementById('map'); if (_mEl && _mEl.clientHeight) mapH = _mEl.clientHeight; } catch (e) {}
+            var midY = mapH / 2;
+            function mercY(lat) {
+                var sn = Math.sin(lat * Math.PI / 180);
+                return 0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI);
+            }
+            var ppxY = 256 * Math.pow(2, zs);
+            if (_fitBox.narrow) {
+                var visTop = _fitBox.panelBottom + 6 + (_fitBox.titleH || 0);
+                var visBot = _fitBox.vh - 6;
+                var visMid = (visTop + visBot) / 2;
+                var mercTarget = mercY(bboxMidLat) + (visMid - midY) / ppxY;
+                var n = Math.PI * (1 - 2 * mercTarget);
+                cx = Math.atan(Math.sinh(n)) * 180 / Math.PI;
+            } else if (_fitBox.panelRight > 0) {
+                var shiftPx = ((_fitBox.panelRight + _fitBox.vw) / 2) - (_fitBox.vw / 2);
+                cy -= shiftPx / pxPerDegLng;
+            }
+            return [cx, cy];   // cx=纬度 cy=经度
         }
-        var ppxY = 256 * Math.pow(2, z);   // 墨卡托 y 的像素比（每单位），与经度同为这个世界宽度
-
-        if (box.narrow) {
-            // 窄屏：横向占满，纵向要让环线整体落在 [抽屉顶+标题条, 视口底] 内居中。
-            // 可见区中心的屏幕 y（用 vh 口径，因为它是相对视口的 CSS 像素）
-            var visTop = box.panelBottom + 6 + (box.titleH || 0);   // S18：标题条占位从可见区顶部再让 48px
-            var visBot = box.vh - 6;
-            var visMid = (visTop + visBot) / 2;
-            // 反解：让 bbox 中心纬线落在 visMid → center.lat 使 mercY(lat) 满足下式
-            //   visMid = midY + (mercY(centerLat) − mercY(bboxMidLat)) · ppxY
-            // ⇒ mercY(centerLat) = mercY(bboxMidLat) + (visMid − midY) / ppxY
-            var mercTarget = mercY(bboxMidLat) + (visMid - midY) / ppxY;
-            // mercY 反函数：y = 0.5 − ln((1+s)/(1−s))/(4π) ⇒ lat = asin(1 − 2/(e^(4π(0.5−y))+1)) 的等价形式
-            var n = Math.PI * (1 - 2 * mercTarget);
-            cx = Math.atan(Math.sinh(n)) * 180 / Math.PI;
-        } else if (box.panelRight > 0) {
-            // 宽屏：横向平移，把 bbox 中心经线对齐到可见区中心
-            // 经度是线性的，直接按像素差折算即可
-            var shiftPx = ((box.panelRight + box.vw) / 2) - (box.vw / 2);
-            cy -= shiftPx / pxPerDegLng;
-        }
+        var _c0 = solveCenter(z);
+        var cx = _c0[0], cy = _c0[1];
 
         // cx=纬度 cy=经度（引擎内部口径）；高德 center=[lng,lat]
         map.setZoomAndCenter(z, [cy, cx]);
         document.getElementById('curEnergy').textContent = '点选上方任意一天，看这段的海拔与能耗提示。';
         if (redraw !== false) drawProfile();
         // 全览落点记录：S16 移动端「全览」条件按钮的偏离判定基准（window 属性，桌面无副作用）
-        try { window.__fitDebug = { z: z, c: [cx, cy], box: box, bbox: bbox }; } catch (e) {}
+        try { window.__fitDebug = { z: z, c: [cx, cy], box: box, bbox: bbox, mh: mapH, midY: midY, visMid: (box.panelBottom + 6 + (box.titleH || 0) + box.vh - 6) / 2 }; } catch (e) {}
     }
     document.getElementById('btnFit').onclick = function () { fitAll(); };
 
@@ -694,8 +740,9 @@
     // 城名开关改走状态位（S18）：标签按 zoom 整层重建，开关不得持有旧图层引用（S0 教训）
     document.getElementById('tgCity').addEventListener('change', function (e) {
         cityLabelOn = e.target.checked;
-        cityMarkers.setMap(e.target.checked ? map : null);
+        cityMarkerOn = e.target.checked;   // S26：钉随开关（重建走状态位）
         renderCityLabels();
+        renderCityMarkers();
     });
     // 景点开关改走状态位：胶囊标签按 zoom 整层重建，不能持有旧图层引用（同 S0 站点开关模式）
     document.getElementById('tgSpot').addEventListener('change', function (e) {
@@ -705,7 +752,7 @@
     });
 
     // 站点图层开关：只记状态 + 重绘（重绘里会把新图层挂上/摘掉）
-    var layerOn = { fuel: true, ev: true };
+    var layerOn = { fuel: false, ev: false };   // S26：油/电站层默认关，按需勾选
     document.getElementById('tgFuel').addEventListener('change', function (e) {
         layerOn.fuel = e.target.checked;
         renderStations();

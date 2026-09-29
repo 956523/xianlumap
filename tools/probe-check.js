@@ -536,19 +536,30 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     elCache['map'].clientWidth = 390;
     var labelsBefore = calls.labels.length;
     var mobFar = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
-    ok('窄屏全览：景点胶囊硬上限 ≤12（60km 桶 + 强信号>手打>距主线近）',
-        !mobFar.err && capsuleCount(labelsBefore) <= 12 && capsuleCount(labelsBefore) > 0,
-        capsuleCount(labelsBefore) + ' 个胶囊');
+    var capN0 = capsuleCount(labelsBefore);
+    if (!mobFar.err && capN0 === 0 && typeof mobFar.sandbox.window.__spotLabels === 'function') {   // S26 默认关 → 模拟勾选图层
+        mobFar.sandbox.window.__spotLabels(true);
+        capN0 = capsuleCount(labelsBefore);
+    }
+    ok('窄屏全览：景点胶囊硬上限 ≤12（60km 桶 + 强信号>手打>距主线近；S26 默认关、勾选后生效）',
+        !mobFar.err && capN0 <= 12 && capN0 > 0,
+        (mobFar.err ? 'ERR ' + mobFar.err.message.slice(0, 90) : capN0 + ' 个胶囊'));
     ok('窄屏全览：必充/必加标注（图标 + 充至/加满文字）收起，近景自动恢复',
-        !mobFar.err && mobFar.sandbox.window.__planFarHidden === true, '');
+        !mobFar.err && mobFar.sandbox.window.__planFarHidden === true,
+        mobFar.err ? 'ERR ' + mobFar.err.message.slice(0, 90) : 'planFar=' + mobFar.sandbox.window.__planFarHidden + ' zoom=' + MOCK_ZOOM + ' w=' + elCache['map'].clientWidth);
     // ② 桌面宽屏同 z：胶囊显著更多（双维口径：容器宽 ≥700 不受 12 上限约束）
     elCache['map'].clientWidth = 1280;
     var labelsBefore2 = calls.labels.length;
     var deskFar = bootRoute('qinghai-gansu');
+    var capD = capsuleCount(labelsBefore2);
+    if (!deskFar.err && capD === 3 && typeof deskFar.sandbox.window.__spotLabels === 'function') {   // 3=盲区胶囊（新），景点默认关
+        deskFar.sandbox.window.__spotLabels(true);
+        capD = capsuleCount(labelsBefore2);
+    }
     ok('桌面宽屏同缩放：胶囊不受 12 上限约束（25km 桶，>12 个）且规划标注照常',
-        !deskFar.err && capsuleCount(labelsBefore2) > 12 &&
+        !deskFar.err && capD > 12 &&
         deskFar.sandbox.window.__planFarHidden === false,
-        capsuleCount(labelsBefore2) + ' 个胶囊');
+        capD + ' 个胶囊');
     elCache['map'].clientWidth = 1200;
     MOCK_ZOOM = 7.3;
     // ③ 剖面把手状态机：全览隐藏不占位（--elev-peek 0）→ 聚焦天恢复 46
@@ -763,6 +774,43 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             elCache['btnFit'].onclick();
             elCache['mobFit'].onclick();
             return n === 3 && S25.window.__mobile.state() === 'peek';
+        })(), '');
+    /* ---------- S26：默认图层 + 盲区按车型 + 摘要展开面板 ---------- */
+    console.log('\n【20】S26：默认图层态 / 车型盲区过滤 / 规划面板');
+    var s26 = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+    var S26 = s26.sandbox;
+    ok('默认图层策略：景点/油/电开关默认关（HTML 无 checked + layerState 双 false）',
+        !s26.err && (function () {
+            var noChecked = ['tgSpot', 'tgFuel', 'tgEv'].every(function (id) {
+                return !new RegExp('id="' + id + '"[^>]*checked').test(html);
+            });
+            var ls = S26.window.__layerState();
+            return noChecked && ls.ev === false && ls.fuel === false;
+        })(), JSON.stringify(S26.window.__layerState()));
+    ok('盲区标注按车型过滤：切油车后无加油段替换无快充段（318 双类型数据实证）',
+        (function () {
+            var b318 = bootRoute('chengdu-lhasa-318');
+            if (b318.err) return 'ERR ' + b318.err.message.slice(0, 80);
+            var warnTexts = function () {
+                return calls.labels.map(function (l) { return (l.opts && l.opts.text) || l.text || ''; })
+                    .filter(function (t) { return /无快充|无加油站/.test(t); });
+            };
+            var lbBefore = calls.labels.length;
+            var evBefore = warnTexts().filter(function (t) { return t.indexOf('无快充') >= 0; }).length;
+            elCache['btnFuel'].onclick();   // planner setMode('fuel') → __evMode + 重渲盲区
+            var after = calls.labels.slice(lbBefore).map(function (l) { return (l.opts && l.opts.text) || l.text || ''; });
+            var fuelAfter = after.filter(function (t) { return t.indexOf('无加油站') >= 0; }).length;
+            var evAfter = after.filter(function (t) { return t.indexOf('无快充') >= 0; }).length;
+            return b318.sandbox.window.__evMode === 'fuel' && evBefore > 0 && fuelAfter > 0 && evAfter === 0;
+        })(), '');
+    ok('规划摘要行点开：mob-plan 面板展开 + 内容镜像 planBox（不截断）',
+        !s26.err && (function () {
+            elCache['planPeek'].onclick();
+            var open = document.body.classList.contains('mob-plan');
+            var bodyHtml = elCache['mobPlanBody'].innerHTML;
+            document.body.classList.remove('mob-plan');
+            if (!(open && bodyHtml.length > 60)) return 'open=' + open + ' len=' + bodyHtml.length;
+            return /全程需(充电|加油)/.test(bodyHtml) && /最长无(充电|加油)间隔/.test(bodyHtml);
         })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);

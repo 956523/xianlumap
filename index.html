@@ -40,11 +40,9 @@
         transition: max-height .18s ease, bottom .18s ease;
         display: flex; flex-direction: column;
     }
-    /* S24 品牌小字标：记号 18px + 宽字距字 */
-    .brand-mini { display: flex; align-items: center; gap: 7px; margin: 0 0 8px; color: #0f172a; }
-    .brand-mini .bm-mark { width: 18px; height: 18px; display: inline-flex; color: #0f766e; }
-    .brand-mini .bm-mark svg { width: 100%; height: 100%; }
-    .brand-mini .bm-word { font-size: 11px; font-weight: 700; letter-spacing: .22em; }
+    /* S26：字标并入标题行（peek 头部去重）——记号 18px + 线路名同行 */
+    #panel h1 .bm-mark { width: 18px; height: 18px; display: inline-flex; color: #0f766e; flex: none; }
+    #panel h1 .bm-mark svg { width: 100%; height: 100%; }
     /* 侧栏与底部抽屉是独立浮层，互不挤占（抽屉浮在侧栏之上，这是地图软件惯例） */
     #panel h1 { margin: 0 0 2px; font-size: 19px; letter-spacing: .5px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     /* 侧栏自带收起按钮（面板自己折叠，不依赖外部悬浮按钮） */
@@ -396,7 +394,19 @@
         #mobFit { display: none; }
         #mobFit.show { display: block; }
         /* peek 规划概要行（planner 喂数据：建议充电 N 次 · 最长无桩间隔） */
-        #planPeek { font-size: 12.5px; font-weight: 600; color: #0f766e; padding: 0 2px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #planPeek { font-size: 12.5px; font-weight: 600; color: #0f766e; padding: 4px 2px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        #planPeek::after { content: " ▾"; color: #94a3b8; }
+        /* S26 移动端规划详情面板（摘要行点开，数据源同侧栏 planBox） */
+        #mobPlanBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
+        body.mob-plan #mobPlanBk { display: block; }
+        #mobPlan { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-guide); background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(15,23,42,.25); max-height: 72vh; display: none; flex-direction: column; padding-bottom: calc(10px + env(safe-area-inset-bottom)); font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+        body.mob-plan #mobPlan { display: flex; }
+        #mobPlan .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; font-size: 14px; font-weight: 600; color: #0f172a; }
+        #mobPlan .ml-head button { width: 44px; height: 38px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 15px; cursor: pointer; color: #64748b; font-family: inherit; }
+        #mobPlanBody { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 16px 8px; font-size: 13px; color: #334155; }
+        #mobPlanBody .psum { border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px; }
+        #mobPlanBody .prow, #mobPlanBody .warn { padding: 6px 0; border-bottom: 1px dashed #f1f5f9; line-height: 1.6; }
+        #mobPlanBody .note { padding: 8px 0 4px; font-size: 11px; color: #94a3b8; line-height: 1.7; }
         /* 行程卡缩略图：抽屉全宽后恢复 sparkline 并加大（860 块的隐藏只作用于 769–860 平板窄条） */
         .day-spark { display: block; width: 84px; height: 40px; }
         .day-list li { min-height: 56px; }
@@ -536,8 +546,7 @@
 <button id="panelHandle" title="展开行程面板">☰ 行程</button>
 
 <div id="panel">
-    <div class="brand-mini"><span class="bm-mark"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 27 L15 12 L22 21 L29 8 L37 19 L43 27"/><path d="M9 33 q4.5 -3.5 9 0 t9 0 t9 0 t9 0"/><path d="M13 39 q4.5 -3.5 9 0 t9 0"/></svg></span><span class="bm-word">自驾线路图</span></div>
-    <h1><span id="routeName">自驾线路图</span>
+    <h1><span class="bm-mark" title="自驾线路图"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 27 L15 12 L22 21 L29 8 L37 19 L43 27"/><path d="M9 33 q4.5 -3.5 9 0 t9 0 t9 0 t9 0"/><path d="M13 39 q4.5 -3.5 9 0 t9 0"/></svg></span><span id="routeName">自驾线路图</span>
         <span class="seg" id="startSeg"></span>
         <button id="panelFold" title="收起侧栏">‹</button>
     </h1>
@@ -552,9 +561,9 @@
         <summary>图层 · 站点开关</summary>
         <div class="row"><span class="name"><span class="dot line"></span>主路线</span><span id="dirNote">沿线方向</span></div>
         <div class="row"><span class="name"><span class="dot city"></span>城镇 / 补给点</span><label class="switch"><input type="checkbox" id="tgCity" checked><span class="track"></span><span class="knob"></span></label></div>
-        <div class="row"><span class="name"><span class="dot spot"></span>景点 / 垭口</span><label class="switch"><input type="checkbox" id="tgSpot" checked><span class="track"></span><span class="knob"></span></label></div>
-        <div class="row"><span class="name"><span class="dot fuel"></span>加油站（关键段）<span class="tierHint" id="fuelTierHint"></span></span><label class="switch"><input type="checkbox" id="tgFuel" checked><span class="track"></span><span class="knob"></span></label></div>
-        <div class="row"><span class="name"><span class="dot ev"></span>充电站（快充）</span><label class="switch"><input type="checkbox" id="tgEv" checked><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row"><span class="name"><span class="dot spot"></span>景点 / 垭口</span><label class="switch"><input type="checkbox" id="tgSpot"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row"><span class="name"><span class="dot fuel"></span>加油站（关键段）<span class="tierHint" id="fuelTierHint"></span></span><label class="switch"><input type="checkbox" id="tgFuel"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row"><span class="name"><span class="dot ev"></span>充电站（快充）</span><label class="switch"><input type="checkbox" id="tgEv"><span class="track"></span><span class="knob"></span></label></div>
         <div class="row" id="classicRow"><span class="name"><span class="dot cls"></span><span id="classicLabel">支线</span></span><label class="switch"><input type="checkbox" id="tgClassic"><span class="track"></span><span class="knob"></span></label></div>
     </details>
         <div class="evcard">

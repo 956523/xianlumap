@@ -447,6 +447,7 @@
             // 同一条防抖链顺带刷新景点胶囊分级（不另起监听，S0 复用）
             if (typeof renderSpotLabels === 'function') renderSpotLabels(_lastZoomForStations);
             if (typeof renderCityLabels === 'function') renderCityLabels(_lastZoomForStations);
+            if (typeof renderCityMarkers === 'function') renderCityMarkers(_lastZoomForStations);
         }, 120);
     }
     if (typeof map.on === 'function') {
@@ -513,6 +514,8 @@
                 if (b && b.classList) b.classList.toggle('on', (i === 0 ? 'ev' : 'fuel') === m);
             });
             document.getElementById('rngLabel').textContent = m === 'fuel' ? '满油续航' : '满电续航';
+            try { window.__evMode = m; } catch (e) {}   // S26：盲区标注按车型过滤
             renderStations();
+            if (typeof renderWarnings === 'function') renderWarnings();
         }
     }

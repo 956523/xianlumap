@@ -270,6 +270,17 @@ function buildIA() {
     var menuBk = mobEl('div', 'mobMenuBk');
     iaRoot.appendChild(menuBk);
 
+    /* S26 移动端规划详情面板（摘要行点开，内容镜像 planBox） */
+    var planBk = mobEl('div', 'mobPlanBk');
+    var planPanel = mobEl('div', 'mobPlan');
+    var planHead = mobEl('div', null, 'ml-head');
+    planHead.appendChild(mobEl('span', null, null, '🔋 续航规划'));
+    planHead.appendChild(mobEl('button', 'mobPlanClose', null, '✕'));
+    planPanel.appendChild(planHead);
+    planPanel.appendChild(mobEl('div', 'mobPlanBody'));
+    iaRoot.appendChild(planBk);
+    iaRoot.appendChild(planPanel);
+
     /* 图层弹层 + 遮罩 */
     var bk = mobEl('div', 'mobLayersBk');
     var layers = mobEl('div', 'mobLayers');
@@ -352,6 +363,24 @@ function buildIA() {
     if (layersClose) layersClose.onclick = function () { toggleClass('mob-layers', false); };
 
     /* 全览条件按钮 → 统一入口 goFit（S25） */
+    /* S26：peek 摘要行点开规划面板 */
+    function openPlanPanel() {
+        var body = document.getElementById('mobPlanBody');
+        var src = document.getElementById('planBox');
+        if (body && src) {
+            body.innerHTML = src.innerHTML +
+                '<div class="note">口径与侧栏一致：按当前车型/续航/高原折算实时计算；' +
+                'geometry 与站点分级以云端构建数据为准，出行前请复核营业状态。</div>';
+        }
+        toggleClass('mob-plan', true);
+    }
+    var planPeekEl = document.getElementById('planPeek');
+    if (planPeekEl && typeof planPeekEl.onclick !== 'undefined') planPeekEl.onclick = openPlanPanel;
+    var planBkEl = document.getElementById('mobPlanBk');
+    if (planBkEl) planBkEl.onclick = function () { toggleClass('mob-plan', false); };
+    var planClose = document.getElementById('mobPlanClose');
+    if (planClose) planClose.onclick = function () { toggleClass('mob-plan', false); };
+
     var fitBtn = document.getElementById('mobFit');
     if (fitBtn) fitBtn.onclick = function () {
         if (fitBtn.classList) fitBtn.classList.add('hit');   // S23：按下即时反馈（感知响应）
