@@ -304,7 +304,10 @@ function buildIA() {
 
     /* 菜单 */
     var menuBtn = document.getElementById('mobMenuBtn');
-    if (menuBtn) menuBtn.onclick = function () { toggleClass('mob-menu'); };
+    if (menuBtn) menuBtn.onclick = function () {
+        toggleClass('mob-menu');
+        if (document.body.classList.contains('mob-menu')) toggleClass('mob-layers', false);   // S22：两弹层互斥
+    };
     var menuBkEl = document.getElementById('mobMenuBk');   // 遮罩经 getElementById 接线（mock 可断言）
     if (menuBkEl) menuBkEl.onclick = function () { toggleClass('mob-menu', false); };
     var mEdit = document.getElementById('mobMenuEdit');
@@ -334,7 +337,10 @@ function buildIA() {
     var openBk = function () { toggleClass('mob-layers', true); };
     if (bk) bk.onclick = function () { toggleClass('mob-layers', false); };
     var layersBtn = document.getElementById('mobLayersBtn');
-    if (layersBtn) layersBtn.onclick = openBk;
+    if (layersBtn) layersBtn.onclick = function () {
+        openBk();
+        if (document.body.classList.contains('mob-layers')) toggleClass('mob-menu', false);   // S22：两弹层互斥
+    };
     var layersClose = document.getElementById('mobLayersClose');
     if (layersClose) layersClose.onclick = function () { toggleClass('mob-layers', false); };
 
@@ -398,7 +404,21 @@ function checkFit() {
         var overLat = Math.max(0, vb.latMin - lb.latMin, lb.latMax - vb.latMax) / ((lb.latMax - lb.latMin) || 1);
         var outFrac = Math.max(overLng, overLat);
         try { window.__fitOut = outFrac; } catch (e) {}
-        dev = fitDeviated ? (outFrac > FIT_EXIT_FRAC) : (outFrac > FIT_ENTER_FRAC);   // 滞回
+        /* S22 修正：AMap 的 getBounds 按整数 zoom 给视野，fitAll 的落点是分数 zoom——
+           窄屏上「刚全览完」整数视野可能比真实视野小一圈，几何判定误报偏离、
+           全览钮卡亮。加 nearFit 快路径：zoom/中心都在 fitAll 目标附近时直接判回位。 */
+        var nearFit = false;
+        var fitDbg = null, cz = null, cc = null;
+        try { fitDbg = window.__fitDebug || null; } catch (e) {}
+        try { if (typeof map.getZoom === 'function') cz = map.getZoom(); } catch (e) {}
+        try { if (typeof map.getCenter === 'function') cc = map.getCenter(); } catch (e) {}
+        if (fitDbg && fitDbg.c && cc && typeof cc.lng === 'number' && cz != null) {
+            nearFit = Math.abs(cz - fitDbg.z) <= 0.8 &&
+                Math.abs(cc.lat - fitDbg.c[0]) * 111 < 8 &&
+                Math.abs(cc.lng - fitDbg.c[1]) * 95 < 8;
+        }
+        dev = nearFit ? false
+            : (fitDeviated ? (outFrac > FIT_EXIT_FRAC) : (outFrac > FIT_ENTER_FRAC));   // 滞回
     } else {
         // —— 近似回退（无 getBounds）：Δz/中心距阈值 ——
         var fit = null, c = null, z = null;

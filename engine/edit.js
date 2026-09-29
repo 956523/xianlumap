@@ -189,6 +189,7 @@
                分段编辑受接入段拼接天的 km 基准限制，仅在主出发地视角开放——
                其他视角下界面给明确提示、API 显式拒绝（见 refreshDayControls/setSeg）。 */
             this.on = true;
+            this.tab = 'trip';   // S22：每次进入复位到默认任务区，不带上次的 Tab 残留
             document.body.classList.add('editing');
             if (editBar) editBar.style.display = '';
             this.refreshDayControls();

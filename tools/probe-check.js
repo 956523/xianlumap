@@ -657,6 +657,24 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         elCache['panel'].style.transform === '' &&
         !document.body.classList.contains('mob-drag') &&
         M2.window.__mobile.state() === 'full', '');
+    /* ---------- S22 压测轮回归断言（CDP 破坏性探索发现的三个真问题） ---------- */
+    console.log('\n【17】S22 压测回归：弹层互斥 / Tab 复位 / nearFit');
+    var s22 = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    var S22 = s22.sandbox;
+    ok('两弹层互斥：开图层关菜单、开菜单关图层',
+        !s22.err &&
+        (elCache['mobLayersBtn'].onclick(), document.body.classList.contains('mob-layers') && !document.body.classList.contains('mob-menu')) &&
+        (elCache['mobMenuBtn'].onclick(), document.body.classList.contains('mob-menu') && !document.body.classList.contains('mob-layers')), '');
+    ok('编辑模式：showTab(more) → 退出 → 再进复位到行程 Tab（无状态残留）',
+        (function () {
+            S22.Edit.enter();
+            S22.Edit.showTab('more');
+            S22.Edit.exit();
+            S22.Edit.enter();
+            return S22.Edit.tab === 'trip';
+        })(), '');
+    ok('全览判定 nearFit 快路径在位（AMap 整数 zoom 视野误报偏离的修正）',
+        /nearFit/.test(mainScript) && /__fitDebug/.test(mainScript), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });
