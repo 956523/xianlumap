@@ -333,10 +333,21 @@
         // 侧栏
         var listEl = document.getElementById('dayList');
         listEl.innerHTML = '';
+        // 出发日期（S13 排期）：overlay 存在时每天卡显示真实日期+星期；
+        // 按 DAYS 顺序顺延（休整日只占序号不改里程）。日期源是 ROUTE_META.departureDate
+        // （edit.js 的 overlay 合并时写入，通用字段、不写死任何线路）。
+        document.body.classList.toggle('has-dep', !!ROUTE_META.departureDate);
         DAYS.forEach(function (d, i) {
             var li = document.createElement('li');
             li.title = d.energy;
-            li.innerHTML = '<span class="day-tag">D' + d.id + '</span>' +
+            var tag = 'D' + d.id;
+            if (ROUTE_META.departureDate) {
+                var dep = new Date(ROUTE_META.departureDate + 'T00:00:00');
+                dep.setDate(dep.getDate() + i);   // 第 i 天 = 出发 + i 天（含休整顺延）
+                tag += ' · ' + (dep.getMonth() + 1) + '月' + dep.getDate() + '日 周' +
+                    '日一二三四五六'.charAt(dep.getDay());
+            }
+            li.innerHTML = '<span class="day-tag">' + tag + '</span>' +
                 '<span class="day-meta"><span class="day-title">' + d.title + '</span>' +
                 '<span class="day-note">' + d.note + (d.stay ? ' · 住' + d.stay : '') + '</span></span>' +
                 sparkSVG(d) +

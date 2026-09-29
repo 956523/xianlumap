@@ -260,11 +260,25 @@
             ALT_MARKS.forEach(function (m, i) { m.n = EDIT_PRISTINE.marks[i]; });
             ROUTE_META.sub = EDIT_PRISTINE.meta.sub;
             ROUTE_META.evNotice = EDIT_PRISTINE.meta.evNotice;
+            delete ROUTE_META.departureDate;
             this.overlay = {};
             editClearStore();
             renderAll();
             this.refreshDayControls();
             drawProfile();
+        },
+
+        /* —— 出发日期（S13 排期）：overlay.meta.departureDate，存本机、随恢复清空 —— */
+        setDeparture: function (iso) {
+            if (iso) { ROUTE_META.departureDate = String(iso).slice(0, 10); }
+            else { delete ROUTE_META.departureDate; }
+            this.overlay.meta = this.overlay.meta || {};
+            if (iso) this.overlay.meta.departureDate = ROUTE_META.departureDate;
+            else delete this.overlay.meta.departureDate;
+            editSave();
+            renderAll();          // 重渲染每日卡（含/不含日期）
+            var dd = document.getElementById('depDate');
+            if (dd) dd.value = ROUTE_META.departureDate || '';
         },
 
         /* —— 导入编辑层（S8）：别人导出的 route-<id>.custom.json → 本机 overlay —— */
@@ -404,6 +418,7 @@
         if (ov.marks) applyMarks(ov.marks);
         if (ov.meta && ov.meta.sub != null) ROUTE_META.sub = String(ov.meta.sub);
         if (ov.meta && ov.meta.evNotice != null) ROUTE_META.evNotice = String(ov.meta.evNotice);
+        if (ov.meta && ov.meta.departureDate) ROUTE_META.departureDate = String(ov.meta.departureDate);
     }
     function applyMetaDom() {
         var subEl = document.getElementById('routeSub');
@@ -411,6 +426,8 @@
         var nt = document.getElementById('evNotice');
         var sp = nt && nt.querySelector('span');
         if (sp && ROUTE_META.evNotice) sp.innerHTML = '⚡ <b>纯电提示：</b>' + ROUTE_META.evNotice;
+        var dd = document.getElementById('depDate');
+        if (dd) dd.value = ROUTE_META.departureDate || '';
     }
     /* 启动合并：包 + overlay（在 ui.js 启动渲染之前执行） */
     (function bootMerge() { applyOverlay(Edit.overlay); })();
@@ -744,8 +761,27 @@
             '<button class="edit-mini" id="wpPick">📍 地图点选</button>' +
             '<button class="edit-mini" id="wpGen">生成新版线路</button>' +
             '</div>';
-        editBar.appendChild(sec);
+        // 出发日期行（排期 S13）：融进编辑条顶部
+        var depSec = document.createElement('div');
+        depSec.className = 'wp-sec dep-sec';
+        depSec.innerHTML =
+            '<div class="wp-head">📅 出发日期</div>' +
+            '<div class="wp-note">选了之后每天卡自动带真实日期+星期（休整日顺延），' +
+            '存在本机随导出分享，构建不需要重跑。</div>' +
+            '<div class="wp-row" style="align-items:center;">' +
+            '<input type="date" id="depDate" class="wp-search" style="flex:1;margin-top:0;">' +
+            '<button class="edit-mini" id="depClear">清除</button></div>';
+        editBar.appendChild(sec);   // 先挂 wp 段，再插日期行（insertBefore 要求参照节点已是子节点）
+        if (editBar.insertBefore) editBar.insertBefore(depSec, sec);
+        else editBar.appendChild(depSec);
         refreshWpBadge();
+        var depInput = document.getElementById('depDate');
+        if (depInput) {
+            depInput.value = (typeof ROUTE_META !== 'undefined' && ROUTE_META.departureDate) || '';
+            depInput.onchange = function () { Edit.setDeparture(depInput.value || null); };
+        }
+        var depClearBtn = document.getElementById('depClear');
+        if (depClearBtn) depClearBtn.onclick = function () { Edit.setDeparture(null); };
 
         function renderList() {
             var el = document.getElementById('wpList');
@@ -1028,4 +1064,25 @@
             var btn = document.getElementById('wpGen');
             if (btn) btn.onclick();
         }
+    })();
+
+    /* ?depautotest=1：冒烟用——进入编辑模式并设出发日期（headless 截图断言） */
+    (function depAutotest() {
+        if (typeof location === 'undefined' || !/[?&]depautotest=1/.test(location.search)) return;
+        if (typeof document === 'undefined') return;
+        function go() {
+            setTimeout(function () {
+                try {
+                    Edit.enter();
+                    Edit.setDeparture('2026-10-03');
+                } catch (e) {
+                    var m = document.createElement('div');
+                    m.id = 'dep-autotest-error';
+                    m.textContent = 'DEPERROR ' + (e && e.message);
+                    document.body.appendChild(m);
+                }
+            }, 500);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+        else go();
     })();

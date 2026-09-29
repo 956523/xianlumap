@@ -281,6 +281,8 @@
         cursor: pointer;
         border-bottom: 1px dashed #f59e0b;
     }
+    /* 出发日期（S13）：有日期时 day-tag 变宽容纳「D1 · 10月3日 周五」 */
+    body.has-dep .day-tag { width: auto; padding: 3px 7px; white-space: nowrap; }
     body.editing .day-stay {
         display: inline-block; margin-top: 2px; font-size: 10.5px; color: #b45309;
         background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 5px; padding: 0 5px;

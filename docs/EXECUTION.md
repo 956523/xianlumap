@@ -854,3 +854,16 @@ apply-spots 仍只认 reviewed 状态。
    地图点选的逆地理在乡镇级常返回空名（回退「点选点(lat,lng)」，可改名）。
 4. **legs 初分粗糙**：纯按点数切段，未按日均里程——润色提示已写进导出注释，
    S5 编辑模式可在构建后调分段（localStorage overlay）。
+
+## 21. 出发日期（2026-09-29，S13 排期第 2 项）
+
+编辑面板顶部「📅 出发日期」（原生 date input 融进编辑条样式）：设后每天卡自动带
+真实日期+星期（「D1 · 10月3日 周六」），休整日只顺延序号不改里程；存 overlay
+（`meta.departureDate`，随导出/导入编辑层走、随「恢复原始数据」清空），不动线路包、
+不需要构建。渲染在 route-engine 的 renderAll 里读通用字段 `ROUTE_META.departureDate`
+（edit.js 合并时写入），切出发地自动重排。probe-check【8】4 项断言
+（渲染星期/导出带字段/导入恢复/清除回纯序号）；浏览器两态冒烟
+（/tmp/dep-with.png、/tmp/dep-without.png）。
+**顺手修了一个真 bug**：日期行插入用了 `insertBefore(depSec, sec)` 但 sec 当时还未
+挂载——真实浏览器抛 NotFoundError 导致 edit.js 尾部（含两个 autotest）静默失效，
+vm mock 因走 fallback 分支完全没暴露（浏览器冒烟的价值又一例证）。

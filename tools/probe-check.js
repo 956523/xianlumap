@@ -317,5 +317,25 @@ W.clear();
 ok('恢复原始数据清掉途经点 overlay', !lsStore['xianlumap.waypoints.chuanxi'] && W.list.length === Object.keys(wiz.sandbox.ROUTE_BUILD.waypoints).length,
     W.list.length + ' 个（回原值）');
 
+/* ---------- 出发日期（S13 排期）：设日期→日卡带星期→导出/导入/清除 ---------- */
+console.log('\n【8】出发日期（S13 排期）');
+const dep = bootRoute('chuanxi');
+const DS = dep.sandbox;
+DS.Edit.setDeparture('2026-10-03');
+const depLis = created.filter(el => el.id === 'dyn:li').slice(-5);
+ok('设日期后每天卡渲染「周X」', depLis.length === 5 && depLis.every(el => /周[一二三四五六日]/.test(el.innerHTML)),
+    depLis[0] ? depLis[0].innerHTML.slice(0, 40) : '无');
+ok('导出 overlay 带 departureDate', /"departureDate":\s*"2026-10-03"/.test(DS.Edit.exportText()), '');
+// 导入恢复（清掉本地再导入）
+delete lsStore['xianlumap.overlay.chuanxi'];
+delete DS.ROUTE_META.departureDate;
+const depJson = JSON.parse(DS.Edit.exportText().slice(DS.Edit.exportText().indexOf('{')));
+ok('导入编辑层恢复 departureDate', DS.Edit.importOverlay(depJson) === true && DS.ROUTE_META.departureDate === '2026-10-03', '');
+DS.Edit.setDeparture(null);
+const depLis2 = created.filter(el => el.id === 'dyn:li').slice(-5);
+ok('清除回纯序号态（无日期无星期）', !DS.ROUTE_META.departureDate &&
+    depLis2.every(el => /^<span class="day-tag">D\d+<\/span>/.test(el.innerHTML)),
+    depLis2[0] ? depLis2[0].innerHTML.slice(0, 30) : '无');
+
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail ? 1 : 0);
