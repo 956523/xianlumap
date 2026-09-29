@@ -66,10 +66,19 @@
     }
 
     /* ---------- 列表 ---------- */
+    /* 分诊排序：manual 档最前，其后 auto-approve，最后 auto-reject（S12 减负环） */
+    function triageRank(s) {
+        var r = reviewedOf(s);
+        if (r) return 0;                       // 已有决定的排最前（方便检查翻案）
+        var t = s.triage || 'manual';
+        return t === 'manual' ? 0 : t === 'auto-approve' ? 1 : 2;
+    }
     function filtered() {
         return spots.filter(function (s) {
             if (curTab !== '全部' && (s.routes || []).indexOf(curTab) < 0) return false;
             return true;
+        }).sort(function (a, b) {
+            return triageRank(a) - triageRank(b);
         });
     }
     function render() {
@@ -85,7 +94,11 @@
                 (s.d != null ? ' · 距主线 ' + s.d + 'km' : '') +
                 (s.desc ? ' · ' + String(s.desc).slice(0, 26) : '');
             var statusTag = !s.autoCaptured ? '<span class="tag st-his">历史</span>'
-                : r ? (r.approved ? '<span class="tag st-ok">已通过</span>' : '<span class="tag st-no">已拒绝</span>') : '';
+                : r ? (r.approved ? '<span class="tag st-ok">已通过' + (r.overridden ? '·翻案' : '') + '</span>'
+                                 : '<span class="tag st-no">已拒绝' + (r.overridden ? '·翻案' : '') + '</span>')
+                : s.triage === 'auto-approve' ? '<span class="tag st-auto-ok">🤖 建议通过</span>'
+                : s.triage === 'auto-reject' ? '<span class="tag st-auto-no">🤖 建议拒绝</span>'
+                : '';
             div.innerHTML = '<div class="grow"><div class="nm">' + escapeHtml(name) + ' ' + statusTag + '</div>' +
                 '<div class="meta">' + escapeHtml(meta) + '</div></div>';
             if (s.autoCaptured) {
@@ -111,6 +124,8 @@
     }
     function decide(s, approved) {
         var rec = { approved: approved, name: (state[s.id] && state[s.id].name) || s.name };
+        // 翻案：对 🤖 自动档下人工决定 → 标记 overridden，导出时清除 triage 走人工语义
+        if (s.triage === 'auto-approve' || s.triage === 'auto-reject') rec.overridden = true;
         if (!approved) {
             var reason = prompt('拒绝原因（可留空，默认「不值得收录」）', (state[s.id] && state[s.id].reason) || '');
             rec.reason = reason || '不值得收录';
@@ -135,9 +150,14 @@
         document.getElementById('progress').innerHTML =
             '候选 ' + decided + '/' + cands.length + ' 已审（' + pct + '%）' +
             '<div class="bar"><i style="width:' + pct + '%"></i></div>';
-        var ok = Object.keys(state).filter(function (id) { return state[id].approved; }).length;
-        var no = Object.keys(state).filter(function (id) { return state[id] && state[id].approved === false; }).length;
-        document.getElementById('footStat').textContent = '通过 ' + ok + ' · 拒绝 ' + no + '（未导出前都存在本机）';
+        // 分诊统计（S12）：待你审 = manual 档未决定；自动两档按 triage 计
+        var manualPending = cands.filter(function (s) {
+            return (s.triage || 'manual') === 'manual' && !state[s.id];
+        }).length;
+        var autoOk = cands.filter(function (s) { return s.triage === 'auto-approve'; }).length;
+        var autoNo = cands.filter(function (s) { return s.triage === 'auto-reject'; }).length;
+        document.getElementById('footStat').textContent =
+            '待你审 ' + manualPending + ' ｜ 自动通过 ' + autoOk + ' ｜ 自动拒绝 ' + autoNo;
     }
     function escapeHtml(t) {
         return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) {
@@ -145,20 +165,32 @@
         });
     }
 
-    /* ---------- 导出：审核状态合入 spots.json 并下载 ---------- */
+    /* ---------- 导出：审核状态 + 分诊默认 合入 spots.json 并下载 ----------
+       优先级：人工决定（含翻案）> 分诊默认（auto-approve→通过 / auto-reject→拒绝）
+       > 未审 manual（保持 reviewed:false 不物化）。
+       翻案记录导出时 triage 清除（走人工语义），原分诊留 overriddenFrom 供审计。 */
     function exportJson() {
         var out = spots.map(function (s) {
             var o = {};
             Object.keys(s).forEach(function (k) { o[k] = s[k]; });
+            if (!s.autoCaptured) return o;              // 手打历史条目原样
             var st = state[s.id];
-            if (s.autoCaptured) {
-                if (st) {
-                    o.reviewed = true;
-                    o.approved = st.approved === false ? false : true;
-                    o.name = st.name || o.name;
-                    if (st.reason) o.rejectReason = st.reason;
-                    o.reviewedAt = new Date().toISOString().slice(0, 10);
-                }
+            if (st && st.approved != null) {
+                o.reviewed = true;
+                o.approved = st.approved === false ? false : true;
+                o.name = st.name || o.name;
+                if (st.reason) o.rejectReason = st.reason;
+                if (st.overridden && o.triage) { o.overriddenFrom = o.triage; o.triage = null; }
+                o.reviewedAt = new Date().toISOString().slice(0, 10);
+            } else if (!o.reviewed && o.triage === 'auto-approve') {
+                o.reviewed = true; o.approved = true;
+                o.autoApproved = true;
+                o.reviewedAt = new Date().toISOString().slice(0, 10);
+            } else if (!o.reviewed && o.triage === 'auto-reject') {
+                o.reviewed = true; o.approved = false;
+                o.autoApproved = true;
+                o.rejectReason = o.rejectReason || '规则分诊：弱信号词或距主线>25km';
+                o.reviewedAt = new Date().toISOString().slice(0, 10);
             }
             return o;
         });
@@ -205,20 +237,33 @@
         });
     }
 
-    /* ?autotest=1：程序化完成 3 种操作 + 生成导出统计，写入 #autotest-result 供 headless 验证 */
+    /* ?autotest=1：程序化完成操作 + 翻案路径 + 导出统计，写入 #autotest-result 供 headless 验证 */
     function autotest() {
         if (!/[?&]autotest=1/.test(location.search)) return;
-        var cands = spots.filter(actionable).slice(0, 3);
-        if (cands[0]) state[cands[0].id] = { approved: true, name: cands[0].name };
-        if (cands[1]) state[cands[1].id] = { approved: null, name: '冒烟改名测试' };
-        if (cands[2]) state[cands[2].id] = { approved: false, reason: '冒烟拒绝测试' };
+        var cands = spots.filter(actionable);
+        var manual = cands.filter(function (s) { return !s.triage || s.triage === 'manual'; });
+        var autoOk = cands.filter(function (s) { return s.triage === 'auto-approve'; });
+        var autoNo = cands.filter(function (s) { return s.triage === 'auto-reject'; });
+        if (manual[0]) state[manual[0].id] = { approved: true, name: manual[0].name };
+        if (manual[1]) state[manual[1].id] = { approved: null, name: '冒烟改名测试' };
+        if (manual[2]) state[manual[2].id] = { approved: false, reason: '冒烟拒绝测试' };
+        // 翻案路径：把一条「建议拒绝」改为通过、一条「建议通过」改为拒绝
+        if (autoNo[0]) state[autoNo[0].id] = { approved: true, name: autoNo[0].name, overridden: true };
+        if (autoOk[0]) state[autoOk[0].id] = { approved: false, reason: '翻案拒绝测试', overridden: true };
         save(); render();
         var json = exportJson();
+        var flipped = json.spots.filter(function (s) {
+            return s.autoCaptured && s.overriddenFrom;
+        });
         var stats = {
             total: json.spots.length,
-            actionable: spots.filter(actionable).length,
-            approved: json.spots.filter(function (s) { return s.autoCaptured && s.reviewed && s.approved; }).length,
-            renamed: json.spots.filter(function (s) { return s.autoCaptured && s.reviewed && s.name === '冒烟改名测试'; }).length
+            manual: manual.length,
+            autoApprove: autoOk.length,
+            autoReject: autoNo.length,
+            autoApprovedByDefault: json.spots.filter(function (s) { return s.autoApproved && s.approved; }).length,
+            autoRejectedByDefault: json.spots.filter(function (s) { return s.autoApproved && s.approved === false; }).length,
+            overridden: flipped.length,
+            triageCleared: flipped.every(function (s) { return !s.triage; })
         };
         document.getElementById('autotest-result').textContent = 'AUTOTEST ' + JSON.stringify(stats);
     }
