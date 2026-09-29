@@ -25,7 +25,9 @@ python -m http.server 8000
 # 然后浏览器打开 http://localhost:8000/index.html
 ```
 
-打开后是**选线器**：三张线路卡片（名称、区域、里程、天数、站点更新日期），点卡片进线路。
+打开后是**选线器**：三张克制的线路卡——每张的主角是一条从真实高程抽稀生成的
+抽象剖面线稿，下面只有「名称 / 区域 / 2164 km · 建议 10 天 · 更新 09-26」一行
+小字；点卡片进线路。
 也可以直接带参数打开某条线：`http://localhost:8000/index.html?route=chuanxi`。
 
 **手机打开即用**：窄屏（≤768px）下行程单变成底部抽屉——默认露手柄和标题概要，
@@ -119,7 +121,8 @@ node tools/build-stations.js <新线>
 node tools/validate.js <新线> --fix
 ```
 
-最后在 `route-defs/manifest.js` 加一行登记（选线器卡片），
+最后在 `route-defs/manifest.js` 加一行登记（选线器卡片），并跑一次
+`node tools/build-hero-curves.js` 把新线的首页线稿抽进 `hero-curves.js`；
 `node tools/c4-test.js` 会自动把新包纳入回归。引擎零改动——青甘/川西/318 已三次验证。
 
 ---

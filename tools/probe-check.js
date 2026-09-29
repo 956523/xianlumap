@@ -23,6 +23,7 @@ Array.from(html.matchAll(/<script src="(engine\/[a-z0-9-]+\.js)"><\\?\/script>/g
 const mainScript = engineSrcs.map(s => fs.readFileSync(path.join(ROOT, s), 'utf8')).join('\n').trim();
 // 选线器专用（S8）：manifest + picker，单独 boot 验证
 const manifestSrc = fs.readFileSync(path.join(ROOT, 'route-defs', 'manifest.js'), 'utf8');
+const heroSrc = fs.readFileSync(path.join(ROOT, 'route-defs', 'hero-curves.js'), 'utf8');   // S21 首页线稿
 const pickerSrc = fs.readFileSync(path.join(ROOT, 'engine', 'picker.js'), 'utf8');
 
 /* ---------- mock（与 c4-test 同构，精简注释） ---------- */
@@ -218,7 +219,7 @@ created.length = 0;
 const pickerSb = vm.createContext({ document, console, ROUTE_KEY: '' });
 let pickerErr = null;
 try {
-    vm.runInContext(manifestSrc + '\n' + pickerSrc, pickerSb);
+    vm.runInContext(manifestSrc + '\n' + heroSrc + '\n' + pickerSrc, pickerSb);   // S21：+ hero-curves
 } catch (e) { pickerErr = e; }
 const pickerRoot = created.filter(el => el.id === 'pickerRoot')[0];
 ok('选线器渲染全部线路卡片（数据只来自 manifest）',
@@ -227,6 +228,27 @@ ok('选线器渲染全部线路卡片（数据只来自 manifest）',
     pickerRoot.innerHTML.indexOf('?route=chuanxi') >= 0 &&
     pickerRoot.innerHTML.indexOf('?route=chengdu-lhasa-318') >= 0,
     pickerErr ? pickerErr.message.slice(0, 80) : '3 张卡片');
+ok('首页线稿（S21）：卡片含真实高程抽稀的 SVG 剖面线稿',
+    !pickerErr && (pickerRoot.innerHTML.match(/<svg class="pick-hero"/g) || []).length === 3 &&
+    /<path d="M[\d.]+,[\d.]+ C/.test(pickerRoot.innerHTML), '');
+
+/* ---------- 首页线稿物化数据（S21） ---------- */
+console.log('\n【16】首页线稿物化（hero-curves.js）');
+const heroSb = {};
+vm.runInNewContext(heroSrc, heroSb);
+const HC = heroSb.HERO_CURVES || {};
+const heroKeys = Object.keys(HC);
+ok('物化覆盖全部线路（3 条 × ~60 采样点，坐标归一化）',
+    heroKeys.length === 3 &&
+    heroKeys.every(function (k) {
+        var c = HC[k];
+        return c && c.pts.length >= 55 && c.pts.length <= 65 &&
+            c.pts.every(function (pt) { return pt[0] >= 0 && pt[0] <= 1 && pt[1] >= 0 && pt[1] <= 1; });
+    }),
+    heroKeys.map(function (k) { return k + ':' + HC[k].pts.length + '点'; }).join(' '));
+ok('选线器加载契约不破：hero-curves 仅出现在选线器分支，无静态 engine/线路包标签',
+    /document\.write\('<script src="route-defs\/hero-curves\.js">/.test(html) &&
+    !/<script src="engine\/[a-z0-9-]+\.js"><\/script>/.test(html), '');
 // 线路页不渲染选线器：ROUTE_KEY 已设时 picker 是 no-op
 created.length = 0;
 const pickerSb2 = vm.createContext({ document, console, ROUTE_KEY: 'chuanxi' });

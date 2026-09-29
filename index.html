@@ -610,6 +610,8 @@
         document.write('<script src="key.local.js"><\/script>');
         document.write('<script src="engine/boot-route.js"><\/script>');
     } else {
+        // 选线器页：manifest + 首页线稿（物化的小数据）+ picker，不加载任何线路包/引擎/底图
+        document.write('<script src="route-defs/hero-curves.js"><\/script>');
         document.write('<script src="engine/picker.js"><\/script>');
     }
 </script>
