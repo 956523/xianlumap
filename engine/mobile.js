@@ -351,14 +351,14 @@ function buildIA() {
     var layersClose = document.getElementById('mobLayersClose');
     if (layersClose) layersClose.onclick = function () { toggleClass('mob-layers', false); };
 
-    /* 全览条件按钮 */
+    /* 全览条件按钮 → 统一入口 goFit（S25） */
     var fitBtn = document.getElementById('mobFit');
     if (fitBtn) fitBtn.onclick = function () {
         if (fitBtn.classList) fitBtn.classList.add('hit');   // S23：按下即时反馈（感知响应）
-        setTimeout(function () { if (fitBtn.classList) fitBtn.classList.remove('hit'); }, 220);
-        try { if (typeof fitAll === 'function') fitAll(); } catch (e) {}
-        setTimeout(checkFit, 120);   // 动画收尾后再判（mock setTimeout 同步执行也无害）
+        setTimeout(function () { if (fitBtn.classList) fitFitRemove(); }, 220);
+        goFit();
     };
+    function fitFitRemove() { if (fitBtn.classList) fitBtn.classList.remove('hit'); }
 }
 
 /* S19 退役：编辑面板自带「‹ 完成编辑」顶栏（etDone），不再需要外挂关闭条。
@@ -492,6 +492,16 @@ function refreshMob() {
         checkFit();
     }
 }
+
+/* S25 全览唯一入口：无条件飞到全线 + 移动端收起抽屉（让飞行可见）。
+   「已全览则忽略」类守卫一律不要——重复动画也比死点击好。
+   抽屉内「回到全览」(#btnFit) 与浮动「全览」(#mobFit) 同走此入口。 */
+function goFit() {
+    try { if (typeof fitAll === 'function') fitAll(); } catch (e) {}
+    if (mobActive && typeof setSheet === 'function') setSheet('peek');
+}
+var _btnFitEl = document.getElementById('btnFit');
+if (_btnFitEl && typeof _btnFitEl.onclick !== 'undefined') _btnFitEl.onclick = goFit;
 
 /* 调试钩子（截图/联调）：?mobsheet=full|peek|hidden 强制初始档位 */
 var _mobQ = (typeof location !== 'undefined' && location.search) ? location.search : '';

@@ -712,6 +712,58 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             var okDel = S23.Edit.wpRowDelete(S23.Wp.list.length - 1) === true && S23.Wp.list.length === before - 1;
             return okDel && /bindWpGestures/.test(mainScript) && /wpSwipe/.test(mainScript) && /wpLift/.test(mainScript);
         })(), '');
+    /* ---------- S25：连续编号 invariant / 休整卡 / 并入前一天 / 全览无条件 ---------- */
+    console.log('\n【19】S25：天数连续编号 + 全览唯一入口');
+    delete lsStore['xianlumap.overlay.chuanxi'];
+    delete lsStore['xianlumap.waypoints.chuanxi'];
+    var s25 = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    var S25 = s25.sandbox;
+    var mark0 = 0;
+    function dayTags(sb, since) {   // since=本次操作前 created.length：只取最新一代日卡
+        return created.slice(since || 0).filter(function (el) { return el.id === 'dyn:li'; })
+            .map(function (el) { return (el.innerHTML.match(/<span class="day-tag">([^<]+)</) || [])[1]; });
+    }
+    ok('切空一天 → 休整占位卡出现且编号连续（D1..D5 无跳号）',
+        !s25.err && (function () {
+            mark0 = created.length;
+            S25.Edit.setSeg(3, 327.98, 328.3);   // D3 切成 0.32km → 休整
+            var tags = dayTags(S25, mark0);
+            return tags.length >= 5 && tags.slice(-5).join('|') === 'D1|D2|D3 · 休整|D4|D5';
+        })(), dayTags(S25).join('|'));
+    ok('归点复活：往休整卡归一个点，它恢复为行程天',
+        (function () {
+            var danba = S25.Wp.list.map(function (w) { return w.n; }).indexOf('丹巴');
+            mark0 = created.length;
+            S25.Edit.assignWpDay(danba, 2);
+            var tags = dayTags(S25, mark0);
+            return tags.length >= 5 && tags.slice(-5).join('|').indexOf('休整') < 0;
+        })(), dayTags(S25).join('|'));
+    ok('并入前一天：D3 消失（merged），编号仍连续 D1..D4，overlay 落盘',
+        (function () {
+            mark0 = created.length;
+            var okM = S25.Edit.mergeDay(3) === true;
+            var tags = dayTags(S25, mark0);
+            var merged = S25.Edit._mergedIds();
+            return okM && tags.length >= 4 && tags.slice(-4).join('|') === 'D1|D2|D3|D4' &&
+                merged.indexOf(3) >= 0 && /"merged":\[3\]/.test(lsStore['xianlumap.overlay.chuanxi'] || '');
+        })(), dayTags(S25).join('|'));
+    ok('恢复原始数据还原五天',
+        (function () {
+            mark0 = created.length;
+            S25.Edit.reset();
+            var tags = dayTags(S25, mark0);
+            return tags.length >= 5 && tags.slice(-5).join('|') === 'D1|D2|D3|D4|D5';
+        })(), dayTags(S25).join('|'));
+    ok('全览无条件执行：抽屉内按钮与浮动钮同入口，连点三次调三次 fitAll',
+        (function () {
+            var n = 0;
+            var _f = S25.fitAll;
+            S25.fitAll = function () { n++; _f.apply(null, arguments); };
+            elCache['btnFit'].onclick();
+            elCache['btnFit'].onclick();
+            elCache['mobFit'].onclick();
+            return n === 3 && S25.window.__mobile.state() === 'peek';
+        })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

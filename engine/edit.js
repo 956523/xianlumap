@@ -63,8 +63,10 @@
     function wpDayIdx(w) {
         if (!w || !w.p || !DAYS.length) return -1;
         var km = routeKmOf(w.p[0], w.p[1]);
+        var merged = (typeof Edit !== 'undefined' && Edit._mergedIds) ? Edit._mergedIds() : [];
         for (var i = 0; i < DAYS.length; i++) {
             var d = DAYS[i];
+            if (merged.indexOf(d.id) >= 0) continue;   // S25：已并入的天不参与归属
             if (d.altKm && km >= d.altKm[0] - 0.5 && km <= d.altKm[1] + 0.5) return i;
         }
         var nearest = 0, nd = 1e18;   // 区间外（如跨段点上/接入段）：归最近一天，不丢
@@ -216,6 +218,35 @@
         },
         wpDayBadge: function (w) { return wpDayBadge(w); },          // S19：途经点归属天徽标
         wpRowMove: function (from, to) { return wpRowMove(from, to); },   // S23：行操作核心（手势/桌面/测试共用）
+        /* S25：并入前一天——overlay 层把该天区间并入显示序列中前一个可见天，
+           该天标 merged（显示层消失，编号仍连续）；恢复原始数据即还原。 */
+        _mergedIds: function () {
+            return (this.overlay.meta && Array.isArray(this.overlay.meta.merged)) ? this.overlay.meta.merged : [];
+        },
+        mergeDay: function (id) {
+            var merged = this._mergedIds();
+            if (merged.indexOf(id) >= 0) return false;
+            var idx = -1;
+            DAYS.forEach(function (d, i) { if (d.id === id) idx = i; });
+            if (idx <= 0) return false;
+            var day = DAYS[idx];
+            if (!day.altKm) return false;
+            var prev = null;
+            for (var j = idx - 1; j >= 0; j--) {
+                if (merged.indexOf(DAYS[j].id) < 0 && DAYS[j].altKm) { prev = DAYS[j]; break; }
+            }
+            if (!prev) return false;
+            var okSeg = Edit.setSeg(prev.id, prev.altKm[0], day.altKm[1]);
+            if (okSeg === false) return false;
+            merged.push(id);
+            this.overlay.meta = this.overlay.meta || {};
+            this.overlay.meta.merged = merged;
+            editSave();
+            renderAll();
+            this.refreshDayControls();
+            try { refreshEditTabs(); } catch (e) {}
+            return true;
+        },
         wpRowDelete: function (i) { return wpRowDelete(i); },
         wpChipsHTML: function (day) { return wpChips(day); },        // S19：行程卡途经 chips（HTML）,
         /* S20 归天直改：把途经点 wpIdx 归到第 dayIdx 天。
@@ -227,13 +258,15 @@
             var w = (typeof Wp !== 'undefined' && Wp && Wp.list) ? Wp.list[wpIdx] : null;
             var T = (typeof DAYS !== 'undefined' ? DAYS : [])[dayIdx];
             if (!w || !T) return false;
-            if (!T.altKm || T.rest) {
-                editNotice('「' + (T.title || ('D' + T.id)) + '」没有里程区间（休整日），无法归入。');
-                return false;
-            }
             var km = routeKmOf(w.p[0], w.p[1]);
             var EPS = 0.5;
             if (wpDayIdx(w) === dayIdx) return true;
+            if (!T.altKm || (T.altKm[1] - T.altKm[0]) < 1) {
+                /* S25：目标天是休整/无区间——归点即复活：区间设为 km±0.5（1km 行程） */
+                var okRevive = Edit.setSeg(T.id, +(km - EPS).toFixed(1), +(km + EPS).toFixed(1));
+                try { refreshEditTabs(); } catch (e) {}
+                return okRevive !== false;
+            }
             var ta = T.altKm[0], tb = T.altKm[1];
             if (km < ta) ta = Math.max(0, km - EPS);
             if (km > tb) tb = km + EPS;
@@ -492,8 +525,10 @@
             var listEl = document.getElementById('dayList');
             if (!listEl) return;
             var segLocked = STARTS.length > 1 && start !== STARTS[0].id;   // 非主出发地视角：分段只读
+            var merged = this._mergedIds();
+            var visible = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });   // S25：与 renderAll 同口径
             Array.prototype.forEach.call(listEl.children, function (li, i) {
-                var day = DAYS[i];
+                var day = visible[i];
                 if (!day) return;
                 // 移除旧控件
                 Array.prototype.forEach.call(li.querySelectorAll('.day-stay, .day-seg, .day-seg-hint'), function (n) { n.remove(); });
@@ -558,12 +593,14 @@
             return sel;
         },
         updateDayRow: function (id) {
+            var merged = this._mergedIds();
+            var visible = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });   // S25：显示序列口径
             var i = -1;
-            DAYS.forEach(function (d, j) { if (d.id === id) i = j; });
+            visible.forEach(function (d, j) { if (d.id === id) i = j; });
             var listEl = document.getElementById('dayList');
             if (i < 0 || !listEl || !listEl.children[i]) return;
             var li = listEl.children[i];
-            var day = DAYS[i];
+            var day = visible[i];
             var t = li.querySelector('.day-title'); if (t) t.textContent = day.title;
             var n = li.querySelector('.day-note'); if (n) n.textContent = day.note + (day.stay ? ' · 住' + day.stay : '');
             var st = li.querySelector('.day-stay'); if (st) st.textContent = day.stay ? '住：' + day.stay + ' ✎' : '＋住宿 ✎';
@@ -583,6 +620,7 @@
         if (ov.meta && ov.meta.sub != null) ROUTE_META.sub = String(ov.meta.sub);
         if (ov.meta && ov.meta.evNotice != null) ROUTE_META.evNotice = String(ov.meta.evNotice);
         if (ov.meta && ov.meta.departureDate) ROUTE_META.departureDate = String(ov.meta.departureDate);
+        if (ov.meta && Array.isArray(ov.meta.merged)) Edit.overlay.meta = Edit.overlay.meta || {}, Edit.overlay.meta.merged = ov.meta.merged.slice();   // S25
     }
     function applyMetaDom() {
         var subEl = document.getElementById('routeSub');
@@ -875,12 +913,17 @@
         if (!box) return;
         box.innerHTML = '';
         var segLocked = (typeof STARTS !== 'undefined' && STARTS.length > 1 && typeof start !== 'undefined' && start !== STARTS[0].id);
+        var merged = Edit._mergedIds();
+        var vi = 0;
         DAYS.forEach(function (d, i) {
+            if (merged.indexOf(d.id) >= 0) return;   // S25：已并入前一天，显示层隐藏
+            vi++;
             var card = document.createElement('div');
             card.className = 'et-day';
+            var rest = !d.altKm || (d.altKm[1] - d.altKm[0]) < 1;   // S25 休整占位
             var top = document.createElement('div');
             top.className = 'et-day-top';
-            top.innerHTML = '<span class="et-tag">' + dayDateTag(d, i) + '</span>';
+            top.innerHTML = '<span class="et-tag">' + dayDateTag(d, vi - 1) + (rest ? ' · 休整' : '') + '</span>';
             var txt = document.createElement('button');
             txt.className = 'et-txt';
             txt.textContent = d.title;
@@ -892,13 +935,21 @@
             card.appendChild(top);
             var sub = document.createElement('div');
             sub.className = 'et-sub';
-            sub.textContent = d.note + (d.stay ? ' · 住' + d.stay : '') + (d.km ? ' · ' + d.km + 'km' : '');
+            sub.textContent = (rest ? '休整占位 · 往里归点可复活，或并入前一天' : d.note + (d.stay ? ' · 住' + d.stay : '') + (d.km ? ' · ' + d.km + 'km' : ''));
             card.appendChild(sub);
             var chips = document.createElement('div');
             chips.className = 'et-chips';
             chips.innerHTML = wpChips(d);
             card.appendChild(chips);
-            if (d.path && d.altKm) {
+            if (rest) {
+                var mg = document.createElement('button');
+                mg.className = 'edit-mini et-merge';
+                mg.textContent = '并入前一天';
+                mg.onclick = function () {
+                    if (Edit.mergeDay(d.id)) etToast('已并入前一天，编号已重排');
+                };
+                card.appendChild(mg);
+            } else if (d.path && d.altKm) {
                 if (segLocked) {
                     var hint = document.createElement('div');
                     hint.className = 'et-seg-hint';

@@ -390,26 +390,37 @@
         // 侧栏
         var listEl = document.getElementById('dayList');
         listEl.innerHTML = '';
-        // 出发日期（S13 排期）：overlay 存在时每天卡显示真实日期+星期；
-        // 按 DAYS 顺序顺延（休整日只占序号不改里程）。日期源是 ROUTE_META.departureDate
-        // （edit.js 的 overlay 合并时写入，通用字段、不写死任何线路）。
+        // S25 天数显示语义：merged（并入前一天）的天隐藏；区间被切空（<1km 或无区间）
+        // 的天不消失，显示「休整」占位卡；编号按可见序列连续重排 D1..Dn，永不跳号。
+        var mergedIds = (typeof Edit !== 'undefined' && Edit.overlay && Edit.overlay.meta &&
+            Array.isArray(Edit.overlay.meta.merged)) ? Edit.overlay.meta.merged : [];
+        var visibleDays = DAYS.filter(function (d) { return mergedIds.indexOf(d.id) < 0; });
         document.body.classList.toggle('has-dep', !!ROUTE_META.departureDate);
-        DAYS.forEach(function (d, i) {
+        visibleDays.forEach(function (d, vi) {
             var li = document.createElement('li');
+            var rest = !d.altKm || (d.altKm[1] - d.altKm[0]) < 1;   // 切空/无区间 = 休整（显示占位，不消失）
+            if (rest) li.classList.add('rest');
             li.title = d.energy;
-            var tag = 'D' + d.id;
+            var tag = 'D' + (vi + 1);   // 连续编号（显示层，按可见序列）
             if (ROUTE_META.departureDate) {
                 var dep = new Date(ROUTE_META.departureDate + 'T00:00:00');
-                dep.setDate(dep.getDate() + i);   // 第 i 天 = 出发 + i 天（含休整顺延）
+                dep.setDate(dep.getDate() + vi);   // 第 vi 张可见卡 = 出发 + vi 天（含休整顺延）
                 tag += ' · ' + (dep.getMonth() + 1) + '月' + dep.getDate() + '日 周' +
                     '日一二三四五六'.charAt(dep.getDay());
             }
+            if (rest) tag += ' · 休整';
             li.innerHTML = '<span class="day-tag">' + tag + '</span>' +
                 '<span class="day-meta"><span class="day-title">' + d.title + '</span>' +
-                '<span class="day-note">' + d.note + (d.stay ? ' · 住' + d.stay : '') + '</span></span>' +
-                sparkSVG(d) +
-                '<span class="day-km">' + (d.km ? d.km + 'km' : '—') + '</span>';
-            li.onclick = function () { focusDay(i); };
+                '<span class="day-note">' + (rest ? '休整占位 · 可往里归点，或编辑模式并入前一天' : d.note + (d.stay ? ' · 住' + d.stay : '')) + '</span></span>' +
+                (rest ? '' : sparkSVG(d)) +
+                '<span class="day-km">' + (rest ? '—' : (d.km ? d.km + 'km' : '—')) + '</span>';
+            li.onclick = rest ? null : (function (dayId) {   // 按 ID 在点击时解析：setStart 重建 DAYS 后旧卡闭包仍正确
+                return function () {
+                    var idx = -1;
+                    DAYS.forEach(function (x, j) { if (x.id === dayId) idx = j; });
+                    if (idx >= 0) focusDay(idx);
+                };
+            })(d.id);
             listEl.appendChild(li);
         });
         // 统计（全部从数据算出，不再写死 —— 写死的数会跟数据脱节）
