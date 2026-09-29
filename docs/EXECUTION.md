@@ -732,3 +732,41 @@ Actions Secrets，构建时写入 `.env.local`（全程日志脱敏），构建�
 5. Actions → cloud-build → Run workflow（routeId 填 `chuanxi` 试跑）验证构建链路；
    成功后 push 任意提交或手动触发 deploy-pages，访问 `https://<用户名>.github.io/xianlumap/`
    应见选线器（注意仓库名路径；若用自定义域名/CNAME 另配）
+
+## 19. 景点库半自动流水线（2026-09-29，S12）
+
+> 承接 §17「半自动景点库」的后续计划。铁律不变：**「值不值得去是人的判断」——
+> 脚本只抓候选 + 人工审核入库，不许自动全进。**
+
+### 三环流程：抓取 → 审核 → 回灌
+
+**① `tools/capture-spots.js --route <id>`**（候选抓取）
+- 走廊：距路径 ≤35km（复用 build-stations 的投影工具）；高德 POI 三类检索：
+  风景名胜 typecode 1101xx（**不含 1102 公园**——城区会爆，这是防淹没的第一道）、
+  纪念馆 1103xx / 寺观教堂 1104xx、关键词兜底「观景台」「垭口」（typecode 覆盖不到的）
+- 防淹没第二道：25km 里程桶 ≤6 + 单区上限（普通区 12 / 大城市城区 5）；
+  第三道：同名人工库条目直接跳过（不重复送审）
+- 入库形状：`{name, kind(spot|viewpoint|pass|memorial|temple), lat/lng(WGS-84), srcCoord(GCJ 原值),
+  source:'amap', sourceId, fetchedAt, autoCaptured:true, reviewed:false, routes:[线路id], d(距主线km)}`
+- 实测：川西 102 / 青甘 228 / 318 108（API 124/406/146 次，0 失败），与手打 81 条共存（库 519 条）
+
+**② `tools/review-spots.html` + `review-spots.js`**（人工审核页，今天的主角）
+- 本地起服务打开（README 有用法）；key.local.js 复用主站模式，高德底图
+- 按线路 Tab；列表 + 地图联动（点列表飞点位）；每条显示名称/类别/距主线 km/地址
+- 三操作：✓通过 / ✗拒绝（可填原因，默认「不值得收录」）/ ✎改名；手打 81 条灰显只读
+- 审核状态存 localStorage（刷新不丢），进度条已审 N/总数；
+  「导出审核结果」下载 spots.json——**浏览器写不了仓库，导出的文件交维护者提交**（诚实边界）
+- 冒烟：headless Chrome 截图 + `?autotest=1` 程序化完成三种操作并输出导出统计（dump-dom 断言）
+
+**③ `tools/apply-spots.js`**（回灌线路包）
+- 只物化 `reviewed && approved` 的候选 + 全部手打条目；某线路走廊内（≤35km）→
+  物化为 GCJ-02 的 `{n, p, d}` 追加进该线 SPOTS（**手打老条目字段原样保留，按名字去重不覆盖**）
+- 实测（模拟审核通过 43 条观景台/垭口类）：青甘 15→50、川西 8→26、318 6→57；
+  c4-test 282 / probe-check 42 全绿，页面胶囊层渲染新点（/tmp/spots-backfilled.png 冒烟）
+
+### 留给用户的审核界面
+
+- 建议从 **318** 开始（新增 108 条里观景台/垭口 24 条已示范通过，风景类 84 条等你拍板）；
+  青甘 228 条最多，适合批量：城市公园类风景可直接 ✗，湖/雪山/雅丹类值得 ✓
+- ✎ 改名很常用：高德名常带「(XX景区)」营销后缀，改短名胶囊标注更清爽
+- 拒绝要填原因的习惯值得养成——下季度重抓时会带着拒绝记录，不再重复送审（同站规则会跳过）

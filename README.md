@@ -213,6 +213,23 @@ node tools/validate.js qinghai-gansu   # 数据体检 V1–V4（--fix 可修复�
 
 之后 push 到 main 自动部署；Actions 页的 `deploy-pages` 也可手动触发。
 
+## 景点库半自动流水线（S12）
+
+铁律：「值不值得去是人的判断」——脚本只抓候选，**人工审核后才入库**。
+
+```bash
+node tools/capture-spots.js --route chuanxi   # ① 沿走廊抓候选（风景/纪念馆/寺观 + 观景台/垭口兜底）
+# ② 审核：仓库根起服务后打开 http://localhost:8000/tools/review-spots.html
+python -m http.server 8000   # （key.local.js 复用主站模式，页面里 ✓通过 / ✗拒绝 / ✎改名）
+# ③ 审核完点「导出审核结果」→ 把 spots.json 交给维护者覆盖 data/db/，然后回灌：
+node tools/apply-spots.js    # reviewed 且通过的候选 → 物化进各线 SPOTS（手打老数据不动）
+```
+
+候选三条线共 438 条（川西 102 / 青甘 228 / 318 108，25km 桶配额防城区淹没）；
+手打 81 条在审核页灰显只读（历史审核成果）。刷新节奏建议跟站点一致（季度）。
+
+---
+
 ## 云端构建（GitHub Actions）
 
 `.github/workflows/build.yml`：**Actions → cloud-build → Run workflow**：
