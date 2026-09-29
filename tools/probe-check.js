@@ -277,5 +277,45 @@ try {
 } catch (e) { dbOk = false; }
 ok('共享库存在且记录形状合规（WGS 基准 + 来源记录 + GCJ 原值）', dbOk, dbCount + ' 条');
 
+/* ---------- 途经点向导（S13）：加点→排序→删点→导出可被 build-route 消费 ---------- */
+console.log('\n【7】途经点增删向导（S13）');
+const { spawnSync } = require('child_process');
+const wiz = bootRoute('chuanxi');
+const W = wiz.sandbox.Wp;
+ok('向导可用（Wp API + 初始列表=包内途经点）', !wiz.err && !!W && W.list.length === Object.keys(wiz.sandbox.ROUTE_BUILD.waypoints).length,
+    W ? W.list.length + ' 个' : '无');
+W.add('向导测试点A', 30.7, 104.1);
+W.add('向导测试点B', 30.5, 103.9);
+const wpAfterAdd = W.list.length;
+ok('加点（GCJ 输入→按包 datum 转 WGS）', wpAfterAdd === Object.keys(wiz.sandbox.ROUTE_BUILD.waypoints).length + 2, wpAfterAdd + ' 个');
+ok('排序与删除', W.move(W.list.length - 1, -1) === true && W.remove(W.list.length - 1) === true && W.list.length === wpAfterAdd - 1, W.list.length + ' 个');
+const wizJson = W.exportJson();
+const wizKeys = Object.keys(wizJson.waypoints);
+const legRefsOk = wizJson.legs.every(l => wizJson.waypoints[l.from] && wizJson.waypoints[l.to] && (l.via || []).every(v => wizJson.waypoints[v]));
+ok('导出结构（waypoints+legs 引用自洽，inputDatum 标注）',
+    wizKeys.length === W.list.length && wizJson.legs.length >= 1 && legRefsOk && (wizJson.inputDatum === 'wgs84' || wizJson.inputDatum === 'gcj02'),
+    wizKeys.length + ' 点 / ' + wizJson.legs.length + ' 段 / ' + wizJson.inputDatum);
+// 消费级验证：临时包跑 build-route --dry（不联网），跑完即删
+let dryOut = '';
+try {
+    const wizPkg = 'var ROUTE_BUILD = ' + JSON.stringify({
+        inputDatum: wizJson.inputDatum, meta: { key: '__wiztest' },
+        waypoints: wizJson.waypoints, legs: wizJson.legs,
+        starts: [{ id: 't', name: '测试' }], poiRegions: ['测试区']
+    }) + ';\n';
+    fs.writeFileSync(path.join(ROOT, 'route-defs', '__wiztest.js'), wizPkg);
+    const r = spawnSync('node', ['tools/build-route.js', '__wiztest', '--dry'], { cwd: ROOT, encoding: 'utf8' });
+    dryOut = (r.stdout || '') + (r.stderr || '');
+    ok('导出物被 build-route --dry 消费（契约校验通过，不联网）', r.status === 0 && dryOut.indexOf('契约校验通过') >= 0,
+        dryOut.split('\n').filter(Boolean).slice(-1)[0] || ('exit ' + r.status));
+} catch (e) {
+    ok('导出物被 build-route --dry 消费（契约校验通过，不联网）', false, e.message.slice(0, 80));
+} finally {
+    try { fs.unlinkSync(path.join(ROOT, 'route-defs', '__wiztest.js')); } catch (e) {}
+}
+W.clear();
+ok('恢复原始数据清掉途经点 overlay', !lsStore['xianlumap.waypoints.chuanxi'] && W.list.length === Object.keys(wiz.sandbox.ROUTE_BUILD.waypoints).length,
+    W.list.length + ' 个（回原值）');
+
 console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
 process.exit(fail ? 1 : 0);

@@ -22,9 +22,27 @@ const ARGS = process.argv.slice(2);
 const ROUTE_ID = ARGS.filter(a => !a.startsWith('--'))[0];
 const SOURCE = (ARGS.filter(a => a.indexOf('--source=') === 0)[0] || '--source=amap').split('=')[1];
 const COMPARE_OSRM = ARGS.indexOf('--compare-osrm') >= 0;
+const DRY = ARGS.indexOf('--dry') >= 0;
 if (!ROUTE_ID || ['amap', 'tencent'].indexOf(SOURCE) < 0) {
-    console.error('用法: node tools/build-route.js <routeId> [--source amap|tencent] [--compare-osrm]');
+    console.error('用法: node tools/build-route.js <routeId> [--source amap|tencent] [--compare-osrm] [--dry]');
     process.exit(1);
+}
+// --dry：只校验包可加载 + 打印契约摘要（不联网）。途经点向导的导出物用它做消费级验证。
+if (DRY) {
+    const dryPkg = loadRoutePackage(ROUTE_ID);
+    const B2 = dryPkg.pkg.ROUTE_BUILD;
+    const wpKeys = Object.keys(B2.waypoints || {});
+    const badLeg = (B2.legs || []).filter(l => !B2.waypoints[l.from] || !B2.waypoints[l.to] ||
+        (l.via || []).some(v => !B2.waypoints[v]));
+    console.log('[dry] ' + ROUTE_ID + '：inputDatum=' + B2.inputDatum +
+        ' / waypoints ' + wpKeys.length + ' 个 / legs ' + (B2.legs || []).length + ' 段' +
+        ' / starts ' + (B2.starts || []).length + ' / poiRegions ' + (B2.poiRegions || []).length);
+    if (badLeg.length) {
+        console.error('[dry] ❌ legs 引用了不存在的途经点键：' + badLeg.map(l => l.id).join(','));
+        process.exit(1);
+    }
+    console.log('[dry] 契约校验通过');
+    process.exit(0);
 }
 
 const { file: PKG_FILE, pkg } = loadRoutePackage(ROUTE_ID);

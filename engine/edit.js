@@ -553,3 +553,479 @@
             }, true);
         }
     }
+
+    /* ============================================================================
+     * 途经点增删向导（S13：自定义线路第一块，用户已拍板）
+     * overlay 语义：改动写 localStorage（xianlumap.waypoints.<routeId>），不动
+     * route-defs 包。新途经点不参与当前渲染（几何是构建产物）——面板与导出
+     * 全程如实标注「待构建」，不假装已生效。
+     * 两档云端构建触发：
+     *   档一（自动尝试）：用户在本机配置了 GitHub PAT（localStorage，仅存本机）
+     *     → 直接调 workflow_dispatch API 触发 build.yml 并轮询进度；
+     *   档二（兜底）：无 token → 下载 route-<id>.waypoints.json + 复制 ROUTE_BUILD
+     *     段 + 打开 Actions 页面（owner/repo 可填则生成直链），维护者代跑后刷新即见。
+     * 全程通用：不出现任何具体线路名（线路身份只来自 ROUTE_META.key）。
+     * ========================================================================== */
+
+    /* GCJ-02 → WGS-84（标准公开算法，与 tools/lib/build-lib.js 同源；
+       搜索/点选拿到的是 GCJ-02，导回包时按包 inputDatum 转换） */
+    var _WZ = { A: 6378245.0, EE: 0.00669342162296594323 };
+    function _outOfChina(lat, lng) {
+        return (lng < 72.004 || lng > 137.8347) || (lat < 0.8293 || lat > 55.8271);
+    }
+    function _tfLat(x, y) {
+        var r = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+        r += (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3;
+        r += (20 * Math.sin(y * Math.PI) + 40 * Math.sin(y / 3 * Math.PI)) * 2 / 3;
+        r += (160 * Math.sin(y / 12 * Math.PI) + 320 * Math.sin(y * Math.PI / 30)) * 2 / 3;
+        return r;
+    }
+    function _tfLng(x, y) {
+        var r = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+        r += (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3;
+        r += (20 * Math.sin(x * Math.PI) + 40 * Math.sin(x / 3 * Math.PI)) * 2 / 3;
+        r += (150 * Math.sin(x / 12 * Math.PI) + 300 * Math.sin(x / 30 * Math.PI)) * 2 / 3;
+        return r;
+    }
+    function gcj2wgsB(lat, lng) {
+        if (_outOfChina(lat, lng)) return [lat, lng];
+        var dLat = _tfLat(lng - 105, lat - 35), dLng = _tfLng(lng - 105, lat - 35);
+        var rad = lat / 180 * Math.PI, magic = Math.sin(rad);
+        magic = 1 - _WZ.EE * magic * magic;
+        var sm = Math.sqrt(magic);
+        dLat = (dLat * 180) / ((_WZ.A * (1 - _WZ.EE)) / (magic * sm) * Math.PI);
+        dLng = (dLng * 180) / (_WZ.A / sm * Math.cos(rad) * Math.PI);
+        return [lat - dLat, lng - dLng];
+    }
+
+    var WP_KEY = 'xianlumap.waypoints.' + ROUTE_META.key;
+    var WP_INPUT_WGS = !!(typeof ROUTE_BUILD !== 'undefined' && ROUTE_BUILD && ROUTE_BUILD.inputDatum === 'wgs84');
+    function wpLoad() {
+        try {
+            var raw = localStorage.getItem(WP_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return null;
+    }
+    function wpSave(list) {
+        try {
+            if (list && list.length) localStorage.setItem(WP_KEY, JSON.stringify({ list: list }));
+            else localStorage.removeItem(WP_KEY);
+        } catch (e) {}
+        refreshWpBadge();
+    }
+    /* 初始列表 = 包内现有途经点（键与顺序保留）；overlay 存在则以 overlay 为准 */
+    function wpBaseList() {
+        var out = [];
+        if (typeof ROUTE_BUILD !== 'undefined' && ROUTE_BUILD && ROUTE_BUILD.waypoints) {
+            Object.keys(ROUTE_BUILD.waypoints).forEach(function (k) {
+                var w = ROUTE_BUILD.waypoints[k];
+                out.push({ key: k, n: w.n, p: [w.p[0], w.p[1]], alt: w.alt, d: w.d || '' });
+            });
+        }
+        return out;
+    }
+    var Wp = {
+        list: (wpLoad() || {}).list || wpBaseList(),
+        dirty: function () { return !!wpLoad(); },
+        add: function (name, gcjLat, gcjLng) {
+            var p = WP_INPUT_WGS ? gcj2wgsB(gcjLat, gcjLng) : [gcjLat, gcjLng];
+            var key = 'wp' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+            this.list.push({ key: key, n: String(name).slice(0, 20), p: [+p[0].toFixed(6), +p[1].toFixed(6)], alt: 500, d: '' });
+            wpSave(this.list);
+            return key;
+        },
+        move: function (idx, dir) {   // dir: -1 上移 / +1 下移
+            var j = idx + dir;
+            if (idx < 0 || idx >= this.list.length || j < 0 || j >= this.list.length) return false;
+            var t = this.list[idx];
+            this.list[idx] = this.list[j];
+            this.list[j] = t;
+            wpSave(this.list);
+            return true;
+        },
+        remove: function (idx) {
+            if (idx < 0 || idx >= this.list.length) return false;
+            this.list.splice(idx, 1);
+            wpSave(this.list);
+            return true;
+        },
+        clear: function () {
+            this.list = wpBaseList();
+            try { localStorage.removeItem(WP_KEY); } catch (e) {}
+            refreshWpBadge();
+        },
+        /* 生成 legs 初分：每段 from + ≤4 via + to（自动初分，标题/备注待人工润色） */
+        buildLegs: function () {
+            var legs = [];
+            var L = this.list;
+            for (var i = 0; i < L.length - 1; i += 5) {
+                var seg = L.slice(i, Math.min(i + 6, L.length));
+                if (seg.length < 2) break;
+                legs.push({
+                    id: legs.length + 1,
+                    title: seg[0].n + ' → ' + seg[seg.length - 1].n,
+                    note: '途经点向导自动初分，标题/备注请人工润色',
+                    zoom: 8,
+                    from: seg[0].key,
+                    to: seg[seg.length - 1].key,
+                    via: seg.slice(1, -1).map(function (w) { return w.key; })
+                });
+            }
+            return legs;
+        },
+        buildWaypoints: function () {
+            var out = {};
+            this.list.forEach(function (w) {
+                out[w.key] = { n: w.n, p: [w.p[0], w.p[1]], alt: w.alt || 500, d: w.d || '' };
+            });
+            return out;
+        },
+        exportJson: function () {
+            return {
+                route: ROUTE_META.key,
+                generatedAt: new Date().toISOString().slice(0, 10),
+                inputDatum: WP_INPUT_WGS ? 'wgs84' : 'gcj02',
+                waypoints: this.buildWaypoints(),
+                legs: this.buildLegs()
+            };
+        },
+        exportJs: function () {
+            var j = this.exportJson();
+            return '/* ===== 途经点向导生成 ' + j.generatedAt + ' · legs 为自动初分，标题/备注请人工润色 ===== */\n' +
+                'ROUTE_BUILD.waypoints = ' + JSON.stringify(j.waypoints, null, 2) + ';\n' +
+                'ROUTE_BUILD.legs = ' + JSON.stringify(j.legs, null, 2) + ';\n';
+        }
+    };
+
+    /* ---------- 面板 UI ---------- */
+    function refreshWpBadge() {
+        var b = document.getElementById('btnEdit');
+        if (!b) return;
+        var n = Wp.dirty() ? Wp.list.length : 0;
+        b.textContent = n ? '✏️ 编辑模式 · ' + n + ' 途经点待构建' : '✏️ 编辑模式';
+    }
+    (function buildWaypointPanel() {
+        if (!editBar) return;
+        var css = document.createElement('style');
+        css.textContent =
+            '.wp-sec{margin-top:8px;border-top:1px dashed #fcd34d;padding-top:8px;}' +
+            '.wp-head{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#92400e;}' +
+            '.wp-badge{font-size:10px;background:#fff7ed;border:1px solid #fdba74;color:#c2410c;border-radius:8px;padding:0 6px;display:none;}' +
+            '.wp-note{font-size:10px;color:#b45309;margin:4px 0;line-height:1.5;}' +
+            '.wp-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#334155;padding:2px 0;}' +
+            '.wp-item .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+            '.wp-item button{width:20px;height:20px;border:1px solid #e2e8f0;background:#fff;border-radius:5px;cursor:pointer;font-size:10px;line-height:1;padding:0;}' +
+            '.wp-item button:hover{background:#fef3c7;}' +
+            '.wp-search{width:100%;box-sizing:border-box;font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;margin-top:4px;font-family:inherit;}' +
+            '.wp-row{display:flex;gap:6px;margin-top:5px;}' +
+            '.wp-row .edit-mini{flex:1;margin-right:0;}' +
+            '.wp-pick-on{background:#b45309 !important;}' +
+            '#wpModal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:var(--z-guide,1400);' +
+            'width:min(620px,calc(100vw - 40px));background:#fff;border:1px solid #e2e8f0;border-radius:14px;' +
+            'box-shadow:0 16px 48px rgba(15,23,42,.22);padding:16px 18px;font-family:inherit;}' +
+            '#wpModal h3{margin:0 0 8px;font-size:14.5px;color:#0f172a;}' +
+            '#wpModal textarea{width:100%;box-sizing:border-box;height:150px;font-size:10.5px;border:1px solid #e2e8f0;' +
+            'border-radius:8px;padding:8px;font-family:ui-monospace,Menlo,monospace;}' +
+            '#wpModal .mrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;}' +
+            '#wpModal input[type=text],#wpModal input[type=password]{font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;width:120px;font-family:inherit;}' +
+            '#wpModal .ghlog{font-size:10.5px;color:#64748b;margin-top:6px;line-height:1.6;white-space:pre-wrap;}';
+        (document.head || document.documentElement).appendChild(css);
+
+        var sec = document.createElement('div');
+        sec.className = 'wp-sec';
+        sec.innerHTML =
+            '<div class="wp-head">➕ 途经点<span class="wp-badge" id="wpBadge">待构建</span></div>' +
+            '<div class="wp-note">搜索或地图点选添加，↑↓ 排序 ✕ 删除。改动只存本机（overlay），' +
+            '<b>不参与当前渲染</b>——点「生成新版线路」后云端构建生效。</div>' +
+            '<div id="wpList"></div>' +
+            '<input class="wp-search" id="wpSearch" placeholder="搜索地名（高德输入提示）…" autocomplete="off">' +
+            '<div class="wp-row">' +
+            '<button class="edit-mini" id="wpPick">📍 地图点选</button>' +
+            '<button class="edit-mini" id="wpGen">生成新版线路</button>' +
+            '</div>';
+        editBar.appendChild(sec);
+        refreshWpBadge();
+
+        function renderList() {
+            var el = document.getElementById('wpList');
+            if (!el) return;
+            el.innerHTML = '';
+            Wp.list.forEach(function (w, i) {
+                var row = document.createElement('div');
+                row.className = 'wp-item';
+                row.innerHTML = '<span class="t">' + (i + 1) + '. ' + escapeHtml(w.n) + '</span>' +
+                    '<button title="上移">↑</button><button title="下移">↓</button><button title="删除">✕</button>';
+                var bs = row.querySelectorAll('button');
+                if (!bs.length) { el.appendChild(row); return; }   // mock DOM 无 querySelectorAll 结果
+                bs[0].onclick = function () { Wp.move(i, -1); renderList(); };
+                bs[1].onclick = function () { Wp.move(i, 1); renderList(); };
+                bs[2].onclick = function () {
+                    if (editAsk('删除途经点「' + w.n + '」？', '确定') !== null) { Wp.remove(i); renderList(); }
+                };
+                el.appendChild(row);
+            });
+            var badge = document.getElementById('wpBadge');
+            if (badge) badge.style.display = Wp.dirty() ? '' : 'none';
+        }
+        renderList();
+        Wp.renderList = renderList;
+
+        /* 搜索：高德输入提示（AMap.AutoComplete 插件；key 来自 key.local.js 模式） */
+        (function setupSearch() {
+            var input = document.getElementById('wpSearch');
+            if (!input || typeof AMap === 'undefined' || !AMap.plugin) return;
+            try {
+                AMap.plugin(['AMap.AutoComplete', 'AMap.Geocoder'], function () {
+                    var ac = new AMap.AutoComplete({ input: input, citylimit: false });
+                    ac.on('select', function (e) {
+                        var poi = e.poi;
+                        if (!poi || !poi.location) return;
+                        Wp.add(poi.name, poi.location.getLat(), poi.location.getLng());
+                        input.value = '';
+                        renderList();
+                    });
+                });
+            } catch (err) {}
+        })();
+
+        /* 地图点选：开 → 点击地图取坐标，逆地理出名字 */
+        var picking = false;
+        var pickHandler = null;
+        var pickBtn = document.getElementById('wpPick');
+        if (pickBtn) {
+            pickBtn.onclick = function () {
+                picking = !picking;
+                pickBtn.classList.toggle('wp-pick-on', picking);
+                pickBtn.textContent = picking ? '📍 点选模式：点地图…' : '📍 地图点选';
+                if (typeof map === 'undefined' || !map || !map.on) return;
+                if (picking) {
+                    pickHandler = function (e) {
+                        var lnglat = e.lnglat;
+                        var lat = lnglat.getLat(), lng = lnglat.getLng();
+                        var name = '点选点(' + lat.toFixed(3) + ',' + lng.toFixed(3) + ')';
+                        Wp.add(name, lat, lng);
+                        renderList();
+                        try {
+                            if (AMap && AMap.plugin) {
+                                AMap.plugin('AMap.Geocoder', function () {
+                                    new AMap.Geocoder().getAddress([lng, lat], function (st, res) {
+                                        if (st === 'complete' && res.regeocode) {
+                                            var cd = res.regeocode.addressComponent;
+                                            var nm = (cd.township || cd.district || cd.street || '').toString();
+                                            var item = Wp.list.filter(function (w) { return w.n === name; })[0];
+                                            if (item && nm) { item.n = nm.slice(0, 20); wpSave(Wp.list); renderList(); }
+                                        }
+                                    });
+                                });
+                            }
+                        } catch (err) {}
+                    };
+                    map.on('click', pickHandler);
+                } else if (pickHandler) {
+                    map.off('click', pickHandler);
+                    pickHandler = null;
+                }
+            };
+        }
+
+        /* 生成新版线路：弹层 = ROUTE_BUILD 段 + 下载 + 两档云端构建触发 */
+        var genBtn = document.getElementById('wpGen');
+        if (genBtn) genBtn.onclick = openWpModal;
+
+        function openWpModal() {
+            var old = document.getElementById('wpModal');
+            if (old) old.remove();
+            var json = Wp.exportJson();
+            var m = document.createElement('div');
+            m.id = 'wpModal';
+            m.innerHTML =
+                '<h3>生成新版线路 · ' + ROUTE_META.name + '</h3>' +
+                '<div class="wp-note">① 复制下方 ROUTE_BUILD 段（替换包内同名两段；legs 为自动初分，' +
+                '标题/备注建议人工润色）或下载 JSON 备份；② 触发云端构建；③ 构建完成后刷新即见。</div>' +
+                '<textarea id="wpJs" readonly></textarea>' +
+                '<div class="mrow">' +
+                '<button class="edit-mini" id="wpCopy">复制 ROUTE_BUILD 段</button>' +
+                '<button class="edit-mini" id="wpDl">下载 waypoints.json</button>' +
+                '<button class="edit-mini" id="wpClose">关闭</button>' +
+                '</div>' +
+                '<div class="mrow" style="margin-top:10px;border-top:1px solid #f1f5f9;padding-top:8px;">' +
+                '<b style="font-size:11.5px;color:#0f766e;">云端构建（二选一）</b></div>' +
+                '<div class="mrow">' +
+                '<span style="font-size:10.5px;color:#64748b;">档一（自动）：</span>' +
+                '<input type="text" id="ghOwner" placeholder="owner">' +
+                '<input type="text" id="ghRepo" placeholder="repo">' +
+                '<input type="password" id="ghToken" placeholder="GitHub PAT（仅存本机）">' +
+                '<button class="edit-mini" id="ghGo">触发 workflow</button>' +
+                '</div>' +
+                '<div class="mrow"><span style="font-size:10.5px;color:#64748b;">档二（兜底）：</span>' +
+                '<span style="font-size:10.5px;color:#475569;">下载文件 + 复制上面代码段，交给维护者代跑</span>' +
+                '<button class="edit-mini" id="ghOpen">打开 Actions 页</button></div>' +
+                '<div class="ghlog" id="ghLog"></div>';
+            document.body.appendChild(m);
+            document.getElementById('wpJs').value = Wp.exportJs();
+            document.getElementById('wpClose').onclick = function () { m.remove(); };
+            document.getElementById('wpCopy').onclick = function () {
+                copyText(Wp.exportJs());
+                editNotice('ROUTE_BUILD 段已复制，粘贴回 route-defs/' + ROUTE_META.key + '.js 对应位置。');
+            };
+            document.getElementById('wpDl').onclick = function () {
+                var blob = new Blob([JSON.stringify(json, null, 1)], { type: 'application/json' });
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'route-' + ROUTE_META.key + '.waypoints.json';
+                document.body.appendChild(a); a.click(); a.remove();
+            };
+            /* GitHub 配置本机持久化（token 只进 localStorage，不上任何服务器除 GitHub API） */
+            var GH_CFG_KEY = 'xlm-gh-config';
+            var ghCfg = {};
+            try { ghCfg = JSON.parse(localStorage.getItem(GH_CFG_KEY) || '{}') || {}; } catch (e) {}
+            document.getElementById('ghOwner').value = ghCfg.owner || '';
+            document.getElementById('ghRepo').value = ghCfg.repo || '';
+            document.getElementById('ghToken').value = ghCfg.token || '';
+            ['ghOwner', 'ghRepo', 'ghToken'].forEach(function (id) {
+                document.getElementById(id).onchange = function () {
+                    ghCfg = {
+                        owner: document.getElementById('ghOwner').value.trim(),
+                        repo: document.getElementById('ghRepo').value.trim(),
+                        token: document.getElementById('ghToken').value.trim()
+                    };
+                    try { localStorage.setItem(GH_CFG_KEY, JSON.stringify(ghCfg)); } catch (e) {}
+                };
+            });
+            document.getElementById('ghOpen').onclick = function () {
+                var o = document.getElementById('ghOwner').value.trim();
+                var r = document.getElementById('ghRepo').value.trim();
+                var url = (o && r)
+                    ? 'https://github.com/' + o + '/' + r + '/actions/workflows/build.yml'
+                    : 'https://github.com/actions';
+                window.open(url, '_blank');
+            };
+            document.getElementById('ghGo').onclick = function () {
+                var log = document.getElementById('ghLog');
+                var owner = document.getElementById('ghOwner').value.trim();
+                var repo = document.getElementById('ghRepo').value.trim();
+                var token = document.getElementById('ghToken').value.trim();
+                if (!owner || !repo || !token) {
+                    log.textContent = '档一需要填 owner / repo / PAT（仅存本机）。不想填就走档二。';
+                    return;
+                }
+                var base = 'https://api.github.com/repos/' + owner + '/' + repo;
+                log.textContent = '触发 workflow_dispatch…';
+                fetch(base + '/actions/workflows/build.yml/dispatches', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ref: 'main', inputs: { routeId: ROUTE_META.key } })
+                }).then(function (r) {
+                    if (r.status === 204) {
+                        log.textContent = '已触发 ✅ 轮询构建状态…';
+                        var since = Date.now();
+                        var tries = 0;
+                        var timer = setInterval(function () {
+                            tries++;
+                            fetch(base + '/actions/workflows/build.yml/runs?per_page=3', {
+                                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' }
+                            }).then(function (r2) { return r2.json(); }).then(function (d) {
+                                var run = (d.workflow_runs || []).filter(function (x) {
+                                    return new Date(x.created_at).getTime() >= since - 30000;
+                                })[0];
+                                if (!run) {
+                                    log.textContent = '等待 run 出现…（' + tries + '）';
+                                } else {
+                                    log.textContent = 'run #' + run.run_number + '：' + run.status +
+                                        (run.conclusion ? ' / ' + run.conclusion : '') +
+                                        '\n' + (run.html_url || '');
+                                    if (run.status === 'completed') {
+                                        clearInterval(timer);
+                                        log.textContent += run.conclusion === 'success'
+                                            ? '\n✅ 构建成功，刷新页面即见新版。'
+                                            : '\n❌ 构建失败：' + run.conclusion + '，详情见上方链接。';
+                                    }
+                                }
+                            }).catch(function (e) { log.textContent = '轮询出错：' + e.message; });
+                            if (tries > 40) { clearInterval(timer); log.textContent += '\n轮询超时，请打开 Actions 页查看。'; }
+                        }, 5000);
+                    } else {
+                        r.text().then(function (t) { log.textContent = '触发失败 HTTP ' + r.status + '：' + t.slice(0, 200); });
+                    }
+                }).catch(function (e) { log.textContent = '请求失败：' + e.message; });
+            };
+        }
+    })();
+
+    /* 复制小工具（向导与引导共用） */
+    function copyText(t) {
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(t);
+                return true;
+            }
+        } catch (e) {}
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = t;
+            document.body.appendChild(ta);
+            ta.select();
+            var ok = typeof document.execCommand === 'function' ? document.execCommand('copy') : false;
+            ta.remove();
+            return ok;
+        } catch (e) { return false; }
+    }
+    function escapeHtml(t) {
+        return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        });
+    }
+
+    /* 恢复原始数据：一并清途经点 overlay */
+    var _origReset = Edit.reset.bind(Edit);
+    Edit.reset = function () {
+        Wp.clear();
+        if (Wp.renderList) Wp.renderList();
+        _origReset();
+    };
+
+    /* ?wpautotest=1：程序化走通 加点→排序→删点→导出（headless 冒烟用） */
+    (function wpAutotest() {
+        if (typeof location === 'undefined' || !/[?&]wpautotest=1/.test(location.search)) return;
+        if (typeof document === 'undefined') return;
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                try {
+                    Edit.enter();
+                    var before = Wp.list.length;
+                    Wp.add('冒烟点A', 30.7, 104.1);
+                    Wp.add('冒烟点B', 30.5, 103.9);
+                    Wp.move(Wp.list.length - 1, -1);
+                    Wp.remove(Wp.list.length - 1);
+                    var js = Wp.exportJs();
+                    var j = Wp.exportJson();
+                    var marker = document.createElement('div');
+                    marker.id = 'wp-autotest-result';
+                    marker.textContent = 'WPAUTOTEST ' + JSON.stringify({
+                        before: before,
+                        after: Wp.list.length,
+                        legs: j.legs.length,
+                        wp: Object.keys(j.waypoints).length,
+                        hasWaypointsAssign: js.indexOf('ROUTE_BUILD.waypoints =') >= 0,
+                        hasLegsAssign: js.indexOf('ROUTE_BUILD.legs =') >= 0
+                    });
+                    document.body.appendChild(marker);
+                    openWpModalSafe();
+                } catch (e) {
+                    var m2 = document.createElement('div');
+                    m2.id = 'wp-autotest-result';
+                    m2.textContent = 'WPAUTOTEST ERROR ' + e.message;
+                    document.body.appendChild(m2);
+                }
+            }, 600);
+        });
+        function openWpModalSafe() {
+            var btn = document.getElementById('wpGen');
+            if (btn) btn.onclick();
+        }
+    })();

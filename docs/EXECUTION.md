@@ -805,3 +805,52 @@ apply-spots 仍只认 reviewed 状态。
 铁律照 S0：**显示层不得放大数据缺陷**——稀疏只减同屏数量，放大即全显，
 绝不制造「这段没景点」的假象。图层 z-index 不变（景点仍压城镇/站点）。
 三档冒烟：/tmp/spot-tier-z6.png（~35 胶囊）/ z8.5（~70）/ z11（全显）。
+
+## 20. 页面内途经点增删向导（2026-09-29，S13：自定义线路第一块，用户已拍板）
+
+### 能力边界（先说清楚）
+
+- 页面能做的：搜索/点选得到新途经点 → 排序/删除 → **生成** ROUTE_BUILD 更新段
+  （写 localStorage overlay，**不动 route-defs 包**）→ 导出/触发构建。
+- 页面做不到的（诚实边界）：几何重建（轨迹/高程/站点是构建产物，页面不实时算）；
+  仓库写入（浏览器没有仓库凭据）。所以新途经点在构建完成前**不参与渲染**，
+  面板与编辑模式按钮全程如实标「N 个途经点待构建」，不假装已生效。
+- 「恢复原始数据」一键连途经点 overlay 一起清。
+
+### 两档云端构建触发
+
+1. **档一（自动尝试）**：用户在弹层填 owner/repo/PAT——PAT 只进本机 localStorage，
+   仅用于浏览器直连 GitHub API（api.github.com 支持 CORS）——POST workflow_dispatch
+   触发 `.github/workflows/build.yml`（带 routeId），随后每 5s 轮询 runs 状态展示进度，
+   成功提示刷新即见。token 永不离开本机（除 GitHub 官方 API）。
+2. **档二（兜底）**：无 token 时——下载 `route-<id>.waypoints.json` + 一键复制
+   ROUTE_BUILD 段 + 打开 Actions 页（填了 owner/repo 生成直链），维护者代跑后用户刷新即见。
+
+### 导出物格式
+
+- `route-<id>.waypoints.json`：`{route, generatedAt, inputDatum, waypoints, legs}`；
+- ROUTE_BUILD 段（JS 文本）：`ROUTE_BUILD.waypoints = {...}; ROUTE_BUILD.legs = [...];`
+  可直接粘贴回包内同名两段。坐标按包 inputDatum 导出（wgs84 包自动 GCJ→WGS 转换，
+  浏览器内置与 tools 同源的公开算法）。legs 为**自动初分**（每段 from+≤4via+to，
+  标题=起止点名），注释里明确要求人工润色标题/备注——分段方案是人的判断。
+- 消费级验证：`build-route.js --dry`（新增）只校验契约不联网；probe-check 用临时包
+  实跑通过（waypoints/legs 引用自洽 + dry 退出码 0）。
+
+### 验证
+
+- probe-check【7】6 项断言：API 可用/加点（datum 转换）/排序删除/导出结构自洽/
+  build-route --dry 消费/恢复清理——48 全绿；c4-test 282 全绿。
+- 浏览器冒烟（headless Chrome + `?wpautotest=1`）：程序化走完 加点→排序→删点→
+  弹层导出，标记 `WPAUTOTEST {"before":13,"after":14,"legs":3,...}` 断言通过；
+  截图确认面板/弹层/两档触发 UI 渲染（/tmp/wizard-smoke.png）。
+
+### 离「完全自动闭环」还差什么（诚实评估）
+
+1. **包回写仍要过仓库**：导出物→粘贴/文件→提交，这一步维护者代跑（档二）。要自动，
+   需要 Pages 以外的受信后端（VPS 构建服务，已拍板方向）接收签名请求并代提交。
+2. **workflow_dispatch 的身份**：档一靠用户 PAT，无 PAT 用户无解（GitHub 不提供
+   匿名触发）；VPS 后端到位后可改为「向导 → VPS → 自动开 PR」。
+3. **搜索/点选质量**：高德输入提示的城市优先级未按线路调权（可能首选外地同名点）；
+   地图点选的逆地理在乡镇级常返回空名（回退「点选点(lat,lng)」，可改名）。
+4. **legs 初分粗糙**：纯按点数切段，未按日均里程——润色提示已写进导出注释，
+   S5 编辑模式可在构建后调分段（localStorage overlay）。
