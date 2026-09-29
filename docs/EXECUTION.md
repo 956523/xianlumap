@@ -1557,3 +1557,81 @@ probe【19】spy 断言：两钮同入口、连点三次 fitAll 调三次。
    重叠或缝隙——属 S19 已声明的「预览层口径」，legs 以云端构建为准。
 4. 全览根治依赖「mobActive 时收抽屉」——桌面无抽屉语义，纯 fitAll（与 S23
    前一致，零变化）。
+
+## 34. 默认图层策略 + 视觉降噪（2026-09-29/30，S26：六项一轮清）
+
+真机截图走查 + 用户点名需求，六项合并一轮。全部由子代理实现、本机验收（实现完成于
+S25 推送后，本轮含收尾修正见 §35）。
+
+### 需求与逐项修法
+
+1. **默认图层策略**：进详情页只开「主路线 + 城镇/补给点」；景点/垭口、加油站、
+   充电站默认关（HTML 去掉 checked + `layerOn = { fuel: false, ev: false }` /
+   `spotLabelOn = false` 状态位同步）。测试接缝：`window.__layerState` /
+   `__spotLabels` 供 vm 模拟用户勾选（c4 数据断言按「已勾选」口径开层重绘）。
+2. **城镇钉减重**：新 `IC.citySmall`（灰阶身 60% 尺寸 14×19）；打点层改状态位
+   重建模式，与城名同一 60km 分桶口径远景稀疏（窄屏 z<8 时按桶取代表）；
+   缩放防抖链顺带 `renderCityMarkers(z)`。
+3. **盲区标注**：白底胶囊（`badge: true` + bold）+ `zIndex: 145` 不被钉/地名截断；
+   **按车型过滤**——`window.__evMode` 记当前车型，renderWarnings 只显示匹配 type
+   的段（修掉「油车模式显示无快充段」的真 bug，318 双类型数据实证）。
+4. **peek 头部去重**：侧栏 `.brand-mini` 小字标并入 `h1` 标题行（记号 18px +
+   线路名同行），删掉重复的一行。
+5. **竖屏取景**：窄屏 padding 26→14；中心解算独立成 `solveCenter(zs)`（midY 用
+   `#map` 真实容器高）。**收尾时发现几何口径与符号双错，见 §35**。
+6. **规划摘要行点开**：peek 概要行加 `cursor:pointer` + ▾；点击弹 `mobPlan`
+   底部面板，`mobPlanBody` 镜像桌面侧栏 `planBox` 全文 + 口径注记；遮罩/✕ 关闭。
+
+### 验证
+
+- c4-test 95 项 × 3 包 285/285、probe-check 102/102（新增断言：默认图层双 false、
+  盲区按车型过滤、mob-plan 面板展开镜像不截断、窄屏容器口径）。
+- CDP iPhone 390×844 实测：路线垂直居中于可视区（截图 /tmp/s26-verify/）。
+
+### 诚实清单
+
+1. 竖屏竖向留白是**横宽环线的固有约束**（zoom 由横向绑定），修正后路线占满宽度、
+   垂直居中，但不可能填满竖屏——这不是缺陷。
+2. 默认关层后，「站点已上图」类数据断言改走测试接缝开层，不再代表默认视觉。
+3. 景点胶囊分桶稀疏口径与城钉共用 60km 桶，两套各自独立实现（数据不同源）。
+
+## 35. 竖屏取景中心修正（2026-09-30，S26 收尾：容器口径 + 反解符号转正）
+
+S26 交付后在 Kimi Work 接续验收，CDP 实测发现「路线仍偏上半屏」没修干净，
+深挖出两层问题：
+
+### Bug 1：可见区几何口径过时（S18 潜伏至今）
+
+S18 起窄屏 `#map` 高度 = `100vh − sheet-visible`（容器底即抽屉顶），但
+`solveCenter` 窄屏分支仍按旧模型算可见区：`visTop = panelBottom + titleH`、
+`visBot = vh − 6`——把抽屉当浮层、容器当全高，偏差一两百像素。
+修正：`visTop = titleH + 6`、`visBot = mapH − 6`（容器内、标题条以下）。
+
+### Bug 2：纬度反解移位量符号反了（同期潜伏）
+
+`mercTarget = mercY(bboxMid) + (visMid − midY)/ppxY` 应为 `(midY − visMid)`：
+mercY 随纬度递减而屏幕 y 递增，要把路线中心放到 visMid（>midY 时偏下），
+中心纬度须**北移**而非南移。旧符号把路线永远往北推——这正是历次
+「环线挤上半屏」的实际表现。转正后 CDP 实测：center 38.918°N（bbox 中值
+38.488 以北），路线落在可视区正中。
+
+### Bug 3：`__fitDebug` 静默失效
+
+S26 重构把 `mapH/midY` 移进 `solveCenter` 局部作用域，但 fitAll 的调试钩子
+仍引用它们——每次 fitAll 抛 ReferenceError 被 try/catch 吞掉，钩子恒为 null。
+mobile.js 全览按钮的 nearFit 偏离判定因此一直拿不到基准（靠近似回退撑着）。
+修法：solveCenter 内记录 `_fitInfo = {mh, midY, visMid}`，钩子统一从 `_fitInfo` 取。
+
+### 验证
+
+- c4-test 285/285、probe-check 102/102；新增【15】断言锁定容器口径
+  （`visTop = (_fitBox.titleH||0)+6` / `visBot = mapH−6`）与转正后公式。
+- CDP 390×844 实测 `__fitDebug`：`{z:5.935, c:[38.918, 98.076], mh:732,
+  midY:366, visMid:390}`——中心精确落在「标题条以下、容器底以上」的几何中心。
+
+### 诚实清单
+
+1. 符号错误期间桌面端为何看起来正常：桌面分支走 `panelRight` 横向补偿
+   （经度线性、公式独立且正确），纵向从不反解——bug 只在窄屏分支显形。
+2. headless 下 AMap 整数 zoom 取整会让 solve 与 render 有亚像素差，真机分数
+   zoom 天然精确（§18 口径不变）。
