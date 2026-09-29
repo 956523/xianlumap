@@ -338,10 +338,15 @@ function runRoute(routeId) {
         /\.day-meta\s*\{[^}]*flex-direction:\s*column/.test(cssOnly), '标题与备注纵向排列');
     ok('窄视口隐藏 sparkline 让位',
         /max-width:\s*860px[\s\S]{0,120}\.day-spark\s*\{\s*display:\s*none/.test(cssOnly), '');
-    ok('窄视口侧栏变底部抽屉（S14：peek 露手柄概要 / mob-full 全展）',
+    ok('窄视口侧栏变底部抽屉 + S16 信息架构（标题条/图层弹层/浮动钮/编辑全屏）',
         /max-width:\s*768px[\s\S]{0,500}#panel\s*\{[^}]*transform:\s*translateY\(calc\(100%\s*-\s*var\(--sheet-peek/.test(cssOnly) &&
-        /body\.mob-full\s+#panel\s*\{[^}]*transform:\s*none/.test(cssOnly),
-        '抽屉贴底全宽，不再是窄条侧栏');
+        /body\.mob-full\s+#panel\s*\{[^}]*transform:\s*none/.test(cssOnly) &&
+        /#mobBar\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
+        /#mobLayers\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
+        /#mobBtns\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
+        /body\.editing\s+#editBar\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
+        /#planPeek\s*\{/.test(cssOnly),
+        '抽屉贴底全宽 + 常驻标题条 + 右下浮动组（全览条件钮）+ 编辑全屏化');
     ok('中等视口侧栏收窄',
         /min-width:\s*721px[\s\S]{0,80}max-width:\s*1000px[\s\S]{0,80}width:\s*252px/.test(cssOnly), '');
     ok('面板自绘滚动条',

@@ -280,7 +280,7 @@
        结构：#panel 变底部行程单抽屉（peek 露手柄+标题+chips / full 全高 / hidden 收起），
        剖面抽屉 #elev 是第二张表（打开时盖住行程单）。手势/互斥逻辑在 engine/mobile.js。 */
     @media (max-width: 768px) {
-        :root { --sheet-peek: 92px; }
+        :root { --sheet-peek: 112px; }
         #panel {
             left: 0; right: 0; top: auto; bottom: 0; width: 100%;
             max-height: none; height: auto;
@@ -331,6 +331,63 @@
         @media (orientation: landscape) {
             body.mob-full #panel { height: 82vh; }
         }
+
+        /* ============ S16 移动端信息架构：标题条 / ⋯菜单 / 图层弹层 / 浮动按钮 ============
+           全部只在 ≤768px 出现；桌面侧栏维持现状（图层开关/续航卡仍在侧栏）。 */
+        #mobRoot { display: none; }
+        /* 常驻标题条：线路名 + 出发地切换 + 车型开关 + ⋯菜单 */
+        #mobBar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-collapse);
+            background: #fff; box-shadow: 0 1px 10px rgba(15,23,42,.14);
+            display: flex; align-items: center; gap: 6px;
+            min-height: 48px; box-sizing: border-box;
+            padding: calc(4px + env(safe-area-inset-top)) 10px 4px;
+            font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        }
+        #mobBar b#mobRouteName { font-size: 15px; color: #0f172a; flex: none; max-width: 32vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #mobStartSlot { flex: none; min-height: 34px; }
+        #mobStartSlot .seg button { min-height: 34px; padding: 4px 10px; }
+        .mob-evsw { display: flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 2px; flex: none; }
+        .mob-evsw button { border: none; background: none; min-width: 44px; min-height: 34px; border-radius: 7px; font-size: 12.5px; cursor: pointer; color: #64748b; font-weight: 600; font-family: inherit; }
+        .mob-evsw button.on { background: #0f766e; color: #fff; }
+        #mobMenuBtn { margin-left: auto; flex: none; width: 44px; min-height: 40px; border: none; background: #f1f5f9; border-radius: 9px; font-size: 20px; color: #475569; cursor: pointer; font-family: inherit; }
+        /* ⋯菜单（下拉） */
+        #mobMenu { position: fixed; top: calc(52px + env(safe-area-inset-top)); right: 8px; z-index: var(--z-guide); background: #fff; border-radius: 12px; box-shadow: 0 10px 32px rgba(15,23,42,.22); padding: 6px; display: none; min-width: 190px; }
+        body.mob-menu #mobMenu { display: block; }
+        #mobMenu button { display: block; width: 100%; text-align: left; border: none; background: none; min-height: 44px; padding: 0 12px; font-size: 14px; color: #1f2937; border-radius: 8px; cursor: pointer; font-family: inherit; }
+        #mobMenu button:active { background: #f1f5f9; }
+        /* 图层弹层（站点/景点开关 + 续航卡整体迁入）+ 点外部遮罩关闭 */
+        #mobLayersBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
+        body.mob-layers #mobLayersBk { display: block; }
+        #mobLayers { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-guide); background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(15,23,42,.25); max-height: 76vh; display: none; flex-direction: column; padding-bottom: calc(10px + env(safe-area-inset-bottom)); font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+        body.mob-layers #mobLayers { display: flex; }
+        #mobLayers .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; font-size: 14px; font-weight: 600; color: #0f172a; }
+        #mobLayers .ml-head button { width: 44px; height: 38px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 15px; cursor: pointer; color: #64748b; font-family: inherit; }
+        #mobLayersBody { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 14px; }
+        #mobLayers .legend { border-top: none; margin-top: 0; padding-top: 4px; }
+        #mobLayers .evcard { margin-top: 10px; }
+        #mobLayers #rngRange { min-height: 44px; }
+        /* 地图右下浮动按钮组：图层 + 条件出现的「全览」 */
+        #mobBtns { position: fixed; right: 10px; bottom: calc(var(--sheet-visible, 0px) + 64px + env(safe-area-inset-bottom)); z-index: var(--z-collapse); display: flex; flex-direction: column; gap: 10px; }
+        #mobBtns button { width: 48px; height: 48px; border-radius: 50%; border: none; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.22); font-size: 11.5px; font-weight: 600; color: #0f766e; cursor: pointer; font-family: inherit; line-height: 1.25; }
+        body.mob-full #mobBtns { display: none; }   /* 抽屉全展时不抢视觉 */
+        #mobFit { display: none; }
+        #mobFit.show { display: block; }
+        /* peek 规划概要行（planner 喂数据：建议充电 N 次 · 最长无桩间隔） */
+        #planPeek { font-size: 12.5px; font-weight: 600; color: #0f766e; padding: 0 2px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* 行程卡缩略图：抽屉全宽后恢复 sparkline 并加大（860 块的隐藏只作用于 769–860 平板窄条） */
+        .day-spark { display: block; width: 84px; height: 40px; }
+        .day-list li { min-height: 56px; }
+        /* 编辑入口改到 ⋯菜单；编辑面板移动端全屏化 */
+        #btnEdit { display: none; }
+        body.editing #panel { transform: none; z-index: var(--z-guide); }   /* 祖先带 transform 时 fixed 会改参照系；面板抬层压住标题条（子级 z 逃不出面板 stacking context） */
+        body.editing #editBar {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: var(--z-guide);
+            background: #fff; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 12px 14px calc(24px + env(safe-area-inset-bottom));
+        }
+        #editClose { display: none; }
+        body.editing #editClose { display: block; position: sticky; top: 0; margin: -12px -14px 10px; padding: 14px; background: #fff; border: none; border-bottom: 1px solid #e2e8f0; font-size: 14.5px; font-weight: 600; color: #0f766e; text-align: left; z-index: 2; font-family: inherit; }
     }
     @media (min-width: 769px) {
         .sheet-grip { display: none; }

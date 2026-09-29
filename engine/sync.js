@@ -244,6 +244,12 @@ var Sync = (function () {
         if (up) up.onclick = function () { upload(); };
         var down = document.getElementById('syncDown');
         if (down) down.onclick = function () { restore(); };
+        /* S16：editBar 此时必已存在，给移动端编辑全屏化补「完成编辑」关闭条 */
+        try {
+            if (typeof window !== 'undefined' && window.__mobile && window.__mobile.attachEditClose) {
+                window.__mobile.attachEditClose();
+            }
+        } catch (e) {}
     })();
 
     return {

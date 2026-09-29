@@ -465,6 +465,10 @@
         stops.forEach(function (s) { maxGap = Math.max(maxGap, s.km - prev); prev = s.km; });
         maxGap = Math.max(maxGap, total - prev);
         var n = plan.filter(function (p) { return p.st; }).length;
+        /* 同一组现有数据同时喂两处：桌面 planBox（HTML，逐字不变）+ 移动端 peek 概要行（纯文本） */
+        var peekEl = document.getElementById('planPeek');
+        if (peekEl) peekEl.textContent = (evState.alt ? '高原折算后有效续航 ' + Math.round(evState.range * 0.85) + ' km · ' : '') +
+            '全程需' + lb + ' ' + n + ' 次 · 最长无' + lb + '间隔 ' + Math.round(maxGap) + ' km';
         var html = '<div class="psum">' + (evState.alt ? '高原折算后有效续航 ' + Math.round(evState.range * 0.85) + ' km · ' : '') +
             '全程需' + lb + ' <b>' + n + '</b> 次 · 最长无' + lb + '间隔 ' + Math.round(maxGap) + ' km</div>';
         html += plan.map(function (p) {
@@ -495,6 +499,11 @@
             evState.mode = m;
             document.getElementById('btnEv').classList.toggle('on', m === 'ev');
             document.getElementById('btnFuel').classList.toggle('on', m === 'fuel');
+            // 移动端标题条上的车型小开关跟随高亮（S16，节点可能不存在）
+            ['mobEv', 'mobFuel'].forEach(function (id, i) {
+                var b = document.getElementById(id);
+                if (b && b.classList) b.classList.toggle('on', (i === 0 ? 'ev' : 'fuel') === m);
+            });
             document.getElementById('rngLabel').textContent = m === 'fuel' ? '满油续航' : '满电续航';
             renderStations();
         }

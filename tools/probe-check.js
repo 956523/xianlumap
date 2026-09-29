@@ -465,6 +465,29 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         !/Bad credentials/.test(elCache['syncLog'].textContent),
         elCache['syncLog'].textContent.slice(0, 46));
 })().then(function () {
+    /* ---------- 移动端信息架构（S16）：标题条/菜单/图层弹层/浮动钮 + peek 概要 ---------- */
+    console.log('\n【11】移动端信息架构（S16）');
+    var ia = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    var IA = ia.sandbox;
+    ok('窄屏构建信息架构（__mobile.ia），桌面不构建',
+        !ia.err && IA.window.__mobile.ia() === true && (function () {
+            var d = bootRoute('chuanxi');
+            return !d.err && d.sandbox.window.__mobile.ia() === false;
+        })(), '');
+    ok('peek 概要行读到 planner 现有规划（充电次数/最长无桩间隔）',
+        /全程需充电 \d+ 次 · 最长无充电间隔 \d+ km/.test(elCache['planPeek'].textContent),
+        elCache['planPeek'].textContent.slice(0, 60));
+    ok('标题条/菜单/图层弹层/浮动钮全部接线（onclick 就绪）',
+        ['mobMenuBtn', 'mobMenuEdit', 'mobMenuSync', 'mobLayersBtn', 'mobLayersClose', 'mobFit', 'mobEv', 'mobFuel']
+            .every(function (id) { return typeof elCache[id].onclick === 'function'; }), '');
+    ok('「全览」条件钮初始不亮（视野就在全览位）且偏离判定可手动触发',
+        IA.window.__mobile.fitDeviated() === false && (function () {
+            IA.window.__mobile.checkFit();
+            return IA.window.__mobile.fitDeviated() === false;   // mock 无 getCenter，不误判
+        })(), '');
+    ok('点 mobFit 走 fitAll 不崩（mock 无动画事件）', (function () {
+        try { elCache['mobFit'].onclick(); return true; } catch (e) { return false; }
+    })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

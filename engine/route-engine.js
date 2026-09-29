@@ -471,7 +471,7 @@
             var pr = panelEl.getBoundingClientRect();
             if (narrow) {
                 // 窄屏：可见高度 = 视口 − 行程单抽屉露出的 peek（mobile.js 的 MOBILE_PEEK），宽度用整屏
-                panelBottom = (typeof MOBILE_PEEK === 'number') ? MOBILE_PEEK : 92;
+                panelBottom = (typeof MOBILE_PEEK === 'number') ? MOBILE_PEEK : 112;
                 h = vh - Math.max(panelBottom, 0) - 14;
                 w = vw - 28;
             } else {
@@ -567,7 +567,8 @@
         map.setZoomAndCenter(z, [cy, cx]);
         document.getElementById('curEnergy').textContent = '点选上方任意一天，看这段的海拔与能耗提示。';
         if (redraw !== false) drawProfile();
-        if (window.__fitDebug) window.__fitDebug = { z: z, box: box, bbox: bbox };
+        // 全览落点记录：S16 移动端「全览」条件按钮的偏离判定基准（window 属性，桌面无副作用）
+        try { window.__fitDebug = { z: z, c: [cx, cy], box: box, bbox: bbox }; } catch (e) {}
     }
     document.getElementById('btnFit').onclick = function () { fitAll(); };
 
