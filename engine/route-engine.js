@@ -661,7 +661,7 @@
            正确做法：直接反解 —— 要把 bbox 的某个纬度对齐到屏幕某个 y。 */
         /* S26：中心解算独立成函数（midY 用真实容器高）；真机 AMap 渲染分数 zoom，
            solve==render 天然精确；headless 的取整 artifact 见 docs §18/§34 留痕 */
-        var _fitBox = box, _fitBbox = bbox;
+        var _fitBox = box, _fitBbox = bbox, _fitInfo = null;
         function solveCenter(zs) {
             var bboxMidLat = (_fitBbox.latMin + _fitBbox.latMax) / 2;
             var cx = bboxMidLat;
@@ -670,16 +670,22 @@
             var mapH = _fitBox.vh;
             try { var _mEl = document.getElementById('map'); if (_mEl && _mEl.clientHeight) mapH = _mEl.clientHeight; } catch (e) {}
             var midY = mapH / 2;
+            _fitInfo = { mh: mapH, midY: midY, visMid: null };
             function mercY(lat) {
                 var sn = Math.sin(lat * Math.PI / 180);
                 return 0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI);
             }
             var ppxY = 256 * Math.pow(2, zs);
             if (_fitBox.narrow) {
-                var visTop = _fitBox.panelBottom + 6 + (_fitBox.titleH || 0);
-                var visBot = _fitBox.vh - 6;
+                /* 可见区口径（S18 起 #map 高度 = 100vh − sheet-visible，容器底即抽屉顶）：
+                   容器内 [标题条 + 6, 容器底 − 6]；容器底之外是抽屉，不是地图。
+                   旧口径 visTop = panelBottom + titleH / visBot = vh − 6 把抽屉当浮层、
+                   容器当全高，反解出的中心偏了一两百像素（真机"路线挤上半屏"的根源）。 */
+                var visTop = (_fitBox.titleH || 0) + 6;
+                var visBot = mapH - 6;
                 var visMid = (visTop + visBot) / 2;
-                var mercTarget = mercY(bboxMidLat) + (visMid - midY) / ppxY;
+                _fitInfo.visMid = visMid;
+                var mercTarget = mercY(bboxMidLat) + (midY - visMid) / ppxY;
                 var n = Math.PI * (1 - 2 * mercTarget);
                 cx = Math.atan(Math.sinh(n)) * 180 / Math.PI;
             } else if (_fitBox.panelRight > 0) {
@@ -696,7 +702,7 @@
         document.getElementById('curEnergy').textContent = '点选上方任意一天，看这段的海拔与能耗提示。';
         if (redraw !== false) drawProfile();
         // 全览落点记录：S16 移动端「全览」条件按钮的偏离判定基准（window 属性，桌面无副作用）
-        try { window.__fitDebug = { z: z, c: [cx, cy], box: box, bbox: bbox, mh: mapH, midY: midY, visMid: (box.panelBottom + 6 + (box.titleH || 0) + box.vh - 6) / 2 }; } catch (e) {}
+        try { window.__fitDebug = { z: z, c: [cx, cy], box: box, bbox: bbox, mh: _fitInfo ? _fitInfo.mh : 0, midY: _fitInfo ? _fitInfo.midY : 0, visMid: _fitInfo ? _fitInfo.visMid : 0 }; } catch (e) {}
     }
     document.getElementById('btnFit').onclick = function () { fitAll(); };
 

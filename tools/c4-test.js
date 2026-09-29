@@ -1,6 +1,6 @@
 // C4 回归测试：mock AMap + DOM，在 node vm 中跑完整引擎 + 指定线路包（S9 底图=高德）
 // 跑法：node tools/c4-test.js [routeId]   缺省 = 轮跑 route-defs/ 下全部线路包
-// 每条线路 94 项断言：期望数值全部按包内容推导（天数/出发地/站点），
+// 每条线路 95 项断言：期望数值全部按包内容推导（天数/出发地/站点），
 // 不再硬编码青甘语义；仅构建工具链检查（【12】【13】）针对参数化后的 tools/ 源码。
 const fs = require('fs');
 const vm = require('vm');
@@ -479,12 +479,16 @@ function runRoute(routeId) {
     console.log('\n【15】窄屏地图可见性（v9-C：390px 下地图全白）');
     ok('窄屏走纵向反解分支（非线性加偏量）',
         /if \((_fitBox|box)\.narrow\)/.test(mainScript) &&
-        /var mercTarget = mercY\(bboxMidLat\) \+ \(visMid - midY\) \/ ppxY/.test(mainScript),
+        /var mercTarget = mercY\(bboxMidLat\) \+ \(midY - visMid\) \/ ppxY/.test(mainScript),
         'mercY 目标值移位 → 再反解纬度');
     ok('有墨卡托纬度反函数（atan∘sinh）',
         /cx = Math\.atan\(Math\.sinh\(n\)\) \* 180 \/ Math\.PI/.test(mainScript) &&
         /var n = Math\.PI \* \(1 - 2 \* mercTarget\)/.test(mainScript),
         'y = 0.5 − ln((1+s)/(1−s))/(4π) 的解析反函数');
+    ok('窄屏可见区按容器口径（标题条以下、容器底=抽屉顶）',
+        /var visTop = \(_fitBox\.titleH \|\| 0\) \+ 6/.test(mainScript) &&
+        /var visBot = mapH - 6/.test(mainScript),
+        'S18 起 sheet-visible 收缩 #map，再用 vh/panelBottom 口径中心会偏一两百像素');
     ok('chip 允许收缩不顶宽（min-width:0）',
         /\.chip\s*\{[\s\S]{0,200}min-width:\s*0/.test(html), 'flex 子项默认 min-width:auto 会顶宽溢出');
     ok('窄屏 chip 字号降档防溢出',
