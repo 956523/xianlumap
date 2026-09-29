@@ -188,7 +188,7 @@ function runRoute(routeId) {
         const lzGeoms = lzMarkers.reduce((a, l) => a + geomCount(l), 0);
         ok('第二出发地站点更多（含接入段）', lzGeoms >= totalMarkerGeoms, lzGeoms + ' vs ' + totalMarkerGeoms);
     } else {
-        const startBtns = created.filter(el => el.id === 'dyn:button' && el.onclick && el.className !== 'edit-mini' && el.className !== 'btn-fit edit-toggle');
+        const startBtns = created.filter(el => el.id === 'dyn:button' && el.onclick && el.className !== 'edit-mini' && el.className !== 'btn-fit edit-toggle' && String(el.className).indexOf('et-') !== 0);   // S19：编辑面板按钮（et-*）不计入出发地切换按钮统计
         ok('单出发地：不渲染切换按钮', startBtns.length === 0, startBtns.length + ' 个按钮');
         sandbox.setStart(sandbox.STARTS[0].id);   // 重选当前出发地 → 幂等
         ok('单出发地：setStart 幂等（天数/里程不变）', sandbox.DAYS.length === totalDays && Math.abs(parseInt(elCache['chipKm'].textContent, 10) - sumDayKm()) <= 2, sandbox.DAYS.length + ' 天');

@@ -574,6 +574,35 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     ok('⋯菜单遮罩接线（点外部关闭，对齐图层弹层）',
         typeof elCache['mobMenuBk'].onclick === 'function' &&
         typeof elCache['mobMenuBtn'].onclick === 'function', '');
+
+    /* ---------- S19 编辑模式重组：Tab / 徽标推导 / chips 联动 / 生成入口 ---------- */
+    console.log('\n【14】S19：编辑模式重组（任务分区 Tab）');
+    var r19 = bootRoute('chuanxi');
+    var R = r19.sandbox;
+    R.Edit.enter();
+    ok('Tab 结构：默认行程 Tab，showTab 切换可见性',
+        !r19.err && R.Edit.tab === 'trip' &&
+        elCache['etPaneTrip'].style.display === '' && elCache['etPaneWp'].style.display === 'none' &&
+        (R.Edit.showTab('wp'), elCache['etPaneWp'].style.display === '' && elCache['etPaneTrip'].style.display === 'none'), '');
+    var danba = R.Wp.list.filter(function (w) { return w.n === '丹巴'; })[0];
+    var d2 = R.DAYS.filter(function (d) { return d.id === 2; })[0];
+    var badgeBefore = danba ? R.Edit.wpDayBadge(danba) : '无丹巴';
+    R.Edit.setSeg(2, d2.altKm[0], 250);   // D2 终点 327.97 → 250
+    var badgeAfter = danba ? R.Edit.wpDayBadge(danba) : '无丹巴';
+    ok('徽标推导：改 D2 终点后丹巴 D2→D3 即时重算（当前视角 DAYS 区间口径）',
+        badgeBefore === 'D2' && badgeAfter === 'D3', badgeBefore + ' → ' + badgeAfter);
+    ok('行程 chips 联动：D2 chips 不再含丹巴、D3 chips 含丹巴',
+        (function () {
+            var d2n = R.DAYS.filter(function (d) { return d.id === 2; })[0];
+            var d3n = R.DAYS.filter(function (d) { return d.id === 3; })[0];
+            return !/丹巴/.test(R.Edit.wpChipsHTML(d2n)) && /丹巴/.test(R.Edit.wpChipsHTML(d3n));
+        })(), '');
+    var genOk = false;
+    try { elCache['wpGen'].onclick(); genOk = !!elCache['wpJs'] && elCache['wpJs'].value.length > 10; } catch (e) {}
+    ok('生成新版线路入口可达（点击出弹层 + ROUTE_BUILD 段就绪）', genOk, '');
+    ok('出发日期在云同步各就各位（depDate 行程 Tab / editPaneMore 更多 Tab）',
+        !!elCache['depDate'] && !!elCache['editPaneMore'] &&
+        typeof elCache['etDone'].onclick === 'function', '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

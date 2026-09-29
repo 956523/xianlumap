@@ -306,6 +306,7 @@ function buildIA() {
         toggleClass('mob-menu', false);
         try {
             if (typeof Edit !== 'undefined' && Edit.enter) Edit.enter();
+            if (typeof Edit !== 'undefined' && Edit.showTab) Edit.showTab('more');   // S19：云同步迁入更多 Tab
             var up = document.getElementById('syncUp');
             if (up && typeof up.scrollIntoView === 'function') up.scrollIntoView({ block: 'center' });
         } catch (e) {}
@@ -334,22 +335,9 @@ function buildIA() {
     };
 }
 
-/* 编辑面板全屏化的关闭条：editBar 由 edit.js 创建（晚于本文件），
-   所以既在 buildIA 里尝试，也留给 sync.js（edit.js 之后加载）再调一次 */
-function attachEditClose() {
-    if (editCloseAttached) return;
-    var bar = document.getElementById('editBar');
-    if (!bar || typeof bar.appendChild !== 'function') return;
-    var btn = mobEl('button', 'editClose', null, '‹ 完成编辑');
-    btn.onclick = function () { try { if (typeof Edit !== 'undefined' && Edit.exit) Edit.exit(); } catch (e) {} };
-    if (typeof bar.insertBefore === 'function') {
-        try { bar.insertBefore(btn, bar.firstChild || null); }   // 第一个子元素：sticky 关闭条才挂在可视顶部
-        catch (e) { bar.appendChild(btn); }
-    } else {
-        bar.appendChild(btn);
-    }
-    editCloseAttached = true;
-}
+/* S19 退役：编辑面板自带「‹ 完成编辑」顶栏（etDone），不再需要外挂关闭条。
+   保留 no-op 以兼容 sync.js 的既有调用。 */
+function attachEditClose() { editCloseAttached = true; }
 
 function toggleClass(cls, force) {
     var b = document.body;

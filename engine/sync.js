@@ -198,9 +198,9 @@ var Sync = (function () {
         });
     }
 
-    /* —— 编辑模式「云同步」区（挂在 editBar 里，非编辑态随 editBar 隐藏） —— */
+    /* —— 编辑模式「云同步」区（S19：迁入编辑面板「更多」Tab 的挂载点） —— */
     (function buildSyncUI() {
-        var bar = document.getElementById('editBar');
+        var bar = document.getElementById('editPaneMore') || document.getElementById('editBar');
         if (!bar || !bar.appendChild || !document.createElement) return;
         var sec = document.createElement('div');
         sec.className = 'wp-sec sync-sec';
@@ -244,12 +244,7 @@ var Sync = (function () {
         if (up) up.onclick = function () { upload(); };
         var down = document.getElementById('syncDown');
         if (down) down.onclick = function () { restore(); };
-        /* S16：editBar 此时必已存在，给移动端编辑全屏化补「完成编辑」关闭条 */
-        try {
-            if (typeof window !== 'undefined' && window.__mobile && window.__mobile.attachEditClose) {
-                window.__mobile.attachEditClose();
-            }
-        } catch (e) {}
+        /* S19：编辑面板顶栏自带「完成编辑」，S16 的外挂关闭条已退役（attachEditClose 为 no-op） */
     })();
 
     return {
