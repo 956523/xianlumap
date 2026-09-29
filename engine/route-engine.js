@@ -168,24 +168,80 @@
     /* --- 地名标注层（体验修复 3：标签分三级） ---
        ① 景点 SPOTS = 最高层级：更大字号 + 白底胶囊 + 最高 zIndex，默认显示
        ② 城镇 CITIES = 中层级：标准标注
-       ③ 站点 = 图标即主表达，站名文字只在近景出现（planner.js 的 z>=10 标签层） */
+       ③ 站点 = 图标即主表达，站名文字只在近景出现（planner.js 的 z>=10 标签层）
+       景点胶囊的缩放分级（S12 补）：复用 S0 站点分级的思路——25km 里程桶按 zoom 稀疏。
+       铁律同 S0：显示层不得放大数据缺陷——稀疏只减同屏数量，放大即全显，
+       绝不制造「这段没景点」的假象。 */
     function labelGeos(arr) {
         return arr.map(function (it, i) {
             return { id: 'l' + i, position: LL(it.p[0], it.p[1]), content: it.n };
         });
     }
+    var SPOT_LABEL_STYLE = { color: '#6d28d9', size: 13, bold: true, badge: true, offset: { x: 0, y: 22 } };
     var cityLabels = createLabelLayer({
         map: map,
         zIndex: 120,
         styles: { default: ({ color: '#1f2937', size: 12, offset: { x: 0, y: 20 } }) },
         geometries: labelGeos(CITIES)
     });
-    var spotLabels = createLabelLayer({
-        map: map,
-        zIndex: 130,   // 景点优先避让权：压在城镇与站点标签之上
-        styles: { default: ({ color: '#6d28d9', size: 13, bold: true, badge: true, offset: { x: 0, y: 22 } }) },
-        geometries: labelGeos(SPOTS)
-    });
+
+    /* --- 景点胶囊分级（S0 同构：桶选代表点，优先级 = 名称强信号 > 原顺序） ---
+       远景 z<8：每 25km 桶 1 个；中景 8≤z<10：每桶 2 个；近景 z≥10：全显。
+       触发链复用 S0：planner 的 zoomchange 防抖回调里顺带调用 renderSpotLabels()。 */
+    var SPOT_FAR_Z = 8, SPOT_MID_Z = 10, SPOT_BUCKET_KM = 25;
+    var SPOT_STRONG = /雪山|冰川|湖|海子|垭口|国家|大峡谷|瀑布|丹霞|雅丹|石窟|古城|遗址|草原/;
+    var spotLabels = null;
+    var spotLabelOn = true;      // tgSpot 图层开关状态位（整层重建后旧引用失效，同 S0 状态位模式）
+    var spotKmCache = [];        // 每个景点的沿线里程（renderAll 时按环线表最近点算，供分桶）
+    function rebuildSpotKm() {
+        // 环线 km→经纬度表（与 renderWarnings 同法：天 path 按 altKm 线性插值）
+        var table = [];
+        DAYS.forEach(function (d) {
+            if (!d.path || !d.altKm) return;
+            var n = d.path.length;
+            d.path.forEach(function (p, i) {
+                table.push([d.altKm[0] + (d.altKm[1] - d.altKm[0]) * i / (n - 1), p[0], p[1]]);
+            });
+        });
+        spotKmCache = SPOTS.map(function (s) {
+            var best = 0, bd = 1e9;
+            for (var i = 0; i < table.length; i++) {
+                var dd = (table[i][1] - s.p[0]) * (table[i][1] - s.p[0]) + (table[i][2] - s.p[1]) * (table[i][2] - s.p[1]);
+                if (dd < bd) { bd = dd; best = table[i][0]; }
+            }
+            return best;
+        });
+    }
+    function renderSpotLabels(zoom) {
+        if (spotLabels) { spotLabels.setMap(null); spotLabels = null; }
+        if (!spotLabelOn) return;
+        var z = (zoom == null) ? 7.3 : zoom;
+        try { if (typeof map.getZoom === 'function') z = map.getZoom(); } catch (e) {}
+        var picked = SPOTS;
+        if (z < SPOT_MID_Z) {
+            var cap = z < SPOT_FAR_Z ? 1 : 2;
+            var buckets = {};
+            SPOTS.forEach(function (s, i) {
+                var b = Math.floor((spotKmCache[i] || 0) / SPOT_BUCKET_KM);
+                (buckets[b] = buckets[b] || []).push(i);
+            });
+            var idx = [];
+            Object.keys(buckets).forEach(function (b) {
+                buckets[b].sort(function (a, c) {
+                    var sa = SPOT_STRONG.test(SPOTS[a].n) ? 0 : 1;
+                    var sc = SPOT_STRONG.test(SPOTS[c].n) ? 0 : 1;
+                    return sa - sc || a - c;   // 强信号优先；同信号按原顺序（手打在前）
+                }).slice(0, cap).forEach(function (i) { idx.push(i); });
+            });
+            picked = idx.sort(function (a, c) { return a - c; }).map(function (i) { return SPOTS[i]; });
+        }
+        spotLabels = createLabelLayer({
+            map: map,
+            zIndex: 130,   // 景点优先避让权：压在城镇与站点标签之上（分级只稀疏同层数量，不动层级）
+            styles: { default: SPOT_LABEL_STYLE },
+            geometries: labelGeos(picked)
+        });
+    }
 
     /* --- 经典支线（虚线；图例文案随数据包 CLASSIC.label） ---
        数据包可给空 CLASSIC（无支线概念的线路），此时不建图层并隐藏图例行 */
@@ -303,6 +359,8 @@
         fitAll();
         renderStations();
         renderWarnings();
+        rebuildSpotKm();        // 景点胶囊分级的里程基准（随出发地重算）
+        renderSpotLabels();
     }
 
     /* --- 长盲区上图（S4 可信度透出）---
@@ -543,7 +601,12 @@
         });
     }
     bindToggle('tgCity', [cityMarkers, cityLabels]);
-    bindToggle('tgSpot', [spotMarkers, spotLabels]);
+    // 景点开关改走状态位：胶囊标签按 zoom 整层重建，不能持有旧图层引用（同 S0 站点开关模式）
+    document.getElementById('tgSpot').addEventListener('change', function (e) {
+        spotLabelOn = e.target.checked;
+        spotMarkers.setMap(e.target.checked ? map : null);
+        renderSpotLabels();
+    });
 
     // 站点图层开关：只记状态 + 重绘（重绘里会把新图层挂上/摘掉）
     var layerOn = { fuel: true, ev: true };

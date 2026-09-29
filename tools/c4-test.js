@@ -257,13 +257,23 @@ function runRoute(routeId) {
         cbEl.style.height = chartH + 'px';
         return cbH === '192px';
     })(), cbH);
-    ok('标签层级（体验修复 3）：景点默认显示 + 全览无站点站名文字',
-        calls.labels.some(function (l) { return ((l.opts && l.opts.text) || l.text) === (pkg.SPOTS[0] || {}).n; }) &&
-        !calls.labels.some(function (l) {
-            const t = (l.opts && l.opts.text) || l.text || '';
-            return t.charAt(0) !== '▲' && t.indexOf('km') !== 0 && /充电|加油/.test(t);
-        }),
-        '景点「' + (pkg.SPOTS[0] || {}).n + '」在标注层内；站名文字层未出现（z=7.3）');
+    ok('标签分级：全览（z=7.3 远景）胶囊稀疏 ≤25km 桶数，且站点站名仍不显示',
+        (function () {
+            const badge = calls.labels.filter(function (l) {
+                const st = (l.opts && l.opts.style) || l.style || {};
+                return /rgba\(255,255,255/.test(st['background-color'] || '');
+            });
+            const maxFar = Math.ceil((pkg.TOTAL_XN || 1000) / 25) + 1;   // 每 25km 桶 1 个的硬上界
+            const noStationText = !calls.labels.some(function (l) {
+                const t = (l.opts && l.opts.text) || l.text || '';
+                return t.charAt(0) !== '▲' && t.indexOf('km') !== 0 && /充电|加油/.test(t);
+            });
+            return badge.length > 0 && badge.length <= maxFar && noStationText;
+        })(),
+        '胶囊 ' + calls.labels.filter(function (l) {
+            const st = (l.opts && l.opts.style) || l.style || {};
+            return /rgba\(255,255,255/.test(st['background-color'] || '');
+        }).length + ' 个（上界 ' + (Math.ceil((pkg.TOTAL_XN || 1000) / 25) + 1) + '）');
     ok('拖拽手柄元素存在', !!elCache['elevGrip'], elCache['elevGrip'] ? 'elevGrip' : '缺失');
     ok('收起按钮存在', !!elCache['elevClose'], 'elevClose');
     elCache['chartBox'].children.length = 0;
@@ -411,10 +421,10 @@ function runRoute(routeId) {
         /function onStationsZoomChange\s*\(/.test(mainScript) &&
         /map\.on\('zoomchange',\s*onStationsZoomChange\)/.test(mainScript),
         '否则拉近点不增加、拉远点不减少');
-    ok('缩放重绘有防抖 + 变化量阈值',
+    ok('缩放重绘有防抖 + 变化量阈值（同一防抖链顺带刷新景点胶囊分级）',
         /Z_REDRAW_EPS\s*=\s*0\.25/.test(mainScript) &&
-        /setTimeout\(function \(\) \{[\s\S]{0,200}renderStations\(\);[\s\S]{0,40}\},\s*120\)/.test(mainScript),
-        'MultiMarker 是整层重建，每帧重建会卡');
+        /setTimeout\(function \(\) \{[\s\S]{0,300}renderStations\(\);[\s\S]{0,220}renderSpotLabels\([\s\S]{0,60}\},\s*120\)/.test(mainScript),
+        'MultiMarker 整层重建，每帧重建会卡；胶囊分级复用同一条链，不另起监听');
     ok('远景隐加油站时有 UI 提示',
         /fuelTierHint/.test(html) && /（放大后显示）/.test(mainScript),
         '否则用户以为图层开关坏了');
