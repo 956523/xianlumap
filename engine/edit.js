@@ -134,6 +134,68 @@
         });
     }
 
+    /* S20 归天：天数选择弹层（当前天禁用）+ 轻反馈 toast */
+    function openDayPick(wpIdx) {
+        var list = document.getElementById('etDayPickList');
+        if (!list || typeof list.appendChild !== 'function') return;
+        list.innerHTML = '';
+        var cur = (typeof Wp !== 'undefined' && Wp.list[wpIdx]) ? wpDayIdx(Wp.list[wpIdx]) : -1;
+        DAYS.forEach(function (d, di) {
+            var b = document.createElement('button');
+            b.textContent = 'D' + d.id + ' ' + d.title + ((d.altKm && !d.rest) ? '' : '（休整日）');
+            if (di === cur) { b.disabled = true; b.className = 'cur'; }
+            else {
+                b.onclick = function () {
+                    closeDayPick();
+                    if (Edit.assignWpDay(wpIdx, di) !== false) {
+                        etToast('已归到 D' + d.id);
+                    }
+                    if (Wp.renderList) Wp.renderList();
+                };
+            }
+            list.appendChild(b);
+        });
+        if (document.body && document.body.classList) document.body.classList.add('et-daypick');
+    }
+    function closeDayPick() {
+        if (document.body && document.body.classList) document.body.classList.remove('et-daypick');
+    }
+    var etToastTimer = null;
+    function etToast(msg) {
+        var t = document.getElementById('etToast');
+        if (!t) return;
+        t.textContent = msg;
+        if (t.classList) t.classList.add('show');
+        if (etToastTimer) clearTimeout(etToastTimer);
+        etToastTimer = setTimeout(function () { if (t.classList) t.classList.remove('show'); }, 1600);
+    }
+    (function () {
+        var bk = document.getElementById('etDayPickBk');
+        if (bk) bk.onclick = closeDayPick;
+    })();
+
+
+    /* S23 行操作核心 API（手势与桌面共用，vm 断言直接调）——落点语义与原 ↑↓ 完全一致 */
+    function wpRowMove(from, to) {
+        if (from === to || from < 0 || to < 0 || from >= Wp.list.length || to >= Wp.list.length) return false;
+        var item = Wp.list.splice(from, 1)[0];
+        Wp.list.splice(to, 0, item);
+        wpSave(Wp.list);
+        if (Wp.renderList) Wp.renderList();
+        return true;
+    }
+    function wpRowDelete(i) {
+        if (i < 0 || i >= Wp.list.length) return false;
+        Wp.list.splice(i, 1);
+        wpSave(Wp.list);
+        if (Wp.renderList) Wp.renderList();
+        return true;
+    }
+    function wpNarrow() {
+        try { return typeof window !== 'undefined' && window.innerWidth <= 768; } catch (e) { return false; }
+    }
+
+
     var Edit = {
         on: false,
         overlay: editLoad(),
@@ -142,8 +204,19 @@
         showTab: function (name) {   // S19：Tab 切换（vm 断言与 ⋯菜单云同步入口用）
             Edit.tab = (name === 'wp' || name === 'more') ? name : 'trip';
             try { refreshEditTabs(); } catch (e) {}
+            /* S23：首次进途经点 Tab（移动断点）给一行手势引导，做过一次不再打扰 */
+            if (Edit.tab === 'wp' && typeof localStorage !== 'undefined' && localStorage) {
+                var narrow = false;
+                try { narrow = window.innerWidth <= 768; } catch (e) {}
+                if (narrow && !localStorage.getItem('xlm.wp-gestures-hint')) {
+                    try { localStorage.setItem('xlm.wp-gestures-hint', '1'); } catch (e) {}
+                    try { etToast('左滑删除 · 长按 ☰ 拖动排序 · 点 [Dn] 改归属', 3200); } catch (e) {}
+                }
+            }
         },
         wpDayBadge: function (w) { return wpDayBadge(w); },          // S19：途经点归属天徽标
+        wpRowMove: function (from, to) { return wpRowMove(from, to); },   // S23：行操作核心（手势/桌面/测试共用）
+        wpRowDelete: function (i) { return wpRowDelete(i); },
         wpChipsHTML: function (day) { return wpChips(day); },        // S19：行程卡途经 chips（HTML）,
         /* S20 归天直改：把途经点 wpIdx 归到第 dayIdx 天。
            口径与 S19 徽标一致（当前视角 DAYS altKm 区间 + 边界就近 EPS）：
@@ -1076,6 +1149,23 @@
             '#wpModal .mrow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;}' +
             '#wpModal input[type=text],#wpModal input[type=password]{font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;width:120px;font-family:inherit;}' +
             '#wpModal .ghlog{font-size:10.5px;color:#64748b;margin-top:6px;line-height:1.6;white-space:pre-wrap;}';
+        css.textContent +=
+            /* S23 途经点行：移动手势（左滑删除 / 长按拖动），桌面列隐藏 */
+            '.et-wp{position:relative;overflow:hidden;}' +
+            '.et-wp-delunder{position:absolute;right:0;top:2px;bottom:2px;width:72px;border:none;border-radius:8px;background:#dc2626;' +   /* 内缩 2px：行有纵向 padding，防底部露红边 */
+            'color:#fff;font-size:13px;font-weight:600;display:none;cursor:pointer;font-family:inherit;}' +
+            '.et-wp-body{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:#fff;position:relative;}' +
+            '.et-wp.lift{z-index:10;}' +
+            '.et-wp.lift .et-wp-body{box-shadow:0 8px 24px rgba(15,23,42,.22);border-radius:10px;background:#fff;}' +
+            '.et-wp.swiped .et-wp-body{transform:translateX(-72px);}' +
+            '.et-wp-body{transition:transform .22s ease;}' +
+            '.et-wp.swiping .et-wp-body{transition:none;}' +
+            '.et-dayno::after{content:" ▾";font-size:8.5px;color:#94a3b8;}' +   /* S23：徽标可点发现性 */
+            '@media (max-width:768px){' +
+            '.et-wp-delunder{display:block;}' +
+            '.et-wp .mv,.et-wp .del{display:none;}' +   /* 行上只剩 ☰ 名 [Dn] */
+            '.et-wp-body{padding:2px 0;}' +
+            '}';
         (document.head || document.documentElement).appendChild(css);
         /* S19：途经点/出发日期的 DOM 已并入编辑面板 Tab 模板（etPaneWp / etPaneTrip），
            这里只保留接线：renderList / 搜索 / 地图点选 / 生成弹层。 */
@@ -1090,46 +1180,100 @@
         var depClearBtn = document.getElementById('depClear');
         if (depClearBtn) depClearBtn.onclick = function () { Edit.setDeparture(null); };
 
-        /* S20 归天：天数选择弹层（当前天禁用）+ 轻反馈 toast */
-        function openDayPick(wpIdx) {
-            var list = document.getElementById('etDayPickList');
-            if (!list || typeof list.appendChild !== 'function') return;
-            list.innerHTML = '';
-            var cur = (typeof Wp !== 'undefined' && Wp.list[wpIdx]) ? wpDayIdx(Wp.list[wpIdx]) : -1;
-            DAYS.forEach(function (d, di) {
-                var b = document.createElement('button');
-                b.textContent = 'D' + d.id + ' ' + d.title + ((d.altKm && !d.rest) ? '' : '（休整日）');
-                if (di === cur) { b.disabled = true; b.className = 'cur'; }
-                else {
-                    b.onclick = function () {
-                        closeDayPick();
-                        if (Edit.assignWpDay(wpIdx, di) !== false) {
-                            etToast('已归到 D' + d.id);
-                        }
-                        renderList();
-                    };
-                }
-                list.appendChild(b);
-            });
-            if (document.body && document.body.classList) document.body.classList.add('et-daypick');
-        }
-        function closeDayPick() {
-            if (document.body && document.body.classList) document.body.classList.remove('et-daypick');
-        }
-        var etToastTimer = null;
-        function etToast(msg) {
-            var t = document.getElementById('etToast');
-            if (!t) return;
-            t.textContent = msg;
-            if (t.classList) t.classList.add('show');
-            if (etToastTimer) clearTimeout(etToastTimer);
-            etToastTimer = setTimeout(function () { if (t.classList) t.classList.remove('show'); }, 1600);
-        }
-        (function () {
-            var bk = document.getElementById('etDayPickBk');
-            if (bk) bk.onclick = closeDayPick;
-        })();
 
+        /* S23 移动手势（≤768 触屏）：①整行左滑露出删除钮 ②长按 ☰ 350ms 跟手拖动排序。
+           桌面（宽屏/鼠标）走 HTML5 DnD + ↑↓✕，不受影响。 */
+        var wpSwipe = null, wpLift = null, wpAutoScroll = null;
+        function bindWpGestures(row, i) {
+            if (!row || typeof row.addEventListener !== 'function') return;
+            var body = row.querySelector ? row.querySelector('.et-wp-body') : null;
+            var grip = row.querySelector ? row.querySelector('.grip') : null;
+            var delBtn = row.querySelector ? row.querySelector('.et-wp-delunder') : null;
+            if (delBtn && typeof delBtn.onclick !== 'undefined') {
+                delBtn.onclick = function () { wpRowDelete(i); };   // 左滑后点红钮即删（两步刻意操作，不再 confirm）
+            }
+            if (!body || typeof body.addEventListener !== 'function') return;
+            body.addEventListener('touchstart', function (e) {
+                if (!wpNarrow()) return;
+                var t = e.touches && e.touches[0];
+                if (!t) return;
+                wpSwipe = { x0: t.clientX, y0: t.clientY, row: row, body: body, live: false };
+            }, { passive: true });
+            body.addEventListener('touchmove', function (e) {
+                if (!wpSwipe || wpSwipe.row !== row) return;
+                var t = e.touches && e.touches[0];
+                if (!t) return;
+                var dx = t.clientX - wpSwipe.x0, dy = t.clientY - wpSwipe.y0;
+                if (!wpSwipe.live) {
+                    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+                    if (Math.abs(dy) >= Math.abs(dx)) { wpSwipe = null; return; }   // 纵向滚动：让路
+                    wpSwipe.live = true;
+                }
+                if (e.cancelable && typeof e.preventDefault === 'function') e.preventDefault();
+                row.classList.add('swiping');
+                body.style.transform = 'translateX(' + Math.max(-72, Math.min(0, dx)) + 'px)';
+                wpSwipe.dx = dx;
+            }, { passive: false });
+            function endSwipe() {
+                if (!wpSwipe || wpSwipe.row !== row) return;
+                var dx = wpSwipe.dx || 0;
+                wpSwipe = null;
+                row.classList.remove('swiping');
+                body.style.transform = '';
+                if (dx <= -64) row.classList.add('swiped');   // 露出删除钮，点「删除」或右滑归位
+                else row.classList.remove('swiped');
+            }
+            body.addEventListener('touchend', endSwipe);
+            /* touchcancel 也按累计位移结算：浏览器抢占手势（滚动判定）时已滑够距离照样生效 */
+            body.addEventListener('touchcancel', endSwipe);
+            /* 长按 ☰ 拖动排序 */
+            if (!grip || typeof grip.addEventListener !== 'function') return;
+            var lpTimer = null;
+            grip.addEventListener('touchstart', function (e) {
+                if (!wpNarrow()) return;
+                var t = e.touches && e.touches[0];
+                if (!t) return;
+                lpTimer = setTimeout(function () {
+                    lpTimer = null;
+                    var list = document.getElementById('wpList');
+                    var rows = list ? list.querySelectorAll('.et-wp') : [];
+                    if (!rows.length) return;
+                    var from = i;
+                    wpLift = { row: row, body: body, from: from, y0: t.clientY, dy: 0, rowH: rows[1] && rows[0] ? (rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top) : 48 };
+                    row.classList.add('lift');
+                    if (e.cancelable && typeof e.preventDefault === 'function') { try { e.preventDefault(); } catch (er) {} }
+                    wpAutoScroll = setInterval(function () {   // 贴边自动滚动
+                        try {
+                            var lr = list.getBoundingClientRect();
+                            if (wpLift && t.clientY < lr.top + 56) list.scrollTop -= 10;
+                            else if (wpLift && t.clientY > lr.bottom - 56) list.scrollTop += 10;
+                        } catch (er) {}
+                    }, 90);
+                }, 350);
+            }, { passive: true });
+            grip.addEventListener('touchmove', function (e) {
+                if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }   // 移动则取消长按
+                if (!wpLift || wpLift.row !== row) return;
+                var t = e.touches && e.touches[0];
+                if (!t) return;
+                if (e.cancelable && typeof e.preventDefault === 'function') e.preventDefault();
+                wpLift.dy = t.clientY - wpLift.y0;
+                body.style.transform = 'translateY(' + wpLift.dy + 'px) scale(1.02)';
+            }, { passive: false });
+            function endLift() {
+                if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+                if (wpAutoScroll) { clearInterval(wpAutoScroll); wpAutoScroll = null; }
+                if (!wpLift || wpLift.row !== row) return;
+                var from = wpLift.from, dy = wpLift.dy, rowH = wpLift.rowH || 48;
+                wpLift = null;
+                row.classList.remove('lift');
+                body.style.transform = '';
+                var target = Math.max(0, Math.min(Wp.list.length - 1, from + Math.round(dy / rowH)));
+                if (target !== from) wpRowMove(from, target);   // 落点语义 = 原 ↑↓ 累加
+            }
+            grip.addEventListener('touchend', endLift);
+            grip.addEventListener('touchcancel', endLift);
+        }
         function renderList() {
             var el = document.getElementById('wpList');
             if (!el) return;
@@ -1137,20 +1281,22 @@
             Wp.list.forEach(function (w, i) {
                 var row = document.createElement('div');
                 row.className = 'et-wp';
-                row.innerHTML = '<span class="grip" title="拖动排序（桌面可拖，触屏用 ↑↓）">☰</span>' +
+                /* S23 行结构：左滑删除 underlay + body 包裹层（桌面视觉不变，移动手势挂 body） */
+                row.innerHTML = '<button class="et-wp-delunder">删除</button>' +
+                    '<div class="et-wp-body">' +
+                    '<span class="grip" title="拖动排序（桌面 HTML5 拖，触屏长按 ☰ 拖动）">☰</span>' +
                     '<span class="t">' + escapeHtml(w.n) + '</span>' +
                     '<button class="et-dayno" title="点我改归属天">' + wpDayBadge(w) + '</button>' +
                     '<button class="mv" title="上移">↑</button><button class="mv" title="下移">↓</button>' +
-                    '<button class="del" title="删除">✕</button>';
+                    '<button class="del" title="删除">✕</button></div>';
                 var bs = row.querySelectorAll('button');
                 if (!bs.length) { el.appendChild(row); return; }   // mock DOM 无 querySelectorAll 结果
-                /* 注意顺序：徽标也是 <button>，会占 bs[0]——先接 ↑↓✕，再接徽标，否则徽标 onclick 被覆盖 */
+                /* 接线顺序：徽标也是 <button>，先接 ↑↓✕（桌面的操作列），再接徽标（S20 归天） */
                 bs[0].onclick = function () { Wp.move(i, -1); renderList(); };
                 bs[1].onclick = function () { Wp.move(i, 1); renderList(); };
                 bs[2].onclick = function () {
                     if (editAsk('删除途经点「' + w.n + '」？', '确定') !== null) { Wp.remove(i); renderList(); }
                 };
-                /* S20 归天：[Dn] 徽标可点 → 弹天数选择（放在 bs 之后接线，防覆盖） */
                 var badgeBtn = row.querySelector ? row.querySelector('.et-dayno') : null;
                 if (badgeBtn && typeof badgeBtn.onclick !== 'undefined') {
                     badgeBtn.onclick = function (ev) {
@@ -1158,23 +1304,24 @@
                         openDayPick(i);
                     };
                 }
-                /* 桌面拖动排序（HTML5 DnD；触屏走 ↑↓ 大按钮，44px） */
-                row.draggable = true;
-                row.ondragstart = function (ev) {
-                    try { ev.dataTransfer.setData('text/plain', String(i)); } catch (e) {}
-                };
-                row.ondragover = function (ev) { try { ev.preventDefault(); } catch (e) {} };
-                row.ondrop = function (ev) {
-                    try {
-                        var from = parseInt(ev.dataTransfer.getData('text/plain'), 10);
-                        if (isNaN(from) || from === i) return;
-                        ev.preventDefault();
-                        var item = Wp.list.splice(from, 1)[0];
-                        Wp.list.splice(i, 0, item);
-                        wpSave(Wp.list);
-                        renderList();
-                    } catch (e) {}
-                };
+                /* 桌面拖动排序（HTML5 DnD；触屏走长按☰，见下） */
+                var body = row.querySelector ? row.querySelector('.et-wp-body') : null;
+                if (body && body.setAttribute) body.setAttribute('draggable', 'true');
+                if (body) {
+                    body.ondragstart = function (ev) {
+                        try { ev.dataTransfer.setData('text/plain', String(i)); } catch (e) {}
+                    };
+                    body.ondragover = function (ev) { try { ev.preventDefault(); } catch (e) {} };
+                    body.ondrop = function (ev) {
+                        try {
+                            var from = parseInt(ev.dataTransfer.getData('text/plain'), 10);
+                            if (isNaN(from) || from === i) return;
+                            ev.preventDefault();
+                            wpRowMove(from, i);
+                        } catch (e) {}
+                    };
+                }
+                bindWpGestures(row, i);
                 el.appendChild(row);
             });
             var badge = document.getElementById('wpBadge');

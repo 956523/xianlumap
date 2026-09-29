@@ -347,8 +347,10 @@ function buildIA() {
     /* 全览条件按钮 */
     var fitBtn = document.getElementById('mobFit');
     if (fitBtn) fitBtn.onclick = function () {
+        if (fitBtn.classList) fitBtn.classList.add('hit');   // S23：按下即时反馈（感知响应）
+        setTimeout(function () { if (fitBtn.classList) fitBtn.classList.remove('hit'); }, 220);
         try { if (typeof fitAll === 'function') fitAll(); } catch (e) {}
-        setTimeout(checkFit, 450);   // 动画收尾后再判一次（mock setTimeout 同步执行也无害）
+        setTimeout(checkFit, 120);   // 动画收尾后再判（mock setTimeout 同步执行也无害）
     };
 }
 
@@ -361,6 +363,17 @@ function toggleClass(cls, force) {
     if (!b || !b.classList) return;
     var on = (typeof force === 'boolean') ? force : !b.classList.contains(cls);
     if (on) b.classList.add(cls); else b.classList.remove(cls);
+}
+
+/* S23：包住全局 fitAll——任何来源（resize 链/出发地切换/全览钮）全览完成后，
+   在动画中段与收尾各复检一次按钮显示态，杜绝「视图已回全览但钮还亮着」的存量竞态。 */
+var _origFitAll2 = (typeof fitAll === 'function') ? fitAll : null;
+if (_origFitAll2) {
+    fitAll = function (redraw) {
+        _origFitAll2(redraw);
+        setTimeout(checkFit, 420);
+        setTimeout(checkFit, 950);
+    };
 }
 
 /* --- 「全览」条件出现：视野矩形 vs 环线包围盒的真实几何包含（S18 升级版） ---
@@ -433,10 +446,8 @@ function checkFit() {
             dev = dz > 0.5 || dKm > 12;
         }
     }
-    if (dev !== fitDeviated) {
-        fitDeviated = dev;
-        btn.classList.toggle('show', dev);
-    }
+    fitDeviated = dev;
+    btn.classList.toggle('show', dev);   // S23：无条件对账，show class 与判定永不发散
 }
 function onFitMaybeChanged() {
     if (fitDevTimer) clearTimeout(fitDevTimer);

@@ -675,6 +675,43 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         })(), '');
     ok('全览判定 nearFit 快路径在位（AMap 整数 zoom 视野误报偏离的修正）',
         /nearFit/.test(mainScript) && /__fitDebug/.test(mainScript), '');
+    /* ---------- S23：全览三态点击 + 途经点行新手势（滑删/长按拖/徽标归天） ---------- */
+    console.log('\n【18】S23：全览钮三态 + 行操作手势');
+    var s23 = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    var S23 = s23.sandbox;
+    ok('全览按钮三态点击都调 fitAll（peek/full/hidden）',
+        !s23.err && (function () {
+            var n = 0;
+            var _f = S23.fitAll;
+            S23.fitAll = function () { n++; _f.apply(null, arguments); };
+            ['peek', 'full', 'hidden'].forEach(function (st) {
+                S23.window.__mobile.setSheet(st);
+                elCache['mobFit'].onclick();
+            });
+            return n === 3;
+        })(), '');
+    ok('wpRowMove 落点语义与 ↑↓ 一致（5→0 == 索引递减连移五次）',
+        (function () {
+            var expect = WpSnapshot(S23, function (W) { for (var k = 5; k > 0; k--) W.move(k, -1); });   // 真实 ↑↓ 用法：当前索引递减
+            var before5 = S23.Wp.list[5] && S23.Wp.list[5].n;
+            S23.Edit.wpRowMove(5, 0);
+            var actual = JSON.stringify(S23.Wp.list);
+            if (expect !== actual) console.log('   …expect0=' + JSON.parse(expect)[0].n + ' expect5=' + JSON.parse(expect)[5].n + ' actual0=' + JSON.parse(actual)[0].n + ' len=' + JSON.parse(expect).length + ' idx5=' + before5);
+            return expect === actual;
+            function WpSnapshot(sb, fn) {
+                var backup = JSON.stringify(sb.Wp.list);
+                if (JSON.parse(backup).length < 6) console.log('   …snapshot len=' + JSON.parse(backup).length + ' wpKey=' + JSON.stringify(lsStore['xianlumap.waypoints.chuanxi'] || null).slice(0,80));
+                var W = { list: JSON.parse(backup), move: function (i, d) { var j = i + d; if (i < 0 || i >= this.list.length || j < 0 || j >= this.list.length) return false; var t = this.list[i]; this.list[i] = this.list[j]; this.list[j] = t; return true; } };
+                fn(W);
+                return JSON.stringify(W.list);
+            }
+        })(), '');
+    ok('wpRowDelete + 滑删/长按拖接线在位（移动手势挂行上）',
+        (function () {
+            var before = S23.Wp.list.length;
+            var okDel = S23.Edit.wpRowDelete(S23.Wp.list.length - 1) === true && S23.Wp.list.length === before - 1;
+            return okDel && /bindWpGestures/.test(mainScript) && /wpSwipe/.test(mainScript) && /wpLift/.test(mainScript);
+        })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });
