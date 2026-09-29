@@ -59,7 +59,7 @@ if (sheetPanel) {
 
 /* --- 拖拽手势：跟手位移 + 松手按档位/速度 snap ---
    挂手柄和面板标题行；日卡列表区内部滚动不在这两个区上，不抢手势。 */
-var drag = null;
+var sheetDrag = null;
 
 function sheetBase(panelH, st) {
     // 各档位的 translateY：full=0，peek=露出 MOBILE_PEEK，hidden=完全出屏
@@ -76,39 +76,40 @@ function onSheetStart(e) {
     if (!t || !sheetPanel || typeof sheetPanel.getBoundingClientRect !== 'function') return;
     var h = sheetPanel.offsetHeight || sheetPanel.getBoundingClientRect().height || 0;
     if (!h) return;
-    drag = { y0: t.clientY, h: h, lastY: t.clientY, lastT: sheetNow(), vy: 0, moved: false, st0: sheetState };
+    sheetDrag = { y0: t.clientY, h: h, lastY: t.clientY, lastT: sheetNow(), vy: 0, moved: false, st0: sheetState };
     if (document.body && document.body.classList) document.body.classList.add('mob-drag');  // 跟手：关过渡
 }
 
 function onSheetMove(e) {
-    if (!drag) return;
+    if (!sheetDrag) return;
     var t = e.touches && e.touches[0];
     if (!t) return;
     var nowT = sheetNow();
-    var dt = Math.max(1, nowT - drag.lastT);
-    drag.vy = (drag.lastY - t.clientY) / dt;   // 上滑为正，px/ms
-    drag.lastY = t.clientY; drag.lastT = nowT;
-    var dy = drag.y0 - t.clientY;
-    if (!drag.moved && Math.abs(dy) < 6) return;   // 6px 死区：先不判滑动，保住标题行里的按钮点击
-    drag.moved = true;
+    var dt = Math.max(1, nowT - sheetDrag.lastT);
+    sheetDrag.vy = (sheetDrag.lastY - t.clientY) / dt;   // 上滑为正，px/ms
+    sheetDrag.lastY = t.clientY; sheetDrag.lastT = nowT;
+    var dy = sheetDrag.y0 - t.clientY;
+    if (!sheetDrag.moved && Math.abs(dy) < 6) return;   // 6px 死区：先不判滑动，保住标题行里的按钮点击
+    sheetDrag.moved = true;
     if (e.cancelable && typeof e.preventDefault === 'function') e.preventDefault();
-    var ty = Math.max(0, Math.min(drag.h, sheetBase(drag.h, drag.st0) - dy));
-    drag.ty = ty;
+    var hN = (isFinite(sheetDrag.h) && sheetDrag.h > 0) ? sheetDrag.h : 1;   // S20：NaN/0 护栏，防 ty 越界
+    var ty = Math.max(0, Math.min(hN, sheetBase(hN, sheetDrag.st0) - dy));
+    if (!isFinite(ty)) return;
+    sheetDrag.ty = ty;
     if (sheetPanel && sheetPanel.style) sheetPanel.style.transform = 'translateY(' + ty + 'px)';
 }
 
 function onSheetEnd() {
-    if (!drag) return;
-    var d = drag; drag = null;
-    if (document.body && document.body.classList) document.body.classList.remove('mob-drag');
-    if (sheetPanel && sheetPanel.style) sheetPanel.style.transform = '';
+    if (!sheetDrag) return;
+    var d = sheetDrag; sheetDrag = null;
+    sheetSettle();   // S20 白屏护栏：inline transform 清零 + mob-drag 移除（状态机只认三态）
     if (!d.moved) {
         // 轻点手柄：peek ↔ full（hidden 点手柄 = 展开）
         setSheet(d.st0 === 'full' ? 'peek' : 'full');
         return;
     }
-    var h = d.h || 1;
-    var ty = (typeof d.ty === 'number') ? d.ty : sheetBase(h, d.st0);
+    var h = (isFinite(d.h) && d.h > 0) ? d.h : 1;
+    var ty = (typeof d.ty === 'number' && isFinite(d.ty)) ? d.ty : sheetBase(h, d.st0);
     var target;
     if (d.vy > 0.45) target = 'full';                                  // 快速上滑：直接全展
     else if (d.vy < -0.45) target = (ty > h - MOBILE_PEEK * 0.5) ? 'hidden' : 'peek';
@@ -133,11 +134,11 @@ bindSheetTouch(sheetPanel && typeof sheetPanel.querySelector === 'function' ? sh
 /* --- S18：抽屉内容滚动与 snap 手势的边界 ---
    full 态下手柄/标题行照旧驱动 snap（上面的绑定）；日卡列表区原生滚动优先，
    唯一接管场景：内容已滚到顶、继续下拉 → 接管为抽屉下拉（商业地图惯例），
-   松手按既有阈值 snap。把手区域的 touchstart 先冒泡到子元素并把 drag 置位，
-   这里以 drag 非空识别并跳过，两边不抢。 */
+   松手按既有阈值 snap。把手区域的 touchstart 先冒泡到子元素并把 sheetDrag 置位，
+   这里以 sheetDrag 非空识别并跳过，两边不抢。 */
 var scrollTake = null;
 function onPanelScrollStart(e) {
-    if (!mobActive || sheetState !== 'full' || drag) return;
+    if (!mobActive || sheetState !== 'full' || sheetDrag) return;
     var t = e.touches && e.touches[0];
     if (!t || !sheetPanel) return;
     scrollTake = { y0: t.clientY, active: false, top0: sheetPanel.scrollTop || 0 };
@@ -149,7 +150,8 @@ function onPanelScrollMove(e) {
     if (!scrollTake.active) {
         if (!(scrollTake.top0 <= 0 && scrollTake.y0 - t.clientY < -8)) return;   // 未到顶部或不是下拉：原生滚动继续
         scrollTake.active = true;
-        drag = { y0: t.clientY, h: sheetPanel.offsetHeight || 1, lastY: t.clientY, lastT: sheetNow(), vy: 0, moved: true, st0: 'full' };
+        try { sheetPanel.scrollTop = 0; } catch (e) {}   // S20：清掉原生滚动/橡皮筋状态，避免与 transform 叠加把面板拽出视口
+        sheetDrag = { y0: t.clientY, h: sheetPanel.offsetHeight || 1, lastY: t.clientY, lastT: sheetNow(), vy: 0, moved: true, st0: 'full' };
         if (document.body && document.body.classList) document.body.classList.add('mob-drag');
     }
     onSheetMove(e);   // 复用既有跟手 + preventDefault（passive:false 才能拦下原生滚动）
@@ -159,6 +161,15 @@ function onPanelScrollEnd() {
     var was = scrollTake.active;
     scrollTake = null;
     if (was) onSheetEnd();
+    sheetSettle();
+}
+/* S20 Bug1②白屏护栏：复现路径=抽屉全展→内容滚到顶→下拉（接管为抽屉手势）→松手。
+   真机上原生橡皮筋与 transform 叠加可能把面板拽出视口且状态机落出三态——
+   松手后 inline transform 一律清零交还 body class，mob-drag 强制移除，
+   状态机只承认 peek/full/hidden。任何越界都在此处归位。 */
+function sheetSettle() {
+    if (sheetPanel && sheetPanel.style) sheetPanel.style.transform = '';
+    if (document.body && document.body.classList) document.body.classList.remove('mob-drag');
 }
 if (sheetPanel && typeof sheetPanel.addEventListener === 'function') {
     sheetPanel.addEventListener('touchstart', onPanelScrollStart, { passive: true });
@@ -456,7 +467,8 @@ window.__mobile = {
     ia: function () { return iaBuilt; },              // S16：信息架构（标题条/菜单/图层弹层/浮动钮）已构建
     checkFit: checkFit,                               // 手动触发「全览」偏离判定（测试用）
     fitDeviated: function () { return fitDeviated; },
-    attachEditClose: attachEditClose                  // sync.js 在 editBar 就绪后回补关闭条
+    attachEditClose: attachEditClose,                // S19 起为 no-op（编辑面板顶栏自带完成按钮）
+    sheetSettle: sheetSettle                          // S20 白屏护栏：transform 越界强制归位（测试用）
 };
 
 refreshMob();

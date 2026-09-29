@@ -1232,3 +1232,62 @@ importOverlay / reset / refreshWpBadge（途经点增删排序）/ Edit.enter。
    已覆盖（归前后相邻天）。
 4. 编辑面板未做未保存提示（改动即时落 overlay，误改的兜底是恢复原始/云同步
    历史——但云同步无版本历史，只有最后一份）。
+
+## 28. 真机反馈两修（2026-09-29，S20：抽屉白屏根因 + 途经点归天直改）
+
+### Bug 1：抽屉全展后下拉白屏——根因是两个文件共享全局 `drag`
+
+用户实拍两段：full 态表头被标题条压住截断 + 下滑后整屏空白（只剩标题条和浮动钮）。
+CDP `Input.dispatchTouchEvent` 真触屏在 headless 里完整复现（状态落进 hidden），
+逐帧追踪发现真凶：**profile.js 与 mobile.js 都是顶层 `var drag`，经典脚本下是
+同一个全局绑定**；profile 的剖面把手拖拽挂着 **window 级** touchmove/touchend，
+任何抽屉手势中它都会拿到 mobile 的 drag 对象，`drag.h = drag.h0 + dy` →
+`h0` 不存在 → **NaN** → snap 的三向比较全 false → 落到 'hidden' → 面板整屏滑出
+= 白屏。修复：mobile.js 的 drag 全量改名 `sheetDrag`（profile 保留 drag，
+两者彻底解耦）。这一 Poison 自 S14 抽屉起就存在，真机触屏必中，鼠标/ mock 无触屏
+路径所以全绿假象——S14–S19 的"全绿"教训：共享全局名 + window 级监听是隐形炸弹。
+
+同修的另外三件套：① full 态面板 top 从标题条下沿起算
+（`height: calc(100vh - 48px - env(safe-area-inset-top))`，实测 panelTop=48=barBottom，
+表头不再被压）；② 白屏护栏 `sheetSettle()`：松手后 inline transform 一律清零 +
+mob-drag 强制移除，状态机只认三态（越界强制归位，暴露 `__mobile.sheetSettle` 供断言）；
+③ 跟手路径 NaN/0 护栏 + `overscroll-behavior-y: contain` + 接管时 scrollTop 归零
+（清原生橡皮筋状态）。复现路径写进注释：全展→内容滚到顶→下拉（接管）→松手。
+
+### 需求 2：途经点「归天」直改
+
+途经点 Tab 每行 [Dn] 徽标**可点** → 弹天数选择（当前天禁用，遮罩点外部关闭）→
+选中后 `Edit.assignWpDay(wpIdx, dayIdx)` 自动重算分段：
+① 目标天区间向外扩到含点（km±0.5，与徽标口径一致）；② 任何按 ±0.5 容差包含该点的
+其他天把点让出——收终点或推起点到容差外（±0.6），天不塌缩（<1km 取消并提示）；
+③ 全程走既有 `setSeg`（主视角守卫复用，环线/双出发地口径同 S19）。成功后 toast
+「已归到 Dn」轻反馈，徽标/chips 经 refreshEditTabs 即时联动。
+
+过程中抓的两个实现 bug：① 徽标改成 `<button>` 后占 `querySelectorAll('button')[0]`，
+先接徽标再接 ↑↓✕ 会被 bs[0].onclick 覆盖（实拍里点了徽标实际执行了上移）——
+接线顺序对调；② 归天"让出"循环最初用严格区间判定，而徽标是 ±0.5 容差归属，
+丹巴恰好落在 D2 终点外 0.01km——容差口径对齐 + 边界推过容差外才保证徽标必落目标天。
+
+### 验证
+
+- c4-test 282 全绿；probe-check【15】3 项 85 全绿：归天重算正确性（丹巴 D2→D3：
+  D3 起点收进、D2 终点让出，区间数字断言）、chips 联动、白屏护栏（越界 transform
+  清零 + mob-drag 移除 + 状态仍 full）。另注：probe 段间共享 localStorage，
+  【14】setSeg 写的 overlay 会污染后续 boot——【15】前显式清键（教训记入注释）。
+- CDP 真触屏复现（390×844 @2x，chuanxi）：复现路径后 `state:'peek'`、transform 空、
+  不再白屏；full 态几何 panelTop=48=标题条下沿；归天全流程（点徽标→弹层→选 D1→
+  徽标 D1 + toast「已归到 D1」+ D1 终点 328.5）。
+  截图：/tmp/s20-1-pulldown.png（下拉后正常）、s20-2-daypick.png（天数选择弹层，
+  当前天禁用）、s20-3-assigned.png（行程 chips 联动）、s20-4-fulltop.png
+  （full 态表头不压）。
+- 桌面 vm 逐字节对比 15/15 一致；对比脚本跑完即删。
+
+### 诚实清单
+
+1. **拖动排序与归天都还没真机手感验证**：归天的天数弹层在真机上的触发时机、
+   toast 的停留时长（1.6s 拍脑袋）待反馈。
+2. **归天是预览层分段重算**（同 S19 诚实边界）：徽标/chips 立即反映，geometry 仍以
+   云端构建产物为准；连续多次归天造成的区间重叠/缝隙靠 ±0.5 容差 + 最近天兜底，
+   极端操作后天区间可能不与邻天严格相接（导出 legs 会重算，属预期）。
+3. 白屏护栏是「兜底」不是「证明」：根因（共享 drag）已除，护栏防的是下一类
+   竞态；若真机再白屏，第一查点仍是 transform/状态机是否落出三态（__mobile.state()）。

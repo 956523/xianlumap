@@ -144,7 +144,41 @@
             try { refreshEditTabs(); } catch (e) {}
         },
         wpDayBadge: function (w) { return wpDayBadge(w); },          // S19：途经点归属天徽标
-        wpChipsHTML: function (day) { return wpChips(day); },        // S19：行程卡途经 chips（HTML）
+        wpChipsHTML: function (day) { return wpChips(day); },        // S19：行程卡途经 chips（HTML）,
+        /* S20 归天直改：把途经点 wpIdx 归到第 dayIdx 天。
+           口径与 S19 徽标一致（当前视角 DAYS altKm 区间 + 边界就近 EPS）：
+           ① 目标天区间向外扩到包含该点（km±EPS）；② 任何包含该点的其他天把点让出
+           （收终点或推起点，天不塌缩）；③ 走既有 setSeg（主视角守卫复用）。
+           预览层语义——徽标/chips 即时联动，geometry 仍待云端构建。 */
+        assignWpDay: function (wpIdx, dayIdx) {
+            var w = (typeof Wp !== 'undefined' && Wp && Wp.list) ? Wp.list[wpIdx] : null;
+            var T = (typeof DAYS !== 'undefined' ? DAYS : [])[dayIdx];
+            if (!w || !T) return false;
+            if (!T.altKm || T.rest) {
+                editNotice('「' + (T.title || ('D' + T.id)) + '」没有里程区间（休整日），无法归入。');
+                return false;
+            }
+            var km = routeKmOf(w.p[0], w.p[1]);
+            var EPS = 0.5;
+            if (wpDayIdx(w) === dayIdx) return true;
+            var ta = T.altKm[0], tb = T.altKm[1];
+            if (km < ta) ta = Math.max(0, km - EPS);
+            if (km > tb) tb = km + EPS;
+            if (tb - ta < 1) { editNotice('移动后该天里程不足 1km，已取消。'); return false; }
+            for (var i = 0; i < DAYS.length; i++) {
+                var d = DAYS[i];
+                if (!d.altKm || d === T) continue;
+                /* 让出口径必须与 wpDayIdx 一致（边界 ±0.5 归属）：按容差判定包含，
+                   再把边界推到容差外（±0.6），保证徽标一定落到目标天 */
+                if (km >= d.altKm[0] - EPS && km <= d.altKm[1] + EPS) {
+                    if (km - 0.6 - d.altKm[0] >= 1) Edit.setSeg(d.id, d.altKm[0], +(km - 0.6).toFixed(1));
+                    else if (d.altKm[1] - (km + 0.6) >= 1) Edit.setSeg(d.id, +(km + 0.6).toFixed(1), d.altKm[1]);
+                }
+            }
+            var okSeg = Edit.setSeg(T.id, +ta.toFixed(1), +tb.toFixed(1));
+            try { refreshEditTabs(); } catch (e) {}
+            return okSeg !== false;
+        },
         refreshTabs: function () { try { refreshEditTabs(); } catch (e) {} },
 
         /* —— 进入/退出编辑模式 —— */
@@ -565,7 +599,11 @@
             '<div class="et-help">改动只存本机浏览器（localStorage overlay），原始线路包不受影响。' +
             '改分段/标题/备注立即重排预览；改途经点后 geometry 仍需「生成新版线路」云端构建。' +
             '换设备用云同步备份恢复。</div>' +
-            '</div>';
+            '</div>' +
+            /* 归天天数选择弹层 + toast（S20） */
+            '<div id="etDayPickBk"></div>' +
+            '<div id="etDayPick"><div class="et-dp_t">把该途经点归到哪一天？</div><div id="etDayPickList"></div></div>' +
+            '<div id="etToast"></div>';
         if (btn.parentNode && btn.parentNode.insertBefore) {
             btn.parentNode.insertBefore(editBar, btn.nextSibling);
         } else if (panel && panel.appendChild) {
@@ -606,7 +644,7 @@
             '.et-wp{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:13px;}' +
             '.et-wp .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 0;}' +
             '.et-wp .grip{border:none;background:none;color:#94a3b8;font-size:15px;cursor:grab;padding:10px 6px;font-family:inherit;}' +
-            '.et-dayno{flex:none;font-size:10.5px;font-weight:700;color:#0f766e;background:#f0fdfa;border-radius:6px;padding:3px 7px;}' +
+            '.et-dayno{flex:none;font-size:10.5px;font-weight:700;color:#0f766e;background:#f0fdfa;border:none;border-radius:6px;padding:3px 7px;font-family:inherit;cursor:pointer;}' +
             '.et-wp button.mv{width:44px;height:44px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;padding:0;font-family:inherit;}' +
             '.et-wp button.del{width:44px;height:44px;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;padding:0;font-family:inherit;}' +
             '.et-gen{display:block;width:100%;margin-top:10px;min-height:52px;border:none;background:#0f766e;color:#fff;font-size:15px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(15,118,110,.3);}' +
@@ -615,7 +653,18 @@
             '.et-mark .mn{flex:1;padding:8px 0;}' +
             '.et-mark button{min-height:40px;padding:0 10px;border:1px solid #e2e8f0;background:#fff;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;}' +
             '.et-help{font-size:11.5px;color:#64748b;line-height:1.7;}' +
-            '#editPaneMore .sync-sec{border-top:none;margin-top:0;padding-top:0;}';
+            '#editPaneMore .sync-sec{border-top:none;margin-top:0;padding-top:0;}' +
+            /* S20 归天天数选择弹层 + toast */
+            '#etDayPickBk{position:fixed;inset:0;z-index:30;background:rgba(15,23,42,.4);display:none;}' +
+            'body.et-daypick #etDayPickBk{display:block;}' +
+            '#etDayPick{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:31;width:min(320px,calc(100vw - 48px));background:#fff;border-radius:14px;box-shadow:0 16px 48px rgba(15,23,42,.25);padding:12px;display:none;}' +
+            'body.et-daypick #etDayPick{display:block;}' +
+            '.et-dp_t{font-size:13.5px;font-weight:600;color:#0f172a;margin-bottom:8px;text-align:center;}' +
+            '#etDayPickList button{display:block;width:100%;min-height:46px;border:none;background:none;font-size:14px;color:#1f2937;border-radius:8px;cursor:pointer;font-family:inherit;text-align:left;padding:0 12px;}' +
+            '#etDayPickList button:active{background:#f0fdfa;}' +
+            '#etDayPickList button.cur{color:#94a3b8;cursor:default;}' +
+            '#etToast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);z-index:40;background:#0f172a;color:#fff;font-size:13px;padding:10px 18px;border-radius:22px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;}' +
+            '#etToast.show{opacity:1;transform:translateX(-50%) translateY(0);}';
         (document.head || document.documentElement).appendChild(css);
 
         /* —— 顶栏与菜单 —— */
@@ -1040,6 +1089,46 @@
         var depClearBtn = document.getElementById('depClear');
         if (depClearBtn) depClearBtn.onclick = function () { Edit.setDeparture(null); };
 
+        /* S20 归天：天数选择弹层（当前天禁用）+ 轻反馈 toast */
+        function openDayPick(wpIdx) {
+            var list = document.getElementById('etDayPickList');
+            if (!list || typeof list.appendChild !== 'function') return;
+            list.innerHTML = '';
+            var cur = (typeof Wp !== 'undefined' && Wp.list[wpIdx]) ? wpDayIdx(Wp.list[wpIdx]) : -1;
+            DAYS.forEach(function (d, di) {
+                var b = document.createElement('button');
+                b.textContent = 'D' + d.id + ' ' + d.title + ((d.altKm && !d.rest) ? '' : '（休整日）');
+                if (di === cur) { b.disabled = true; b.className = 'cur'; }
+                else {
+                    b.onclick = function () {
+                        closeDayPick();
+                        if (Edit.assignWpDay(wpIdx, di) !== false) {
+                            etToast('已归到 D' + d.id);
+                        }
+                        renderList();
+                    };
+                }
+                list.appendChild(b);
+            });
+            if (document.body && document.body.classList) document.body.classList.add('et-daypick');
+        }
+        function closeDayPick() {
+            if (document.body && document.body.classList) document.body.classList.remove('et-daypick');
+        }
+        var etToastTimer = null;
+        function etToast(msg) {
+            var t = document.getElementById('etToast');
+            if (!t) return;
+            t.textContent = msg;
+            if (t.classList) t.classList.add('show');
+            if (etToastTimer) clearTimeout(etToastTimer);
+            etToastTimer = setTimeout(function () { if (t.classList) t.classList.remove('show'); }, 1600);
+        }
+        (function () {
+            var bk = document.getElementById('etDayPickBk');
+            if (bk) bk.onclick = closeDayPick;
+        })();
+
         function renderList() {
             var el = document.getElementById('wpList');
             if (!el) return;
@@ -1049,16 +1138,25 @@
                 row.className = 'et-wp';
                 row.innerHTML = '<span class="grip" title="拖动排序（桌面可拖，触屏用 ↑↓）">☰</span>' +
                     '<span class="t">' + escapeHtml(w.n) + '</span>' +
-                    '<span class="et-dayno">' + wpDayBadge(w) + '</span>' +
+                    '<button class="et-dayno" title="点我改归属天">' + wpDayBadge(w) + '</button>' +
                     '<button class="mv" title="上移">↑</button><button class="mv" title="下移">↓</button>' +
                     '<button class="del" title="删除">✕</button>';
                 var bs = row.querySelectorAll('button');
                 if (!bs.length) { el.appendChild(row); return; }   // mock DOM 无 querySelectorAll 结果
+                /* 注意顺序：徽标也是 <button>，会占 bs[0]——先接 ↑↓✕，再接徽标，否则徽标 onclick 被覆盖 */
                 bs[0].onclick = function () { Wp.move(i, -1); renderList(); };
                 bs[1].onclick = function () { Wp.move(i, 1); renderList(); };
                 bs[2].onclick = function () {
                     if (editAsk('删除途经点「' + w.n + '」？', '确定') !== null) { Wp.remove(i); renderList(); }
                 };
+                /* S20 归天：[Dn] 徽标可点 → 弹天数选择（放在 bs 之后接线，防覆盖） */
+                var badgeBtn = row.querySelector ? row.querySelector('.et-dayno') : null;
+                if (badgeBtn && typeof badgeBtn.onclick !== 'undefined') {
+                    badgeBtn.onclick = function (ev) {
+                        if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+                        openDayPick(i);
+                    };
+                }
                 /* 桌面拖动排序（HTML5 DnD；触屏走 ↑↓ 大按钮，44px） */
                 row.draggable = true;
                 row.ondragstart = function (ev) {

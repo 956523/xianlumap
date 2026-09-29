@@ -292,7 +292,8 @@
             transition: transform .28s cubic-bezier(.32,.72,0,1);
         }
         #panel { overflow: hidden; }                             /* 非全展态内容不滚，避免 peek 里手势变成滚内容 */
-        body.mob-full #panel { transform: none; height: calc(100vh - 24px); max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        body.mob-full #panel { transform: none; height: calc(100vh - 48px - env(safe-area-inset-top)); max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+        /* S20 Bug1①：full 态面板严格从标题条（48px+safe-area）下沿起算——表头不再被标题条压住截断 */
         body.mob-hidden #panel { transform: translateY(100%); }
         body.mob-elev #panel { transform: translateY(100%); }   /* 剖面抽屉打开时行程单让位 */
         /* 两张表上下叠放（地图软件惯例）：行程单 peek 时，剖面把手贴在行程单下沿之上，

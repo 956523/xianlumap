@@ -603,6 +603,38 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     ok('出发日期在云同步各就各位（depDate 行程 Tab / editPaneMore 更多 Tab）',
         !!elCache['depDate'] && !!elCache['editPaneMore'] &&
         typeof elCache['etDone'].onclick === 'function', '');
+
+    /* ---------- S20 真机反馈：白屏护栏 + 途经点归天直改 ---------- */
+    console.log('\n【15】S20：白屏护栏 + 归天重算');
+    delete lsStore['xianlumap.overlay.chuanxi'];   // 前段 setSeg 写的 overlay 会跨 boot 生效，清掉再验
+    // ① 归天：丹巴（km≈328）从 D2 直归 D3 → 自动重算分段（D3 起点收过该点、D2 让出）
+    var r20 = bootRoute('chuanxi');
+    var R2 = r20.sandbox;
+    R2.Edit.enter(); R2.Edit.showTab('wp');
+    var danbaIdx = R2.Wp.list.map(function (w) { return w.n; }).indexOf('丹巴');
+    var badge0 = R2.Edit.wpDayBadge(R2.Wp.list[danbaIdx]);
+    var assignOk = R2.Edit.assignWpDay(danbaIdx, 2);
+    var badge1 = R2.Edit.wpDayBadge(R2.Wp.list[danbaIdx]);
+    var d3t = R2.DAYS.filter(function (d) { return d.id === 3; })[0];
+    var d2b = R2.DAYS.filter(function (d) { return d.id === 2; })[0];
+    ok('归天直改：点徽标选 D3 → 徽标 D2→D3，D3 起点收到点内侧、D2 终点让出（边界推到 ±0.6 容差外）',
+        assignOk !== false && badge0 === 'D2' && badge1 === 'D3' &&
+        d3t.altKm[0] <= 327.5 && d2b.altKm[1] < 327.9 && d2b.altKm[1] > d2b.altKm[0],
+        badge0 + '→' + badge1 + '，D2 [' + d2b.altKm + ']，D3 [' + d3t.altKm + ']');
+    ok('归天后 chips 联动：D3 chips 含丹巴、D2 chips 只剩余点',
+        /丹巴/.test(R2.Edit.wpChipsHTML(d3t)) && !/丹巴/.test(R2.Edit.wpChipsHTML(d2b)) &&
+        /小金/.test(R2.Edit.wpChipsHTML(d2b)), '');
+    // ② 白屏护栏：transform 越界 + mob-drag 残留 → sheetSettle 强制归位
+    var r20m = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    var M2 = r20m.sandbox;
+    M2.window.__mobile.setSheet('full');
+    elCache['panel'].style.transform = 'translateY(9999px)';
+    document.body.classList.add('mob-drag');
+    M2.window.__mobile.sheetSettle();
+    ok('白屏护栏：越界 transform 清零 + mob-drag 移除（状态机只认三态）',
+        elCache['panel'].style.transform === '' &&
+        !document.body.classList.contains('mob-drag') &&
+        M2.window.__mobile.state() === 'full', '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });
