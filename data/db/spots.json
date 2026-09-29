@@ -1,5 +1,6 @@
 {
  "version": 1,
+ "updatedAt": "2026-09-29",
  "spots": [
   {
    "id": "spo-city-0",
@@ -1563,8 +1564,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C8P5DI",
    "fetchedAt": "2026-09-29",
@@ -1572,7 +1573,9 @@
    "km": 2.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "青羊区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-82",
@@ -1591,8 +1594,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C05OX0",
    "fetchedAt": "2026-09-29",
@@ -1600,7 +1603,9 @@
    "km": 2.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "青羊区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-83",
@@ -1619,8 +1624,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C7U6BR",
    "fetchedAt": "2026-09-29",
@@ -1628,7 +1633,9 @@
    "km": 12.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "青羊区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-84",
@@ -1647,8 +1654,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFGW43Q",
    "fetchedAt": "2026-09-29",
@@ -1656,7 +1663,9 @@
    "km": 15,
    "poiType": "风景名胜;公园广场;公园",
    "region": "温江区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-85",
@@ -1675,8 +1684,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKT1QXI",
    "fetchedAt": "2026-09-29",
@@ -1684,7 +1693,9 @@
    "km": 32.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "温江区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-86",
@@ -1703,8 +1714,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K0FH7ZT1",
    "fetchedAt": "2026-09-29",
@@ -1712,7 +1723,9 @@
    "km": 32.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "崇州市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-87",
@@ -1731,8 +1744,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFF06JQQ",
    "fetchedAt": "2026-09-29",
@@ -1740,7 +1753,9 @@
    "km": 67.9,
    "poiType": "风景名胜;公园广场;动物园",
    "region": "都江堰市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-88",
@@ -1759,8 +1774,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C92D90",
    "fetchedAt": "2026-09-29",
@@ -1768,7 +1783,9 @@
    "km": 71.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "都江堰市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-89",
@@ -1787,8 +1804,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHVEFL5",
    "fetchedAt": "2026-09-29",
@@ -1796,7 +1813,9 @@
    "km": 71.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "都江堰市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-90",
@@ -1815,8 +1834,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L0JXGGOQ",
    "fetchedAt": "2026-09-29",
@@ -1824,7 +1843,9 @@
    "km": 91.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-91",
@@ -1843,8 +1864,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03450MKDJ",
    "fetchedAt": "2026-09-29",
@@ -1852,7 +1873,8 @@
    "km": 91.5,
    "poiType": "风景名胜;公园广场;公园",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-92",
@@ -1871,8 +1893,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFLFHWDA",
    "fetchedAt": "2026-09-29",
@@ -1880,7 +1902,8 @@
    "km": 91.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-93",
@@ -1899,8 +1922,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B034500XTU",
    "fetchedAt": "2026-09-29",
@@ -1908,7 +1931,9 @@
    "km": 93.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-94",
@@ -1927,8 +1952,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03450MOVD",
    "fetchedAt": "2026-09-29",
@@ -1936,7 +1961,10 @@
    "km": 100.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-95",
@@ -1955,8 +1983,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG6QODH",
    "fetchedAt": "2026-09-29",
@@ -1964,7 +1992,9 @@
    "km": 100.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-96",
@@ -1983,8 +2013,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C7YK3K",
    "fetchedAt": "2026-09-29",
@@ -1992,7 +2022,9 @@
    "km": 156.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "崇州市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-97",
@@ -2011,8 +2043,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFFFSMHN",
    "fetchedAt": "2026-09-29",
@@ -2020,7 +2052,8 @@
    "km": 213,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "小金县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-98",
@@ -2039,8 +2072,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0345001C3",
    "fetchedAt": "2026-09-29",
@@ -2048,7 +2081,8 @@
    "km": 222.1,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "小金县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-99",
@@ -2067,8 +2101,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B034500985",
    "fetchedAt": "2026-09-29",
@@ -2076,7 +2110,8 @@
    "km": 212.8,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "小金县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-100",
@@ -2095,8 +2130,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0345001CJ",
    "fetchedAt": "2026-09-29",
@@ -2104,7 +2139,8 @@
    "km": 212.6,
    "poiType": "风景名胜;风景名胜;国家级景点",
    "region": "小金县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-101",
@@ -2123,8 +2159,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B034500Q4A",
    "fetchedAt": "2026-09-29",
@@ -2132,7 +2168,8 @@
    "km": 269.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "小金县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-102",
@@ -2151,8 +2188,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFJ00S57",
    "fetchedAt": "2026-09-29",
@@ -2160,7 +2197,9 @@
    "km": 269.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "小金县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-103",
@@ -2179,8 +2218,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MRJR6LMX",
    "fetchedAt": "2026-09-29",
@@ -2188,7 +2227,9 @@
    "km": 272.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "小金县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-104",
@@ -2207,8 +2248,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03450MJDC",
    "fetchedAt": "2026-09-29",
@@ -2216,7 +2257,9 @@
    "km": 269.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "小金县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-105",
@@ -2235,8 +2278,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHBTSSC",
    "fetchedAt": "2026-09-29",
@@ -2244,7 +2287,9 @@
    "km": 322.9,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "丹巴县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-106",
@@ -2263,8 +2308,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03440023R",
    "fetchedAt": "2026-09-29",
@@ -2272,7 +2317,8 @@
    "km": 326.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "丹巴县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-107",
@@ -2291,8 +2337,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFG0NLKS",
    "fetchedAt": "2026-09-29",
@@ -2300,7 +2346,8 @@
    "km": 328.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "丹巴县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-108",
@@ -2319,8 +2366,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L1RAAVD0",
    "fetchedAt": "2026-09-29",
@@ -2328,7 +2375,10 @@
    "km": 330,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "丹巴县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-109",
@@ -2347,8 +2397,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KK3ULCG0",
    "fetchedAt": "2026-09-29",
@@ -2356,7 +2406,9 @@
    "km": 329.9,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "丹巴县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-110",
@@ -2375,8 +2427,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B034400RKS",
    "fetchedAt": "2026-09-29",
@@ -2384,7 +2436,8 @@
    "km": 390.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "道孚县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-111",
@@ -2403,8 +2456,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0G1YUTFK2",
    "fetchedAt": "2026-09-29",
@@ -2412,7 +2465,9 @@
    "km": 411.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "道孚县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-112",
@@ -2431,8 +2486,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LAC5FW88",
    "fetchedAt": "2026-09-29",
@@ -2440,7 +2495,9 @@
    "km": 415.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "道孚县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-113",
@@ -2459,8 +2516,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L6HMEKUO",
    "fetchedAt": "2026-09-29",
@@ -2468,7 +2525,9 @@
    "km": 410.3,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "道孚县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-114",
@@ -2487,8 +2546,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L6HDG7YZ",
    "fetchedAt": "2026-09-29",
@@ -2496,7 +2555,9 @@
    "km": 410.2,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "道孚县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-115",
@@ -2515,8 +2576,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L245OY8O",
    "fetchedAt": "2026-09-29",
@@ -2524,7 +2585,10 @@
    "km": 436.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "道孚县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-116",
@@ -2543,8 +2607,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHS11CT",
    "fetchedAt": "2026-09-29",
@@ -2552,7 +2616,10 @@
    "km": 430.1,
    "poiType": "风景名胜;风景名胜;省级景点",
    "region": "道孚县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-117",
@@ -2571,8 +2638,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL2WG9F",
    "fetchedAt": "2026-09-29",
@@ -2580,7 +2647,10 @@
    "km": 556.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "康定市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-118",
@@ -2599,8 +2669,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03440MHII",
    "fetchedAt": "2026-09-29",
@@ -2608,7 +2678,10 @@
    "km": 562.8,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "康定市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-119",
@@ -2627,8 +2700,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0I2RUVLAS",
    "fetchedAt": "2026-09-29",
@@ -2636,7 +2709,10 @@
    "km": 556.8,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "康定市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-120",
@@ -2655,8 +2731,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B034400S6E",
    "fetchedAt": "2026-09-29",
@@ -2664,7 +2740,10 @@
    "km": 615.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "泸定县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-121",
@@ -2683,8 +2762,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG0D1C9",
    "fetchedAt": "2026-09-29",
@@ -2692,7 +2771,10 @@
    "km": 615.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "泸定县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-122",
@@ -2711,8 +2793,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0344004CJ",
    "fetchedAt": "2026-09-29",
@@ -2720,7 +2802,10 @@
    "km": 615.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "泸定县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-123",
@@ -2739,8 +2824,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LKDSN3TQ",
    "fetchedAt": "2026-09-29",
@@ -2748,7 +2833,10 @@
    "km": 615.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "泸定县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-124",
@@ -2767,8 +2855,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0343005N0",
    "fetchedAt": "2026-09-29",
@@ -2776,7 +2864,10 @@
    "km": 683.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "天全县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-125",
@@ -2795,8 +2886,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFLNODPL",
    "fetchedAt": "2026-09-29",
@@ -2804,7 +2895,10 @@
    "km": 683.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "天全县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-126",
@@ -2823,8 +2917,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL7JJHN",
    "fetchedAt": "2026-09-29",
@@ -2832,7 +2926,10 @@
    "km": 682.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "天全县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-127",
@@ -2851,8 +2948,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B034300DNP",
    "fetchedAt": "2026-09-29",
@@ -2860,7 +2957,10 @@
    "km": 682.2,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "天全县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-128",
@@ -2879,8 +2979,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HB7517SC",
    "fetchedAt": "2026-09-29",
@@ -2888,7 +2988,10 @@
    "km": 717.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "雅安市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-129",
@@ -2907,8 +3010,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0343006GK",
    "fetchedAt": "2026-09-29",
@@ -2916,7 +3019,10 @@
    "km": 707.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "雅安市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-130",
@@ -2935,8 +3041,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0343005OJ",
    "fetchedAt": "2026-09-29",
@@ -2944,7 +3050,10 @@
    "km": 716.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "雅安市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-131",
@@ -2963,8 +3072,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0G3NSO7S8",
    "fetchedAt": "2026-09-29",
@@ -2972,7 +3081,9 @@
    "km": 725,
    "poiType": "风景名胜;公园广场;公园",
    "region": "名山区",
-   "triage": "auto-approve"
+   "triage": null,
+   "overriddenFrom": "auto-approve",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-132",
@@ -2991,8 +3102,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MA1ME8WT",
    "fetchedAt": "2026-09-29",
@@ -3000,7 +3111,10 @@
    "km": 727.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "名山区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-133",
@@ -3019,8 +3133,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0G1JZ5WFE",
    "fetchedAt": "2026-09-29",
@@ -3028,7 +3142,8 @@
    "km": 734.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "名山区",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-134",
@@ -3047,8 +3162,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFHU9AGZ",
    "fetchedAt": "2026-09-29",
@@ -3056,7 +3171,8 @@
    "km": 740.4,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "雅安市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-135",
@@ -3075,8 +3191,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K6JDYBKV",
    "fetchedAt": "2026-09-29",
@@ -3084,7 +3200,10 @@
    "km": 768.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "蒲江县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-136",
@@ -3103,8 +3222,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFGB4OH4",
    "fetchedAt": "2026-09-29",
@@ -3112,7 +3231,10 @@
    "km": 769.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "蒲江县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-137",
@@ -3131,8 +3253,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0IAH764UH",
    "fetchedAt": "2026-09-29",
@@ -3140,7 +3262,10 @@
    "km": 752.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "蒲江县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-138",
@@ -3159,8 +3284,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C8OPDK",
    "fetchedAt": "2026-09-29",
@@ -3168,7 +3293,10 @@
    "km": 839.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "武侯区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-139",
@@ -3187,8 +3315,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C06R0O",
    "fetchedAt": "2026-09-29",
@@ -3196,7 +3324,10 @@
    "km": 849.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "武侯区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-140",
@@ -3215,8 +3346,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHUHA9B",
    "fetchedAt": "2026-09-29",
@@ -3224,7 +3355,10 @@
    "km": 843.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "武侯区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-141",
@@ -3243,8 +3377,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFODZ7F",
    "fetchedAt": "2026-09-29",
@@ -3252,7 +3386,9 @@
    "km": 837.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "双流区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-142",
@@ -3271,8 +3407,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0G0CCXW79",
    "fetchedAt": "2026-09-29",
@@ -3280,7 +3416,10 @@
    "km": 9.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "青羊区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-143",
@@ -3299,8 +3438,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFM964N0",
    "fetchedAt": "2026-09-29",
@@ -3308,7 +3447,10 @@
    "km": 7.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "青羊区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-144",
@@ -3327,8 +3469,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0H2YHWP6M",
    "fetchedAt": "2026-09-29",
@@ -3336,7 +3478,9 @@
    "km": 15,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "温江区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-145",
@@ -3355,8 +3499,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C7XU73",
    "fetchedAt": "2026-09-29",
@@ -3364,7 +3508,10 @@
    "km": 32.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "崇州市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-146",
@@ -3383,8 +3530,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0I217R40G",
    "fetchedAt": "2026-09-29",
@@ -3392,7 +3539,10 @@
    "km": 36.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "崇州市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-147",
@@ -3411,8 +3561,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B001C7Y1MU",
    "fetchedAt": "2026-09-29",
@@ -3420,7 +3570,10 @@
    "km": 71.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "都江堰市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-148",
@@ -3439,8 +3592,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0J2T5Y06T",
    "fetchedAt": "2026-09-29",
@@ -3448,7 +3601,10 @@
    "km": 58.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "都江堰市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-149",
@@ -3467,8 +3623,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG8ZWP2",
    "fetchedAt": "2026-09-29",
@@ -3476,7 +3632,10 @@
    "km": 91.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-150",
@@ -3495,8 +3654,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0G3Z6KCKS",
    "fetchedAt": "2026-09-29",
@@ -3504,7 +3663,8 @@
    "km": 93.8,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "汶川县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-151",
@@ -3523,8 +3683,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0I0V5BWVX",
    "fetchedAt": "2026-09-29",
@@ -3532,7 +3692,10 @@
    "km": 114,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-152",
@@ -3551,8 +3714,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K295AI2Z",
    "fetchedAt": "2026-09-29",
@@ -3560,7 +3723,10 @@
    "km": 100.6,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-153",
@@ -3579,8 +3745,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B034500XWQ",
    "fetchedAt": "2026-09-29",
@@ -3588,7 +3754,10 @@
    "km": 107.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "汶川县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-154",
@@ -3607,8 +3776,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03450MJR2",
    "fetchedAt": "2026-09-29",
@@ -3616,7 +3785,9 @@
    "km": 204.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "小金县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-155",
@@ -3635,8 +3806,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFH6KSB8",
    "fetchedAt": "2026-09-29",
@@ -3644,7 +3815,9 @@
    "km": 209.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "小金县",
-   "triage": "auto-approve"
+   "triage": null,
+   "overriddenFrom": "auto-approve",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-156",
@@ -3663,8 +3836,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFMCT1G3",
    "fetchedAt": "2026-09-29",
@@ -3672,7 +3845,9 @@
    "km": 267.5,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "小金县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-157",
@@ -3803,8 +3978,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HG45RASS",
    "fetchedAt": "2026-09-29",
@@ -3812,7 +3987,8 @@
    "km": 391.4,
    "poiType": "生活服务;售票处;公园景点售票处",
    "region": "道孚县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-162",
@@ -3831,8 +4007,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFKP8AIB",
    "fetchedAt": "2026-09-29",
@@ -3840,7 +4016,9 @@
    "km": 404.7,
    "poiType": "风景名胜;风景名胜;寺庙道观",
    "region": "道孚县",
-   "triage": "auto-approve"
+   "triage": null,
+   "overriddenFrom": "auto-approve",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-163",
@@ -3859,8 +4037,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0KB9H6DJC",
    "fetchedAt": "2026-09-29",
@@ -3868,7 +4046,8 @@
    "km": 404.8,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "道孚县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-164",
@@ -3887,8 +4066,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GUB6KOSS",
    "fetchedAt": "2026-09-29",
@@ -3896,7 +4075,9 @@
    "km": 493.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "康定市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-165",
@@ -3915,8 +4096,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JK9ZDGPE",
    "fetchedAt": "2026-09-29",
@@ -3924,7 +4105,9 @@
    "km": 554.4,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "泸定县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-166",
@@ -3943,8 +4126,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHKX9A7",
    "fetchedAt": "2026-09-29",
@@ -3952,7 +4135,9 @@
    "km": 554.4,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "泸定县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-167",
@@ -3971,8 +4156,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG6SVJU",
    "fetchedAt": "2026-09-29",
@@ -3980,7 +4165,10 @@
    "km": 586.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "康定市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-168",
@@ -3999,8 +4187,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0G2R7JEHH",
    "fetchedAt": "2026-09-29",
@@ -4008,7 +4196,8 @@
    "km": 615.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "天全县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-169",
@@ -4055,8 +4244,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0K1G6RGAX",
    "fetchedAt": "2026-09-29",
@@ -4064,7 +4253,8 @@
    "km": 652.5,
    "poiType": "生活服务;售票处;公园景点售票处",
    "region": "天全县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-171",
@@ -4083,8 +4273,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0LR37ESOE",
    "fetchedAt": "2026-09-29",
@@ -4092,7 +4282,8 @@
    "km": 652.3,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "天全县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-172",
@@ -4111,8 +4302,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0K1JOQD6M",
    "fetchedAt": "2026-09-29",
@@ -4120,7 +4311,8 @@
    "km": 652.1,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "天全县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-173",
@@ -4139,8 +4331,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFOH8V1",
    "fetchedAt": "2026-09-29",
@@ -4148,7 +4340,10 @@
    "km": 682.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "天全县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-174",
@@ -4167,8 +4362,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKJJNJ7",
    "fetchedAt": "2026-09-29",
@@ -4176,7 +4371,10 @@
    "km": 682.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "天全县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-175",
@@ -4195,8 +4393,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B034300MUA",
    "fetchedAt": "2026-09-29",
@@ -4204,7 +4402,10 @@
    "km": 712.4,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "雅安市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-176",
@@ -4223,8 +4424,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFI8P9BE",
    "fetchedAt": "2026-09-29",
@@ -4232,7 +4433,10 @@
    "km": 712.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "雅安市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-177",
@@ -4251,8 +4455,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFMHK2XK",
    "fetchedAt": "2026-09-29",
@@ -4260,7 +4464,9 @@
    "km": 738.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "名山区",
-   "triage": "auto-approve"
+   "triage": null,
+   "overriddenFrom": "auto-approve",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-178",
@@ -4279,8 +4485,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JRJSHE8B",
    "fetchedAt": "2026-09-29",
@@ -4288,7 +4494,10 @@
    "km": 725.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "名山区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-179",
@@ -4307,8 +4516,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HGSS41QS",
    "fetchedAt": "2026-09-29",
@@ -4316,7 +4525,10 @@
    "km": 767.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "蒲江县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-180",
@@ -4335,8 +4547,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFGZI9XM",
    "fetchedAt": "2026-09-29",
@@ -4344,7 +4556,8 @@
    "km": 766.3,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "蒲江县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-181",
@@ -4363,8 +4576,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG86UMF",
    "fetchedAt": "2026-09-29",
@@ -4372,7 +4585,10 @@
    "km": 841.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "武侯区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-182",
@@ -4391,8 +4607,8 @@
     "chuanxi"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFH0US9N",
    "fetchedAt": "2026-09-29",
@@ -4400,7 +4616,10 @@
    "km": 841.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "武侯区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-183",
@@ -4419,8 +4638,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A30WYCJ",
    "fetchedAt": "2026-09-29",
@@ -4428,7 +4647,10 @@
    "km": 11,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "兰州市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-184",
@@ -4447,8 +4669,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFH83SNE",
    "fetchedAt": "2026-09-29",
@@ -4456,7 +4678,10 @@
    "km": 18.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "安宁区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-185",
@@ -4475,8 +4700,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A30AS9M",
    "fetchedAt": "2026-09-29",
@@ -4484,7 +4709,10 @@
    "km": 15.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "安宁区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-186",
@@ -4503,8 +4731,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A30YJRU",
    "fetchedAt": "2026-09-29",
@@ -4512,7 +4740,10 @@
    "km": 10.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "安宁区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-187",
@@ -4531,8 +4762,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A3093D2",
    "fetchedAt": "2026-09-29",
@@ -4540,7 +4771,10 @@
    "km": 3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "兰州市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-188",
@@ -4559,8 +4793,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL796S5",
    "fetchedAt": "2026-09-29",
@@ -4568,7 +4802,9 @@
    "km": 8.1,
    "poiType": "风景名胜;公园广场;水族馆",
    "region": "七里河区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-189",
@@ -4587,8 +4823,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0G36AMBCB",
    "fetchedAt": "2026-09-29",
@@ -4596,7 +4832,10 @@
    "km": 44.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "西固区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-190",
@@ -4615,8 +4854,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFLCPN18",
    "fetchedAt": "2026-09-29",
@@ -4624,7 +4863,10 @@
    "km": 25.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "西固区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-191",
@@ -4643,8 +4885,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MU36N416",
    "fetchedAt": "2026-09-29",
@@ -4652,7 +4894,10 @@
    "km": 25.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "西固区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-192",
@@ -4671,8 +4916,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFLJIJUG",
    "fetchedAt": "2026-09-29",
@@ -4680,7 +4925,9 @@
    "km": 39,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "永登县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-193",
@@ -4699,8 +4946,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKXHTYF",
    "fetchedAt": "2026-09-29",
@@ -4708,7 +4955,10 @@
    "km": 26,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "西固区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-194",
@@ -4727,8 +4977,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFF3K8MX",
    "fetchedAt": "2026-09-29",
@@ -4736,7 +4986,9 @@
    "km": 26,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "西固区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-195",
@@ -4755,8 +5007,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03A30B0FC",
    "fetchedAt": "2026-09-29",
@@ -4764,7 +5016,8 @@
    "km": 92.5,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "红古区",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-196",
@@ -4783,8 +5036,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKHMSQ3",
    "fetchedAt": "2026-09-29",
@@ -4792,7 +5045,10 @@
    "km": 80.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "红古区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-197",
@@ -4811,8 +5067,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KRPMQ5X8",
    "fetchedAt": "2026-09-29",
@@ -4820,7 +5076,10 @@
    "km": 88.4,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "民和回族土族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-198",
@@ -4839,8 +5098,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03CC0079N",
    "fetchedAt": "2026-09-29",
@@ -4848,7 +5107,8 @@
    "km": 112.6,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "民和回族土族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-199",
@@ -4867,8 +5127,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K3DDUHLU",
    "fetchedAt": "2026-09-29",
@@ -4876,7 +5136,9 @@
    "km": 107.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "红古区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-200",
@@ -4895,8 +5157,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG1G9EX",
    "fetchedAt": "2026-09-29",
@@ -4904,7 +5166,10 @@
    "km": 112.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海东市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-201",
@@ -4923,8 +5188,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L1A5J7ZP",
    "fetchedAt": "2026-09-29",
@@ -4932,7 +5197,9 @@
    "km": 116.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海东市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-202",
@@ -4951,8 +5218,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0J1P521JC",
    "fetchedAt": "2026-09-29",
@@ -4960,7 +5227,10 @@
    "km": 106.9,
    "poiType": "风景名胜;公园广场;水族馆|购物服务;花鸟鱼虫市场;花鸟鱼虫市场",
    "region": "红古区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-203",
@@ -4979,8 +5249,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFIP2CUZ",
    "fetchedAt": "2026-09-29",
@@ -4988,7 +5258,10 @@
    "km": 107.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "红古区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-204",
@@ -5007,8 +5280,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0JR2HEP0P",
    "fetchedAt": "2026-09-29",
@@ -5016,7 +5289,9 @@
    "km": 140.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "乐都区",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-205",
@@ -5035,8 +5310,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LG0L6MM4",
    "fetchedAt": "2026-09-29",
@@ -5044,7 +5319,9 @@
    "km": 140.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "乐都区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-206",
@@ -5063,8 +5340,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LUL18PJJ",
    "fetchedAt": "2026-09-29",
@@ -5072,7 +5349,10 @@
    "km": 128.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "永登县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-207",
@@ -5091,8 +5371,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LKOAFGCB",
    "fetchedAt": "2026-09-29",
@@ -5100,7 +5380,10 @@
    "km": 128.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "永登县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-208",
@@ -5119,8 +5402,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L04LZ082",
    "fetchedAt": "2026-09-29",
@@ -5128,7 +5411,10 @@
    "km": 132,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "永登县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-209",
@@ -5147,8 +5433,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFIZTYW9",
    "fetchedAt": "2026-09-29",
@@ -5156,7 +5442,10 @@
    "km": 140.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "永登县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-210",
@@ -5175,8 +5464,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0LAL5II7H",
    "fetchedAt": "2026-09-29",
@@ -5184,7 +5473,9 @@
    "km": 161.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "乐都区",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-211",
@@ -5203,8 +5494,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0M2L1PVXD",
    "fetchedAt": "2026-09-29",
@@ -5212,7 +5503,10 @@
    "km": 157.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "乐都区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-212",
@@ -5231,8 +5525,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HD0AWJUZ",
    "fetchedAt": "2026-09-29",
@@ -5240,7 +5534,9 @@
    "km": 153.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海东市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-213",
@@ -5259,8 +5555,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0IG5HJ0B5",
    "fetchedAt": "2026-09-29",
@@ -5268,7 +5564,10 @@
    "km": 154.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "乐都区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-214",
@@ -5287,8 +5586,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HB7H2FKJ",
    "fetchedAt": "2026-09-29",
@@ -5296,7 +5595,10 @@
    "km": 156.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "乐都区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-215",
@@ -5315,8 +5617,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFGX7SRM",
    "fetchedAt": "2026-09-29",
@@ -5324,7 +5626,10 @@
    "km": 155.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海东市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-216",
@@ -5343,8 +5648,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0KRJ1GAS2",
    "fetchedAt": "2026-09-29",
@@ -5352,7 +5657,9 @@
    "km": 184,
    "poiType": "风景名胜;公园广场;公园",
    "region": "平安区",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-217",
@@ -5371,8 +5678,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFI1QFVN",
    "fetchedAt": "2026-09-29",
@@ -5380,7 +5687,10 @@
    "km": 184,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海东市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-218",
@@ -5399,8 +5709,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L1J78X2S",
    "fetchedAt": "2026-09-29",
@@ -5408,7 +5718,10 @@
    "km": 179.5,
    "poiType": "风景名胜;公园广场;动物园",
    "region": "平安区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-219",
@@ -5427,8 +5740,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L2AA0LKN",
    "fetchedAt": "2026-09-29",
@@ -5436,7 +5749,10 @@
    "km": 184.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "平安区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-220",
@@ -5455,8 +5771,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HGDA90NU",
    "fetchedAt": "2026-09-29",
@@ -5464,7 +5780,10 @@
    "km": 182.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海东市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-221",
@@ -5483,8 +5802,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFMC205O",
    "fetchedAt": "2026-09-29",
@@ -5492,7 +5811,9 @@
    "km": 184.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海东市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-222",
@@ -5511,8 +5832,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL5O9X8",
    "fetchedAt": "2026-09-29",
@@ -5520,7 +5841,9 @@
    "km": 224.9,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "城西区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-223",
@@ -5539,8 +5862,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFK8QLH2",
    "fetchedAt": "2026-09-29",
@@ -5548,7 +5871,10 @@
    "km": 215.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城东区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-224",
@@ -5567,8 +5893,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFH8DKDC",
    "fetchedAt": "2026-09-29",
@@ -5576,7 +5902,10 @@
    "km": 214.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城东区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-225",
@@ -5595,8 +5924,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHSSHYD",
    "fetchedAt": "2026-09-29",
@@ -5604,7 +5933,9 @@
    "km": 214.1,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "城东区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-226",
@@ -5623,8 +5954,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KRVA4X9G",
    "fetchedAt": "2026-09-29",
@@ -5632,7 +5963,10 @@
    "km": 216.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城东区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-227",
@@ -5651,8 +5985,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L2SZ5HF8",
    "fetchedAt": "2026-09-29",
@@ -5660,7 +5994,10 @@
    "km": 213.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城东区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-228",
@@ -5679,8 +6016,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03CB0712M",
    "fetchedAt": "2026-09-29",
@@ -5688,7 +6025,8 @@
    "km": 225.1,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "西宁市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-229",
@@ -5707,8 +6045,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L2GGS0M4",
    "fetchedAt": "2026-09-29",
@@ -5716,7 +6054,9 @@
    "km": 226.4,
    "poiType": "风景名胜;公园广场;动物园",
    "region": "城西区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-230",
@@ -5735,8 +6075,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFK48348",
    "fetchedAt": "2026-09-29",
@@ -5744,7 +6084,9 @@
    "km": 226.3,
    "poiType": "风景名胜;公园广场;动物园",
    "region": "城西区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-231",
@@ -5763,8 +6105,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB0ZCCY",
    "fetchedAt": "2026-09-29",
@@ -5772,7 +6114,10 @@
    "km": 226.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城西区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-232",
@@ -5791,8 +6136,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03CB0726M",
    "fetchedAt": "2026-09-29",
@@ -5800,7 +6145,8 @@
    "km": 226.3,
    "poiType": "风景名胜;公园广场;动物园",
    "region": "西宁市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-233",
@@ -5819,8 +6165,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GD758PMR",
    "fetchedAt": "2026-09-29",
@@ -5828,7 +6174,10 @@
    "km": 228.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城西区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-234",
@@ -5847,8 +6196,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K1HARGQU",
    "fetchedAt": "2026-09-29",
@@ -5856,7 +6205,10 @@
    "km": 262.1,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "湟源县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-235",
@@ -5875,8 +6227,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K15UVL6V",
    "fetchedAt": "2026-09-29",
@@ -5884,7 +6236,10 @@
    "km": 262.7,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "湟源县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-236",
@@ -5903,8 +6258,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KRMRRTCF",
    "fetchedAt": "2026-09-29",
@@ -5912,7 +6267,10 @@
    "km": 260.1,
    "poiType": "风景名胜;公园广场;公园|风景名胜;风景名胜;风景名胜",
    "region": "西宁市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-237",
@@ -5931,8 +6289,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K1DHH5WV",
    "fetchedAt": "2026-09-29",
@@ -5940,7 +6298,10 @@
    "km": 265.8,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "湟源县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-238",
@@ -5959,8 +6320,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0K03R44YB",
    "fetchedAt": "2026-09-29",
@@ -5968,7 +6329,8 @@
    "km": 267.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "湟源县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-239",
@@ -5987,8 +6349,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFI3NA0F",
    "fetchedAt": "2026-09-29",
@@ -5996,7 +6358,9 @@
    "km": 253.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "湟中区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-240",
@@ -6015,8 +6379,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K1J1ONF3",
    "fetchedAt": "2026-09-29",
@@ -6024,7 +6388,10 @@
    "km": 297.7,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "贵德县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-241",
@@ -6043,8 +6410,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL65JAQ",
    "fetchedAt": "2026-09-29",
@@ -6052,7 +6419,10 @@
    "km": 297.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "贵德县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-242",
@@ -6071,8 +6441,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFJ86P3M",
    "fetchedAt": "2026-09-29",
@@ -6080,7 +6450,8 @@
    "km": 302,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "湟源县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-243",
@@ -6099,8 +6470,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HDZC1ZCA",
    "fetchedAt": "2026-09-29",
@@ -6108,7 +6479,9 @@
    "km": 302.1,
    "poiType": "生活服务;售票处;公园景点售票处",
    "region": "共和县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-244",
@@ -6127,8 +6500,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0JDHS90G9",
    "fetchedAt": "2026-09-29",
@@ -6136,7 +6509,8 @@
    "km": 316.7,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "贵德县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-245",
@@ -6211,8 +6585,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFJCMDME",
    "fetchedAt": "2026-09-29",
@@ -6220,7 +6594,10 @@
    "km": 316.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "贵德县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-248",
@@ -6239,8 +6616,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GUNCI4BI",
    "fetchedAt": "2026-09-29",
@@ -6248,7 +6625,10 @@
    "km": 339.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "共和县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-249",
@@ -6267,8 +6647,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KGLCYBMN",
    "fetchedAt": "2026-09-29",
@@ -6276,7 +6656,10 @@
    "km": 346.6,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "海晏县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-250",
@@ -6295,8 +6678,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L3L5PWEI",
    "fetchedAt": "2026-09-29",
@@ -6304,7 +6687,9 @@
    "km": 338.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海南藏族自治州",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-251",
@@ -6323,8 +6708,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MRDY8HDZ",
    "fetchedAt": "2026-09-29",
@@ -6332,7 +6717,10 @@
    "km": 338.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海南藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-252",
@@ -6351,8 +6739,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CE003BB",
    "fetchedAt": "2026-09-29",
@@ -6360,7 +6748,10 @@
    "km": 327.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海南藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-253",
@@ -6379,8 +6770,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CE0036R",
    "fetchedAt": "2026-09-29",
@@ -6388,7 +6779,10 @@
    "km": 337.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海南藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-254",
@@ -6407,8 +6801,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0J1YCPIKT",
    "fetchedAt": "2026-09-29",
@@ -6416,7 +6810,8 @@
    "km": 365.3,
    "poiType": "生活服务;生活服务场所;生活服务场所",
    "region": "共和县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-255",
@@ -6435,8 +6830,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03CE0000D",
    "fetchedAt": "2026-09-29",
@@ -6444,7 +6839,9 @@
    "km": 365.7,
    "poiType": "风景名胜;风景名胜;国家级景点",
    "region": "海南藏族自治州",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-256",
@@ -6463,8 +6860,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03CE002BN",
    "fetchedAt": "2026-09-29",
@@ -6472,7 +6869,9 @@
    "km": 365.6,
    "poiType": "风景名胜;风景名胜;国家级景点|科教文化服务;科技馆;科技馆",
    "region": "共和县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-257",
@@ -6491,8 +6890,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0KUGSU8KT",
    "fetchedAt": "2026-09-29",
@@ -6500,7 +6899,8 @@
    "km": 365.3,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "海南藏族自治州",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-258",
@@ -6519,8 +6919,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0L1M9H9OX",
    "fetchedAt": "2026-09-29",
@@ -6528,7 +6928,8 @@
    "km": 365.6,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "共和县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-259",
@@ -6547,8 +6948,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0MRXRLYQA",
    "fetchedAt": "2026-09-29",
@@ -6556,7 +6957,9 @@
    "km": 366.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "共和县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-260",
@@ -6575,8 +6978,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0IA37ZRFI",
    "fetchedAt": "2026-09-29",
@@ -6584,7 +6987,9 @@
    "km": 434.1,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "共和县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-261",
@@ -6659,8 +7064,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0IAJSWLNH",
    "fetchedAt": "2026-09-29",
@@ -6668,7 +7073,10 @@
    "km": 442.4,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "刚察县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-264",
@@ -6687,8 +7095,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KD79EIVG",
    "fetchedAt": "2026-09-29",
@@ -6696,7 +7104,10 @@
    "km": 522.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "乌兰县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-265",
@@ -6715,8 +7126,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFJ2YRFJ",
    "fetchedAt": "2026-09-29",
@@ -6724,7 +7135,9 @@
    "km": 519.5,
    "poiType": "公共设施;公共设施;公共设施",
    "region": "乌兰县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-266",
@@ -6743,8 +7156,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HUNAAJNH",
    "fetchedAt": "2026-09-29",
@@ -6752,7 +7165,9 @@
    "km": 505.7,
    "poiType": "生活服务;售票处;公园景点售票处",
    "region": "乌兰县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-267",
@@ -6771,8 +7186,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HUNAAR9K",
    "fetchedAt": "2026-09-29",
@@ -6780,7 +7195,8 @@
    "km": 505.7,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "乌兰县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-268",
@@ -6799,8 +7215,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL4C32D",
    "fetchedAt": "2026-09-29",
@@ -6808,7 +7224,10 @@
    "km": 519.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "乌兰县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-269",
@@ -6827,8 +7246,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MUYHPTGV",
    "fetchedAt": "2026-09-29",
@@ -6836,7 +7255,10 @@
    "km": 505.7,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "乌兰县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-270",
@@ -6855,8 +7277,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JU77VID7",
    "fetchedAt": "2026-09-29",
@@ -6864,7 +7286,10 @@
    "km": 564.6,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "天峻县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-271",
@@ -6883,8 +7308,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JRKMQZU7",
    "fetchedAt": "2026-09-29",
@@ -6892,7 +7317,10 @@
    "km": 597,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "乌兰县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-272",
@@ -6911,8 +7339,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03D10P2DY",
    "fetchedAt": "2026-09-29",
@@ -6920,7 +7348,10 @@
    "km": 595.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海西蒙古族藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-273",
@@ -6939,8 +7370,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0K1JOLFQ7",
    "fetchedAt": "2026-09-29",
@@ -6948,7 +7379,8 @@
    "km": 598.1,
    "poiType": "风景名胜;公园广场;公园|风景名胜;风景名胜;风景名胜",
    "region": "海西蒙古族藏族自治州",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-274",
@@ -6967,8 +7399,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFHQ6YEO",
    "fetchedAt": "2026-09-29",
@@ -6976,7 +7408,9 @@
    "km": 678.5,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "德令哈市",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-275",
@@ -6995,8 +7429,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03D100769",
    "fetchedAt": "2026-09-29",
@@ -7004,7 +7438,10 @@
    "km": 715.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海西蒙古族藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-276",
@@ -7023,8 +7460,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MR5HGVRE",
    "fetchedAt": "2026-09-29",
@@ -7032,7 +7469,10 @@
    "km": 716.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海西蒙古族藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-277",
@@ -7051,8 +7491,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKQSYAF",
    "fetchedAt": "2026-09-29",
@@ -7060,7 +7500,10 @@
    "km": 715.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "德令哈市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-278",
@@ -7079,8 +7522,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03D10P30U",
    "fetchedAt": "2026-09-29",
@@ -7088,7 +7531,9 @@
    "km": 715.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "德令哈市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-279",
@@ -7107,8 +7552,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFH3EVP6",
    "fetchedAt": "2026-09-29",
@@ -7116,7 +7561,9 @@
    "km": 715.1,
    "poiType": "风景名胜;公园广场;水族馆",
    "region": "德令哈市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-280",
@@ -7135,8 +7582,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0J0OAE5L5",
    "fetchedAt": "2026-09-29",
@@ -7144,7 +7591,8 @@
    "km": 716.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海西蒙古族藏族自治州",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-281",
@@ -7163,8 +7611,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0LR3CDJ4C",
    "fetchedAt": "2026-09-29",
@@ -7172,7 +7620,8 @@
    "km": 758.2,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "德令哈市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-282",
@@ -7191,8 +7640,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HRVAUNGG",
    "fetchedAt": "2026-09-29",
@@ -7200,7 +7649,8 @@
    "km": 758.2,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "德令哈市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-283",
@@ -7219,8 +7669,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03D1007JT",
    "fetchedAt": "2026-09-29",
@@ -7228,7 +7678,9 @@
    "km": 758.2,
    "poiType": "生活服务;售票处;公园景点售票处",
    "region": "德令哈市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-284",
@@ -7275,8 +7727,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFMH38O2",
    "fetchedAt": "2026-09-29",
@@ -7284,7 +7736,8 @@
    "km": 1166.8,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "阿克塞哈萨克族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-286",
@@ -7303,8 +7756,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFOH59L",
    "fetchedAt": "2026-09-29",
@@ -7312,7 +7765,9 @@
    "km": 1191,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "阿克塞哈萨克族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-287",
@@ -7331,8 +7786,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG18XCP",
    "fetchedAt": "2026-09-29",
@@ -7340,7 +7795,9 @@
    "km": 1191.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "酒泉市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-288",
@@ -7359,8 +7816,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K1P59LGB",
    "fetchedAt": "2026-09-29",
@@ -7368,7 +7825,10 @@
    "km": 1192.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "阿克塞哈萨克族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-289",
@@ -7387,8 +7847,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFLC114X",
    "fetchedAt": "2026-09-29",
@@ -7396,7 +7856,8 @@
    "km": 1188.5,
    "poiType": "风景名胜;公园广场;动物园",
    "region": "阿克塞哈萨克族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-290",
@@ -7415,8 +7876,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0KRSCL84H",
    "fetchedAt": "2026-09-29",
@@ -7424,7 +7885,8 @@
    "km": 1200.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "阿克塞哈萨克族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-291",
@@ -7443,8 +7905,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKWXASQ",
    "fetchedAt": "2026-09-29",
@@ -7452,7 +7914,10 @@
    "km": 1271.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "敦煌市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-292",
@@ -7471,8 +7936,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MR4YENTQ",
    "fetchedAt": "2026-09-29",
@@ -7480,7 +7945,10 @@
    "km": 1271.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "敦煌市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-293",
@@ -7499,8 +7967,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KD4OZMVN",
    "fetchedAt": "2026-09-29",
@@ -7508,7 +7976,10 @@
    "km": 1261.5,
    "poiType": "风景名胜;公园广场;公园",
    "region": "敦煌市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-294",
@@ -7527,8 +7998,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A900097",
    "fetchedAt": "2026-09-29",
@@ -7536,7 +8007,10 @@
    "km": 1268.5,
    "poiType": "风景名胜;公园广场;公园",
    "region": "酒泉市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-295",
@@ -7555,8 +8029,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MR4YENUK",
    "fetchedAt": "2026-09-29",
@@ -7564,7 +8038,10 @@
    "km": 1272.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "敦煌市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-296",
@@ -7583,8 +8060,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A900156",
    "fetchedAt": "2026-09-29",
@@ -7592,7 +8069,10 @@
    "km": 1270.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "酒泉市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-297",
@@ -7611,8 +8091,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFH716NZ",
    "fetchedAt": "2026-09-29",
@@ -7620,7 +8100,10 @@
    "km": 1281.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "酒泉市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-298",
@@ -7639,8 +8122,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HB6AITU8",
    "fetchedAt": "2026-09-29",
@@ -7648,7 +8131,8 @@
    "km": 1376.9,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "瓜州县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-299",
@@ -7667,8 +8151,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HB6AJWX6",
    "fetchedAt": "2026-09-29",
@@ -7676,7 +8160,8 @@
    "km": 1377.4,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "瓜州县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-300",
@@ -7695,8 +8180,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HB6AITU9",
    "fetchedAt": "2026-09-29",
@@ -7704,7 +8189,8 @@
    "km": 1380.4,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "瓜州县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-301",
@@ -7723,8 +8209,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFG0HLUM",
    "fetchedAt": "2026-09-29",
@@ -7732,7 +8218,8 @@
    "km": 1386.6,
    "poiType": "科教文化服务;博物馆;博物馆",
    "region": "瓜州县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-302",
@@ -7751,8 +8238,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0G0Y7L6PN",
    "fetchedAt": "2026-09-29",
@@ -7760,7 +8247,10 @@
    "km": 1386.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "瓜州县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-303",
@@ -7779,8 +8269,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0G1CSQPM2",
    "fetchedAt": "2026-09-29",
@@ -7788,7 +8278,9 @@
    "km": 1394.5,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "瓜州县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-304",
@@ -7863,8 +8355,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0KR27GCWH",
    "fetchedAt": "2026-09-29",
@@ -7872,7 +8364,8 @@
    "km": 1511.1,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-307",
@@ -7891,8 +8384,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KR2CJZN9",
    "fetchedAt": "2026-09-29",
@@ -7900,7 +8393,10 @@
    "km": 1511,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "玉门市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-308",
@@ -7919,8 +8415,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A913OVI",
    "fetchedAt": "2026-09-29",
@@ -7928,7 +8424,10 @@
    "km": 1515.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "玉门市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-309",
@@ -7947,8 +8446,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A913KGH",
    "fetchedAt": "2026-09-29",
@@ -7956,7 +8455,9 @@
    "km": 1515.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "酒泉市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-310",
@@ -7975,8 +8476,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0M2B7A2TZ",
    "fetchedAt": "2026-09-29",
@@ -7984,7 +8485,8 @@
    "km": 1501.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-311",
@@ -8003,8 +8505,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0K3D7QHNO",
    "fetchedAt": "2026-09-29",
@@ -8012,7 +8514,8 @@
    "km": 1513.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-312",
@@ -8031,8 +8534,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LGV1W17O",
    "fetchedAt": "2026-09-29",
@@ -8040,7 +8543,9 @@
    "km": 1546.4,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-313",
@@ -8059,8 +8564,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MDNXGG5U",
    "fetchedAt": "2026-09-29",
@@ -8068,7 +8573,9 @@
    "km": 1546.4,
    "poiType": "生活服务;生活服务场所;生活服务场所",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-314",
@@ -8087,8 +8594,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KUBRXADX",
    "fetchedAt": "2026-09-29",
@@ -8096,7 +8603,9 @@
    "km": 1546.5,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-315",
@@ -8143,8 +8652,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HUDSLRZX",
    "fetchedAt": "2026-09-29",
@@ -8152,7 +8661,9 @@
    "km": 1546.7,
    "poiType": "风景名胜;风景名胜;国家级景点",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-317",
@@ -8171,8 +8682,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0H3SRN0EN",
    "fetchedAt": "2026-09-29",
@@ -8180,7 +8691,9 @@
    "km": 1547,
    "poiType": "生活服务;售票处;公园景点售票处",
    "region": "玉门市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-318",
@@ -8199,8 +8712,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFGAK4IV",
    "fetchedAt": "2026-09-29",
@@ -8208,7 +8721,9 @@
    "km": 1596.8,
    "poiType": "风景名胜;风景名胜;回教寺",
    "region": "玉门市",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-319",
@@ -8227,8 +8742,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B07910LLPR",
    "fetchedAt": "2026-09-29",
@@ -8236,7 +8751,10 @@
    "km": 1643.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "嘉峪关市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-320",
@@ -8255,8 +8773,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B07910LND3",
    "fetchedAt": "2026-09-29",
@@ -8264,7 +8782,10 @@
    "km": 1642,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "嘉峪关市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-321",
@@ -8283,8 +8804,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFG4WQMK",
    "fetchedAt": "2026-09-29",
@@ -8292,7 +8813,9 @@
    "km": 1638.1,
    "poiType": "风景名胜;公园广场;公园|风景名胜;风景名胜;风景名胜",
    "region": "嘉峪关市",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-322",
@@ -8311,8 +8834,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0M2K9LG85",
    "fetchedAt": "2026-09-29",
@@ -8320,7 +8843,10 @@
    "km": 1645.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "嘉峪关市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-323",
@@ -8339,8 +8865,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B07910LMHY",
    "fetchedAt": "2026-09-29",
@@ -8348,7 +8874,9 @@
    "km": 1645.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "嘉峪关市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-324",
@@ -8367,8 +8895,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFGF3TRU",
    "fetchedAt": "2026-09-29",
@@ -8376,7 +8904,10 @@
    "km": 1636,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "嘉峪关市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-325",
@@ -8395,8 +8926,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KU37IVRW",
    "fetchedAt": "2026-09-29",
@@ -8404,7 +8935,9 @@
    "km": 1663.5,
    "poiType": "风景名胜;公园广场;公园",
    "region": "肃州区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-326",
@@ -8423,8 +8956,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HB7S30VW",
    "fetchedAt": "2026-09-29",
@@ -8432,7 +8965,9 @@
    "km": 1668,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "酒泉市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-327",
@@ -8451,8 +8986,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFJCXT2M",
    "fetchedAt": "2026-09-29",
@@ -8460,7 +8995,10 @@
    "km": 1665.5,
    "poiType": "风景名胜;公园广场;公园",
    "region": "肃州区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-328",
@@ -8479,8 +9017,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A913PC2",
    "fetchedAt": "2026-09-29",
@@ -8488,7 +9026,10 @@
    "km": 1664.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "肃州区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-329",
@@ -8507,8 +9048,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFGEXCU2",
    "fetchedAt": "2026-09-29",
@@ -8516,7 +9057,9 @@
    "km": 1658.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "酒泉市",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-330",
@@ -8535,8 +9078,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG8X0LJ",
    "fetchedAt": "2026-09-29",
@@ -8544,7 +9087,10 @@
    "km": 1664.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "酒泉市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-331",
@@ -8563,8 +9109,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0J2G5GICT",
    "fetchedAt": "2026-09-29",
@@ -8572,7 +9118,10 @@
    "km": 1791.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "高台县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-332",
@@ -8591,8 +9140,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFK8FXPV",
    "fetchedAt": "2026-09-29",
@@ -8600,7 +9149,10 @@
    "km": 1794.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "高台县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-333",
@@ -8619,8 +9171,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JAP75T94",
    "fetchedAt": "2026-09-29",
@@ -8628,7 +9180,10 @@
    "km": 1791.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "高台县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-334",
@@ -8647,8 +9202,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KALZC5HD",
    "fetchedAt": "2026-09-29",
@@ -8656,7 +9211,10 @@
    "km": 1784.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "高台县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-335",
@@ -8675,8 +9233,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JGTHQHWI",
    "fetchedAt": "2026-09-29",
@@ -8684,7 +9242,10 @@
    "km": 1788.5,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "高台县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-336",
@@ -8703,8 +9264,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JAZ78F55",
    "fetchedAt": "2026-09-29",
@@ -8712,7 +9273,10 @@
    "km": 1789.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "高台县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-337",
@@ -8731,8 +9295,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GR95PVDF",
    "fetchedAt": "2026-09-29",
@@ -8740,7 +9304,10 @@
    "km": 1809.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "临泽县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-338",
@@ -8759,8 +9326,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A813U6G",
    "fetchedAt": "2026-09-29",
@@ -8768,7 +9335,9 @@
    "km": 1832.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "临泽县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-339",
@@ -8787,8 +9356,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0H1HAPPL2",
    "fetchedAt": "2026-09-29",
@@ -8796,7 +9365,10 @@
    "km": 1830.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "临泽县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-340",
@@ -8815,8 +9387,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GKXRFVC1",
    "fetchedAt": "2026-09-29",
@@ -8824,7 +9396,10 @@
    "km": 1832.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "临泽县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-341",
@@ -8843,8 +9418,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0M16SNLBT",
    "fetchedAt": "2026-09-29",
@@ -8852,7 +9427,10 @@
    "km": 1830.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "临泽县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-342",
@@ -8871,8 +9449,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0G0PACK5F",
    "fetchedAt": "2026-09-29",
@@ -8880,7 +9458,9 @@
    "km": 1831.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "临泽县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-343",
@@ -8899,8 +9479,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKULWZD",
    "fetchedAt": "2026-09-29",
@@ -8908,7 +9488,10 @@
    "km": 1830.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-344",
@@ -8927,8 +9510,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LBSDS9F8",
    "fetchedAt": "2026-09-29",
@@ -8936,7 +9519,10 @@
    "km": 1864.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "甘州区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-345",
@@ -8955,8 +9541,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFI20AKR",
    "fetchedAt": "2026-09-29",
@@ -8964,7 +9550,8 @@
    "km": 1867.6,
    "poiType": "科教文化服务;博物馆;博物馆",
    "region": "甘州区",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-346",
@@ -8983,8 +9570,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFM3EH36",
    "fetchedAt": "2026-09-29",
@@ -8992,7 +9579,10 @@
    "km": 1865.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-347",
@@ -9011,8 +9601,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KRKLG2R5",
    "fetchedAt": "2026-09-29",
@@ -9020,7 +9610,10 @@
    "km": 1864.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "甘州区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-348",
@@ -9039,8 +9632,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A80HYVV",
    "fetchedAt": "2026-09-29",
@@ -9048,7 +9641,10 @@
    "km": 1868,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-349",
@@ -9067,8 +9663,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFM2W0KG",
    "fetchedAt": "2026-09-29",
@@ -9076,7 +9672,10 @@
    "km": 1871.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-350",
@@ -9123,8 +9722,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03A80HZW3",
    "fetchedAt": "2026-09-29",
@@ -9132,7 +9731,10 @@
    "km": 1876.5,
    "poiType": "风景名胜;公园广场;公园",
    "region": "甘州区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-352",
@@ -9151,8 +9753,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GUR9QYSJ",
    "fetchedAt": "2026-09-29",
@@ -9160,7 +9762,10 @@
    "km": 1921.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-353",
@@ -9179,8 +9784,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFL20MRK",
    "fetchedAt": "2026-09-29",
@@ -9188,7 +9793,8 @@
    "km": 1909.8,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "临泽县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-354",
@@ -9235,8 +9841,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MU5RUO5I",
    "fetchedAt": "2026-09-29",
@@ -9244,7 +9850,9 @@
    "km": 1905.5,
    "poiType": "风景名胜;公园广场;公园内部设施",
    "region": "肃南裕固族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-356",
@@ -9291,8 +9899,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG0GJSJ",
    "fetchedAt": "2026-09-29",
@@ -9300,7 +9908,10 @@
    "km": 1901.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "临泽县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-358",
@@ -9319,8 +9930,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFLGH4Y6",
    "fetchedAt": "2026-09-29",
@@ -9328,7 +9939,10 @@
    "km": 1956.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-359",
@@ -9347,8 +9961,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFOY4OQ",
    "fetchedAt": "2026-09-29",
@@ -9356,7 +9970,10 @@
    "km": 1954.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-360",
@@ -9375,8 +9992,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KUPS2OFI",
    "fetchedAt": "2026-09-29",
@@ -9384,7 +10001,10 @@
    "km": 1955.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "肃南裕固族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-361",
@@ -9403,8 +10023,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFMC8LKF",
    "fetchedAt": "2026-09-29",
@@ -9412,7 +10032,10 @@
    "km": 1955.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "肃南裕固族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-362",
@@ -9431,8 +10054,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0J36UMY6I",
    "fetchedAt": "2026-09-29",
@@ -9440,7 +10063,10 @@
    "km": 1955.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "张掖市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-363",
@@ -9459,8 +10085,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0G0C4R1CH",
    "fetchedAt": "2026-09-29",
@@ -9468,7 +10094,10 @@
    "km": 1970.9,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "肃南裕固族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-364",
@@ -9487,8 +10116,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0GKM6O3D5",
    "fetchedAt": "2026-09-29",
@@ -9496,7 +10125,8 @@
    "km": 1998,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海北藏族自治州",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-365",
@@ -9515,8 +10145,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CA000ZV",
    "fetchedAt": "2026-09-29",
@@ -9524,7 +10154,10 @@
    "km": 2105.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海北藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-366",
@@ -9543,8 +10176,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFGM1Z77",
    "fetchedAt": "2026-09-29",
@@ -9552,7 +10185,10 @@
    "km": 2103.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海北藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-367",
@@ -9571,8 +10207,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MRRZZHJ0",
    "fetchedAt": "2026-09-29",
@@ -9580,7 +10216,10 @@
    "km": 2105.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海北藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-368",
@@ -9599,8 +10238,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0GRNRC0W7",
    "fetchedAt": "2026-09-29",
@@ -9608,7 +10247,8 @@
    "km": 2116.1,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "祁连县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-369",
@@ -9627,8 +10267,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LRLKLNWH",
    "fetchedAt": "2026-09-29",
@@ -9636,7 +10276,9 @@
    "km": 2116.1,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "祁连县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-370",
@@ -9655,8 +10297,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KRVAH77D",
    "fetchedAt": "2026-09-29",
@@ -9664,7 +10306,10 @@
    "km": 2105,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海北藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-371",
@@ -9683,8 +10328,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03A813VKR",
    "fetchedAt": "2026-09-29",
@@ -9692,7 +10337,8 @@
    "km": 2166.2,
    "poiType": "风景名胜;风景名胜;寺庙道观",
    "region": "山丹县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-372",
@@ -9711,8 +10357,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0KRJ14PDG",
    "fetchedAt": "2026-09-29",
@@ -9720,7 +10366,9 @@
    "km": 2177.3,
    "poiType": "风景名胜;风景名胜;国家级景点",
    "region": "祁连县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-373",
@@ -9739,8 +10387,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03CA0LVPX",
    "fetchedAt": "2026-09-29",
@@ -9748,7 +10396,8 @@
    "km": 2176.5,
    "poiType": "风景名胜;公园广场;公园",
    "region": "海北藏族自治州",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-374",
@@ -9795,8 +10444,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JUVCCX71",
    "fetchedAt": "2026-09-29",
@@ -9804,7 +10453,10 @@
    "km": 2178.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "山丹县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-376",
@@ -9851,8 +10503,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0IBXUPUCJ",
    "fetchedAt": "2026-09-29",
@@ -9860,7 +10512,8 @@
    "km": 2212.1,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "祁连县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-378",
@@ -9879,8 +10532,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0H2P7QZHE",
    "fetchedAt": "2026-09-29",
@@ -9888,7 +10541,8 @@
    "km": 2201.2,
    "poiType": "生活服务;售票处;公园景点售票处",
    "region": "山丹县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-379",
@@ -9907,8 +10561,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B03CA0LPEV",
    "fetchedAt": "2026-09-29",
@@ -9916,7 +10570,8 @@
    "km": 2232.6,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-380",
@@ -9935,8 +10590,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0LAOLSCAY",
    "fetchedAt": "2026-09-29",
@@ -9944,7 +10599,8 @@
    "km": 2233.7,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-381",
@@ -10019,8 +10675,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFFCPDZF",
    "fetchedAt": "2026-09-29",
@@ -10028,7 +10684,8 @@
    "km": 2249.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-384",
@@ -10047,8 +10704,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFH2FK0Y",
    "fetchedAt": "2026-09-29",
@@ -10056,7 +10713,8 @@
    "km": 2249.9,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-385",
@@ -10075,8 +10733,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0MUTUKS5A",
    "fetchedAt": "2026-09-29",
@@ -10084,7 +10742,8 @@
    "km": 2252.7,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-386",
@@ -10103,8 +10762,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GDDXYCU1",
    "fetchedAt": "2026-09-29",
@@ -10112,7 +10771,9 @@
    "km": 2269.7,
    "poiType": "风景名胜;公园广场;水族馆",
    "region": "海北藏族自治州",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-387",
@@ -10131,8 +10792,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CA000ID",
    "fetchedAt": "2026-09-29",
@@ -10140,7 +10801,10 @@
    "km": 2269.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海北藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-388",
@@ -10159,8 +10823,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL0RVNU",
    "fetchedAt": "2026-09-29",
@@ -10168,7 +10832,10 @@
    "km": 2259.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "海北藏族自治州",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-389",
@@ -10187,8 +10854,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0KR2CL33M",
    "fetchedAt": "2026-09-29",
@@ -10196,7 +10863,8 @@
    "km": 2270.6,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-390",
@@ -10215,8 +10883,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CA0LQCO",
    "fetchedAt": "2026-09-29",
@@ -10224,7 +10892,9 @@
    "km": 2270.6,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-391",
@@ -10243,8 +10913,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFI5H15S",
    "fetchedAt": "2026-09-29",
@@ -10252,7 +10922,8 @@
    "km": 2297,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-392",
@@ -10271,8 +10942,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFHI33NQ",
    "fetchedAt": "2026-09-29",
@@ -10280,7 +10951,8 @@
    "km": 2298.8,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "门源回族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-393",
@@ -10299,8 +10971,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB063FN",
    "fetchedAt": "2026-09-29",
@@ -10308,7 +10980,10 @@
    "km": 2345.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "大通回族土族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-394",
@@ -10327,8 +11002,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB0634D",
    "fetchedAt": "2026-09-29",
@@ -10336,7 +11011,10 @@
    "km": 2345.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "大通回族土族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-395",
@@ -10355,8 +11033,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFGZ7CGQ",
    "fetchedAt": "2026-09-29",
@@ -10364,7 +11042,10 @@
    "km": 2345.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "大通回族土族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-396",
@@ -10383,8 +11064,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB07097",
    "fetchedAt": "2026-09-29",
@@ -10392,7 +11073,9 @@
    "km": 2345.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "大通回族土族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-397",
@@ -10411,8 +11094,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0K62H7Z8S",
    "fetchedAt": "2026-09-29",
@@ -10420,7 +11103,10 @@
    "km": 2344.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "大通回族土族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-398",
@@ -10439,8 +11125,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HGSZ24QX",
    "fetchedAt": "2026-09-29",
@@ -10448,7 +11134,10 @@
    "km": 2344.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "大通回族土族自治县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-399",
@@ -10467,8 +11156,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB0SKS6",
    "fetchedAt": "2026-09-29",
@@ -10476,7 +11165,9 @@
    "km": 2350.9,
    "poiType": "风景名胜;公园广场;植物园",
    "region": "大通回族土族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-400",
@@ -10495,8 +11186,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0MU3SNYR5",
    "fetchedAt": "2026-09-29",
@@ -10504,7 +11195,9 @@
    "km": 2360.6,
    "poiType": "风景名胜;公园广场;水族馆",
    "region": "大通回族土族自治县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-401",
@@ -10523,8 +11216,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB0ZIQJ",
    "fetchedAt": "2026-09-29",
@@ -10532,7 +11225,10 @@
    "km": 2375,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城北区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-402",
@@ -10551,8 +11247,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GDH713VY",
    "fetchedAt": "2026-09-29",
@@ -10560,7 +11256,9 @@
    "km": 2369.1,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城北区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-403",
@@ -10579,8 +11277,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFLAU0FL",
    "fetchedAt": "2026-09-29",
@@ -10588,7 +11286,10 @@
    "km": 2369.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "西宁市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-404",
@@ -10607,8 +11308,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KRKL7VV8",
    "fetchedAt": "2026-09-29",
@@ -10616,7 +11317,10 @@
    "km": 2373.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城北区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-405",
@@ -10635,8 +11339,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKVT7PF",
    "fetchedAt": "2026-09-29",
@@ -10644,7 +11348,10 @@
    "km": 2380.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城北区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-406",
@@ -10663,8 +11370,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB0ZP0L",
    "fetchedAt": "2026-09-29",
@@ -10672,7 +11379,10 @@
    "km": 2384,
    "poiType": "风景名胜;公园广场;公园",
    "region": "西宁市",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-407",
@@ -10691,8 +11401,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB06ZWO",
    "fetchedAt": "2026-09-29",
@@ -10700,7 +11410,10 @@
    "km": 2381.3,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城北区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-408",
@@ -10719,8 +11432,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03CB0ZJVR",
    "fetchedAt": "2026-09-29",
@@ -10728,7 +11441,10 @@
    "km": 2380.5,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城北区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-409",
@@ -10747,8 +11463,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KUBRSG7W",
    "fetchedAt": "2026-09-29",
@@ -10756,7 +11472,10 @@
    "km": 2383,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城西区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-410",
@@ -10775,8 +11494,8 @@
     "qinghai-gansu"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFYWEN5",
    "fetchedAt": "2026-09-29",
@@ -10784,7 +11503,9 @@
    "km": 2383.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城西区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-411",
@@ -10803,8 +11524,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HGDM8DSE",
    "fetchedAt": "2026-09-29",
@@ -10812,7 +11533,10 @@
    "km": 124.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "名山区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-412",
@@ -10831,8 +11555,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0343009O5",
    "fetchedAt": "2026-09-29",
@@ -10840,7 +11564,10 @@
    "km": 128.4,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "名山区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-413",
@@ -10859,8 +11586,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFH8LSPJ",
    "fetchedAt": "2026-09-29",
@@ -10868,7 +11595,10 @@
    "km": 128.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "名山区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-414",
@@ -10887,8 +11617,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HAJZ6HDO",
    "fetchedAt": "2026-09-29",
@@ -10896,7 +11626,9 @@
    "km": 125.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "名山区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-415",
@@ -10915,8 +11647,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKQ1LVW",
    "fetchedAt": "2026-09-29",
@@ -10924,7 +11656,10 @@
    "km": 136.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "雨城区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-416",
@@ -10943,8 +11678,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KKN550SD",
    "fetchedAt": "2026-09-29",
@@ -10952,7 +11687,10 @@
    "km": 239.5,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "泸定县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-417",
@@ -10971,8 +11709,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0MGM7A7E2",
    "fetchedAt": "2026-09-29",
@@ -10980,7 +11718,8 @@
    "km": 382.5,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "雅江县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-418",
@@ -10999,8 +11738,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HDGCOQ9M",
    "fetchedAt": "2026-09-29",
@@ -11008,7 +11747,10 @@
    "km": 403.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "雅江县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-419",
@@ -11027,8 +11769,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0MRUULUXH",
    "fetchedAt": "2026-09-29",
@@ -11036,7 +11778,8 @@
    "km": 406,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "雅江县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-420",
@@ -11083,8 +11826,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HAMU3QEV",
    "fetchedAt": "2026-09-29",
@@ -11092,7 +11835,8 @@
    "km": 462.8,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "雅江县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-422",
@@ -11223,8 +11967,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFJ5IZFN",
    "fetchedAt": "2026-09-29",
@@ -11232,7 +11976,8 @@
    "km": 454.1,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "雅江县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-427",
@@ -11307,8 +12052,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFG0E70M",
    "fetchedAt": "2026-09-29",
@@ -11316,7 +12061,10 @@
    "km": 548.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "理塘县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-430",
@@ -11335,8 +12083,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFL4XWOE",
    "fetchedAt": "2026-09-29",
@@ -11344,7 +12092,8 @@
    "km": 548.6,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "理塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-431",
@@ -11363,8 +12112,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFH2BO4N",
    "fetchedAt": "2026-09-29",
@@ -11372,7 +12121,8 @@
    "km": 546.4,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "理塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-432",
@@ -11391,8 +12141,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFGKFEL9",
    "fetchedAt": "2026-09-29",
@@ -11400,7 +12150,8 @@
    "km": 549.8,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "理塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-433",
@@ -11419,8 +12170,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0GRYCUDNH",
    "fetchedAt": "2026-09-29",
@@ -11428,7 +12179,10 @@
    "km": 549.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "理塘县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-434",
@@ -11447,8 +12201,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFKVTC6H",
    "fetchedAt": "2026-09-29",
@@ -11456,7 +12210,10 @@
    "km": 549.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "理塘县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-435",
@@ -11475,8 +12232,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFIXF4OA",
    "fetchedAt": "2026-09-29",
@@ -11484,7 +12241,8 @@
    "km": 553.1,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "理塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-436",
@@ -11503,8 +12261,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0344001OK",
    "fetchedAt": "2026-09-29",
@@ -11512,7 +12270,10 @@
    "km": 550.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "理塘县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-437",
@@ -11587,8 +12348,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFLBY7EB",
    "fetchedAt": "2026-09-29",
@@ -11596,7 +12357,9 @@
    "km": 594.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "理塘县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-440",
@@ -11615,8 +12378,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0I1FUP1L5",
    "fetchedAt": "2026-09-29",
@@ -11624,7 +12387,10 @@
    "km": 618,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "理塘县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-441",
@@ -11643,8 +12409,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFG6XXYL",
    "fetchedAt": "2026-09-29",
@@ -11652,7 +12418,9 @@
    "km": 648.5,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "巴塘县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-442",
@@ -11699,8 +12467,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L11OMEZ6",
    "fetchedAt": "2026-09-29",
@@ -11708,7 +12476,9 @@
    "km": 671.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "巴塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-444",
@@ -11811,8 +12581,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFL4TZW3",
    "fetchedAt": "2026-09-29",
@@ -11820,7 +12590,8 @@
    "km": 694.1,
    "poiType": "生活服务;信息咨询中心;服务中心",
    "region": "巴塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-448",
@@ -11839,8 +12610,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFM93LPB",
    "fetchedAt": "2026-09-29",
@@ -11848,7 +12619,8 @@
    "km": 687.8,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "巴塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-449",
@@ -11867,8 +12639,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0MGB1VJEQ",
    "fetchedAt": "2026-09-29",
@@ -11876,7 +12648,8 @@
    "km": 693.4,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "巴塘县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-450",
@@ -11895,8 +12668,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B03440MO80",
    "fetchedAt": "2026-09-29",
@@ -11904,7 +12677,10 @@
    "km": 747.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "巴塘县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-451",
@@ -11923,8 +12699,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL2QXMG",
    "fetchedAt": "2026-09-29",
@@ -11932,7 +12708,10 @@
    "km": 748.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "巴塘县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-452",
@@ -12007,8 +12786,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B037F006ZZ",
    "fetchedAt": "2026-09-29",
@@ -12016,7 +12795,9 @@
    "km": 896.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "芒康县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-455",
@@ -12035,8 +12816,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KA7LUF9I",
    "fetchedAt": "2026-09-29",
@@ -12044,7 +12825,10 @@
    "km": 895.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "芒康县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-456",
@@ -12063,8 +12847,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037F0079Q",
    "fetchedAt": "2026-09-29",
@@ -12072,7 +12856,8 @@
    "km": 925.1,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "芒康县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-457",
@@ -12091,8 +12876,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFLBQA6L",
    "fetchedAt": "2026-09-29",
@@ -12100,7 +12885,10 @@
    "km": 925.1,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "芒康县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-458",
@@ -12119,8 +12907,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFF3O9L9",
    "fetchedAt": "2026-09-29",
@@ -12128,7 +12916,8 @@
    "km": 967.5,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "芒康县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-459",
@@ -12147,8 +12936,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFGHQJ4A",
    "fetchedAt": "2026-09-29",
@@ -12156,7 +12945,8 @@
    "km": 1012.8,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "芒康县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-460",
@@ -12175,8 +12965,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0I3F92D2J",
    "fetchedAt": "2026-09-29",
@@ -12184,7 +12974,8 @@
    "km": 1067.6,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "左贡县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-461",
@@ -12231,8 +13022,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HDFMH66C",
    "fetchedAt": "2026-09-29",
@@ -12240,7 +13031,10 @@
    "km": 1101.6,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "左贡县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-463",
@@ -12287,8 +13081,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KRO7Y2YR",
    "fetchedAt": "2026-09-29",
@@ -12296,7 +13090,10 @@
    "km": 1100.8,
    "poiType": "风景名胜;公园广场;公园广场",
    "region": "左贡县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-465",
@@ -12343,8 +13140,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFJJQ723",
    "fetchedAt": "2026-09-29",
@@ -12352,7 +13149,9 @@
    "km": 1216.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "八宿县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-467",
@@ -12371,8 +13170,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFF2CAQ7",
    "fetchedAt": "2026-09-29",
@@ -12380,7 +13179,8 @@
    "km": 1224.6,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "八宿县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-468",
@@ -12399,8 +13199,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFI95P03",
    "fetchedAt": "2026-09-29",
@@ -12408,7 +13208,10 @@
    "km": 1211.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "八宿县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-469",
@@ -12427,8 +13230,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFICCOEF",
    "fetchedAt": "2026-09-29",
@@ -12436,7 +13239,8 @@
    "km": 1237.5,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "八宿县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-470",
@@ -12455,8 +13259,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0K3BHSRHU",
    "fetchedAt": "2026-09-29",
@@ -12464,7 +13268,9 @@
    "km": 1256.7,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "八宿县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-471",
@@ -12511,8 +13317,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037F0NHMA",
    "fetchedAt": "2026-09-29",
@@ -12520,7 +13326,8 @@
    "km": 1301.3,
    "poiType": "风景名胜;风景名胜;省级景点",
    "region": "八宿县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-473",
@@ -12539,8 +13346,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0LDHOTLGQ",
    "fetchedAt": "2026-09-29",
@@ -12548,7 +13355,10 @@
    "km": 1306.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "八宿县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-474",
@@ -12623,8 +13433,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFK2R955",
    "fetchedAt": "2026-09-29",
@@ -12632,7 +13442,10 @@
    "km": 1394.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "八宿县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-477",
@@ -12651,8 +13464,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E0M5AA",
    "fetchedAt": "2026-09-29",
@@ -12660,7 +13473,9 @@
    "km": 1426.2,
    "poiType": "风景名胜;风景名胜;国家级景点",
    "region": "波密县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-478",
@@ -12679,8 +13494,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B037E0M58A",
    "fetchedAt": "2026-09-29",
@@ -12688,7 +13503,10 @@
    "km": 1522.8,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "波密县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-479",
@@ -12707,8 +13525,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHDM7NT",
    "fetchedAt": "2026-09-29",
@@ -12716,7 +13534,10 @@
    "km": 1522.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "波密县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-480",
@@ -12735,8 +13556,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JD6S3OQU",
    "fetchedAt": "2026-09-29",
@@ -12744,7 +13565,10 @@
    "km": 1523.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "波密县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-481",
@@ -12763,8 +13587,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFF2WPIV",
    "fetchedAt": "2026-09-29",
@@ -12772,7 +13596,8 @@
    "km": 1515.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "波密县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-482",
@@ -12791,8 +13616,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E00335",
    "fetchedAt": "2026-09-29",
@@ -12800,7 +13625,9 @@
    "km": 1541.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "波密县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-483",
@@ -12819,8 +13646,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0MG3Z9PM6",
    "fetchedAt": "2026-09-29",
@@ -12828,7 +13655,9 @@
    "km": 1543,
    "poiType": "风景名胜;公园广场;公园",
    "region": "波密县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-484",
@@ -12847,8 +13676,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HA49T01T",
    "fetchedAt": "2026-09-29",
@@ -12856,7 +13685,9 @@
    "km": 1542.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "波密县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-485",
@@ -12875,8 +13706,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E0M5EB",
    "fetchedAt": "2026-09-29",
@@ -12884,7 +13715,9 @@
    "km": 1556.9,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "波密县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-486",
@@ -12931,8 +13764,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E0M5B6",
    "fetchedAt": "2026-09-29",
@@ -12940,7 +13773,9 @@
    "km": 1614.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "波密县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-488",
@@ -12959,8 +13794,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E002LJ",
    "fetchedAt": "2026-09-29",
@@ -12968,7 +13803,9 @@
    "km": 1614.8,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "波密县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-489",
@@ -12987,8 +13824,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFICFKX6",
    "fetchedAt": "2026-09-29",
@@ -12996,7 +13833,10 @@
    "km": 1772.9,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "巴宜区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-490",
@@ -13015,8 +13855,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFSHZHH",
    "fetchedAt": "2026-09-29",
@@ -13024,7 +13864,9 @@
    "km": 1769.9,
    "poiType": "风景名胜;公园广场;公园",
    "region": "巴宜区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-491",
@@ -13043,8 +13885,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HR2ZT4W3",
    "fetchedAt": "2026-09-29",
@@ -13052,7 +13894,10 @@
    "km": 1769.8,
    "poiType": "风景名胜;公园广场;公园",
    "region": "巴宜区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-492",
@@ -13071,8 +13916,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFSASPL",
    "fetchedAt": "2026-09-29",
@@ -13080,7 +13925,10 @@
    "km": 1769.1,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "巴宜区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-493",
@@ -13099,8 +13947,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0HU2STHSI",
    "fetchedAt": "2026-09-29",
@@ -13108,7 +13956,10 @@
    "km": 1757.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "巴宜区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-494",
@@ -13155,8 +14006,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFJZ6JA6",
    "fetchedAt": "2026-09-29",
@@ -13164,7 +14015,10 @@
    "km": 1793.1,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "工布江达县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-496",
@@ -13211,8 +14065,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B037E002N5",
    "fetchedAt": "2026-09-29",
@@ -13220,7 +14074,9 @@
    "km": 1825.4,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-498",
@@ -13239,8 +14095,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E002MT",
    "fetchedAt": "2026-09-29",
@@ -13248,7 +14104,8 @@
    "km": 1831.7,
    "poiType": "风景名胜;风景名胜;观景点",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-499",
@@ -13267,8 +14124,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFHCBSX2",
    "fetchedAt": "2026-09-29",
@@ -13276,7 +14133,9 @@
    "km": 1831.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-500",
@@ -13295,8 +14154,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E0M3PB",
    "fetchedAt": "2026-09-29",
@@ -13304,7 +14163,8 @@
    "km": 1825.4,
    "poiType": "风景名胜;风景名胜;风景名胜",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-501",
@@ -13323,8 +14183,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0FFFEJHWN",
    "fetchedAt": "2026-09-29",
@@ -13332,7 +14192,8 @@
    "km": 1850.7,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-502",
@@ -13351,8 +14212,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL545L8",
    "fetchedAt": "2026-09-29",
@@ -13360,7 +14221,9 @@
    "km": 1863.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-503",
@@ -13379,8 +14242,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E0M596",
    "fetchedAt": "2026-09-29",
@@ -13388,7 +14251,8 @@
    "km": 1877.5,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-504",
@@ -13407,8 +14271,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037E0M5AQ",
    "fetchedAt": "2026-09-29",
@@ -13416,7 +14280,9 @@
    "km": 1932.9,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "工布江达县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-505",
@@ -13435,8 +14301,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B0HUR528H5",
    "fetchedAt": "2026-09-29",
@@ -13444,7 +14310,8 @@
    "km": 1928.9,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "工布江达县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-506",
@@ -13463,8 +14330,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037B0P33A",
    "fetchedAt": "2026-09-29",
@@ -13472,7 +14339,8 @@
    "km": 2032.3,
    "poiType": "风景名胜;风景名胜相关;旅游景点",
    "region": "墨竹工卡县",
-   "triage": "manual"
+   "triage": "manual",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-507",
@@ -13491,8 +14359,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L26YDW9G",
    "fetchedAt": "2026-09-29",
@@ -13500,7 +14368,10 @@
    "km": 2118.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "墨竹工卡县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-508",
@@ -13519,8 +14390,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L26ZELEZ",
    "fetchedAt": "2026-09-29",
@@ -13528,7 +14399,10 @@
    "km": 2118.6,
    "poiType": "风景名胜;公园广场;公园",
    "region": "墨竹工卡县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-509",
@@ -13547,8 +14421,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L3A1WWDB",
    "fetchedAt": "2026-09-29",
@@ -13556,7 +14430,10 @@
    "km": 2120.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "墨竹工卡县",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-510",
@@ -13575,8 +14452,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": true,
    "source": "amap",
    "sourceId": "B037B02SLX",
    "fetchedAt": "2026-09-29",
@@ -13584,7 +14461,9 @@
    "km": 2179.5,
    "poiType": "风景名胜;风景名胜;寺庙道观",
    "region": "墨竹工卡县",
-   "triage": "auto-approve"
+   "triage": "auto-approve",
+   "autoApproved": true,
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-511",
@@ -13603,8 +14482,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0KUFC9FVI",
    "fetchedAt": "2026-09-29",
@@ -13612,7 +14491,10 @@
    "km": 2432.4,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "达孜区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-512",
@@ -13631,8 +14513,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B037B0O8U9",
    "fetchedAt": "2026-09-29",
@@ -13640,7 +14522,10 @@
    "km": 2431.4,
    "poiType": "风景名胜;公园广场;公园",
    "region": "达孜区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-513",
@@ -13659,8 +14544,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFL7J6RI",
    "fetchedAt": "2026-09-29",
@@ -13668,7 +14553,10 @@
    "km": 2431.2,
    "poiType": "风景名胜;公园广场;公园",
    "region": "达孜区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-514",
@@ -13687,8 +14575,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFH83FAK",
    "fetchedAt": "2026-09-29",
@@ -13696,7 +14584,9 @@
    "km": 2455.3,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城关区",
-   "triage": "manual"
+   "triage": "manual",
+   "rejectReason": "不值得收录",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-515",
@@ -13715,8 +14605,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0FFFXMY88",
    "fetchedAt": "2026-09-29",
@@ -13724,7 +14614,10 @@
    "km": 2455.7,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城关区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-516",
@@ -13743,8 +14636,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0L165S6H1",
    "fetchedAt": "2026-09-29",
@@ -13752,7 +14645,10 @@
    "km": 2455.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城关区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-517",
@@ -13771,8 +14667,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0JDSLR42F",
    "fetchedAt": "2026-09-29",
@@ -13780,7 +14676,10 @@
    "km": 2452.2,
    "poiType": "风景名胜;公园广场;城市广场",
    "region": "城关区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   },
   {
    "id": "spo-auto-518",
@@ -13799,8 +14698,8 @@
     "chengdu-lhasa-318"
    ],
    "autoCaptured": true,
-   "reviewed": false,
-   "approved": null,
+   "reviewed": true,
+   "approved": false,
    "source": "amap",
    "sourceId": "B0H10HVY44",
    "fetchedAt": "2026-09-29",
@@ -13808,8 +14707,10 @@
    "km": 2455.7,
    "poiType": "风景名胜;公园广场;公园",
    "region": "城关区",
-   "triage": "auto-reject"
+   "triage": "auto-reject",
+   "autoApproved": true,
+   "rejectReason": "规则分诊：弱信号词或距主线>25km",
+   "reviewedAt": "2026-09-29"
   }
- ],
- "updatedAt": "2026-09-29"
+ ]
 }
