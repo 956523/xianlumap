@@ -244,12 +244,19 @@ function buildIA() {
 
     /* 标题条 */
     var bar = mobEl('div', 'mobBar');
+    /* S24：标题条左端品牌记号（与侧栏/首页一家人） */
+    var bm = mobEl('span', 'mobBrandMark');
+    if (typeof BRAND !== 'undefined') bm.innerHTML = BRAND.mark;
+    bar.appendChild(bm);
+    var _rn = (typeof ROUTE_META !== 'undefined' && ROUTE_META && ROUTE_META.name) || '线路';
     bar.appendChild(mobEl('b', 'mobRouteName', null,
-        (typeof ROUTE_META !== 'undefined' && ROUTE_META && ROUTE_META.name) || '线路'));
+        (typeof BRAND !== 'undefined' && BRAND.stripEmoji) ? BRAND.stripEmoji(_rn) : _rn));   // S24 去 emoji
     bar.appendChild(mobEl('span', 'mobStartSlot'));
     var evsw = mobEl('span', null, 'mob-evsw');
-    evsw.appendChild(mobEl('button', 'mobEv', null, '⚡ 电车'));
-    evsw.appendChild(mobEl('button', 'mobFuel', null, '⛽ 油车'));
+    var _evB = mobEl('button', 'mobEv', null, (typeof BRAND !== 'undefined') ? BRAND.bolt + ' 电车' : '⚡ 电车');
+    var _fuB = mobEl('button', 'mobFuel', null, (typeof BRAND !== 'undefined') ? BRAND.pump + ' 油车' : '⛽ 油车');
+    evsw.appendChild(_evB);
+    evsw.appendChild(_fuB);
     bar.appendChild(evsw);
     bar.appendChild(mobEl('button', 'mobMenuBtn', null, '⋯'));
     iaRoot.appendChild(bar);

@@ -19,7 +19,7 @@
     if (typeof ROUTE_MANIFEST === 'undefined' || !ROUTE_MANIFEST || !ROUTE_MANIFEST.length) return;
 
     var INK = '#0f172a', SUB = '#475569', MUTED = '#94a3b8', LINE = '#cbd5e1';
-    var BRAND = '#0f766e';
+    var BRAND_C = '#0f766e';   // 品牌绿（S24：避免与 engine/logo.js 全局 BRAND 撞名）
     var stripEmoji = function (s) { return String(s == null ? '' : s).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\uFE0F?|\u{1F000}-\u{1F0FF}/gu, '').trim(); };
 
     /* 归一化采样点 → Catmull-Rom 平滑线稿（过点插值，纯视觉） */
@@ -52,17 +52,22 @@
         'font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:' + INK + ';' +
         'display:flex;flex-direction:column;align-items:center;padding:72px 24px 40px;box-sizing:border-box;}' +
         '#pickerRoot .pk-head{display:flex;flex-direction:column;align-items:center;margin-bottom:44px;}' +
-        '#pickerRoot h1{font-size:26px;font-weight:700;margin:0;letter-spacing:.32em;text-indent:.32em;color:' + INK + ';}' +
-        '#pickerRoot .pk-rule{width:28px;height:2px;background:' + BRAND + ';margin-top:16px;border-radius:1px;}' +
+        '#pickerRoot .pk-mark{width:40px;height:40px;color:' + BRAND_C + ';margin-bottom:14px;}' +
+        '#pickerRoot .pk-mark svg{width:100%;height:100%;}' +
+        '#pickerRoot h1{font-size:24px;font-weight:700;margin:0;letter-spacing:.34em;text-indent:.34em;color:' + INK + ';}' +
+        '#pickerRoot .pk-slogan{margin-top:14px;font-size:15px;font-weight:600;letter-spacing:.14em;color:' + INK + ';}' +
+        '#pickerRoot .pk-slogan em{font-style:normal;color:' + BRAND_C + ';}' +   /* 「见山海」品牌绿 */
+        '#pickerRoot .pk-sub{margin-top:8px;font-size:12px;letter-spacing:.22em;color:' + MUTED + ';}' +
+        '#pickerRoot .pk-rule{width:28px;height:2px;background:' + BRAND_C + ';margin-top:18px;border-radius:1px;}' +
         '#pickerCards{display:grid;gap:20px;width:100%;max-width:960px;' +
         'grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}' +
         '.pick-card{display:block;background:#fff;border-radius:12px;padding:18px 20px 20px;text-decoration:none;' +
         'color:inherit;border:1px solid #e2e8f0;' +
         'transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;}' +
-        '.pick-card:hover{transform:translateY(-2px);border-color:' + BRAND + ';box-shadow:0 6px 16px rgba(15,23,42,.06);}' +
+        '.pick-card:hover{transform:translateY(-2px);border-color:' + BRAND_C + ';box-shadow:0 6px 16px rgba(15,23,42,.06);}' +
         '.pick-hero{display:block;width:100%;height:88px;margin-bottom:14px;}' +
         '.pick-hero path[stroke]{transition:stroke .3s ease;}' +
-        '.pick-card:hover .pick-hero path[stroke]{stroke:' + BRAND + ';}' +
+        '.pick-card:hover .pick-hero path[stroke]{stroke:' + BRAND_C + ';}' +
         '.pick-name{font-size:17px;font-weight:600;color:' + INK + ';letter-spacing:.02em;}' +
         '.pick-region{font-size:12px;color:' + MUTED + ';margin-top:3px;letter-spacing:.06em;}' +
         '.pick-meta{font-size:12px;color:' + SUB + ';margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;}' +
@@ -87,8 +92,13 @@
             (r.updatedAt ? '<i>·</i>更新 ' + r.updatedAt.slice(5) : '') + '</div>' +
             '</a>';
     }).join('');
+    var mark = (typeof BRAND !== 'undefined' && BRAND && BRAND.mark) ? BRAND.mark : '';
     root.innerHTML =
-        '<div class="pk-head"><h1>自驾线路图</h1><div class="pk-rule"></div></div>' +
+        '<div class="pk-head"><div class="pk-mark">' + mark + '</div>' +
+        '<h1>自驾线路图</h1>' +
+        '<div class="pk-slogan">去旷野，<em>见山海</em></div>' +
+        '<div class="pk-sub">把整条路，摊开看</div>' +
+        '<div class="pk-rule"></div></div>' +
         '<div id="pickerCards">' + cards + '</div>' +
         '<div class="pick-foot">页面数据全部内联 · 打开即全量</div>';
     document.body.appendChild(root);

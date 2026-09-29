@@ -20,6 +20,7 @@
         document.write('<script src="https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(K.amapKey) + '"><\/script>');
     }
     document.write('<script src="route-defs/' + ROUTE_KEY + '.js"><\/script>');
+    document.write('<script src="engine/logo.js"><\/script>');
     document.write('<script src="engine/map-adapter.js"><\/script>');
     document.write('<script src="engine/route-engine.js"><\/script>');
     document.write('<script src="engine/planner.js"><\/script>');

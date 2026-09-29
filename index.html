@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>自驾线路图</title>
 <style>
     /* ============ 层级体系（关键！） ============
@@ -31,14 +32,19 @@
            （"回到全览"按钮 + 免责声明）会被展开/半收的抽屉压住，
            两者 z-index 不同层 → 看得见按钮却点不到，或字被切断。 */
         max-height: calc(100vh - 28px - 60px); overflow-y: auto;
-        background: #ffffff; border-radius: 16px;
-        box-shadow: 0 10px 36px rgba(15, 23, 42, .22);
+        background: #ffffff; border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, .10);
         padding: 16px 16px 12px; z-index: var(--z-panel);
         font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
         color: #1f2937; box-sizing: border-box;
         transition: max-height .18s ease, bottom .18s ease;
         display: flex; flex-direction: column;
     }
+    /* S24 品牌小字标：记号 18px + 宽字距字 */
+    .brand-mini { display: flex; align-items: center; gap: 7px; margin: 0 0 8px; color: #0f172a; }
+    .brand-mini .bm-mark { width: 18px; height: 18px; display: inline-flex; color: #0f766e; }
+    .brand-mini .bm-mark svg { width: 100%; height: 100%; }
+    .brand-mini .bm-word { font-size: 11px; font-weight: 700; letter-spacing: .22em; }
     /* 侧栏与底部抽屉是独立浮层，互不挤占（抽屉浮在侧栏之上，这是地图软件惯例） */
     #panel h1 { margin: 0 0 2px; font-size: 19px; letter-spacing: .5px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     /* 侧栏自带收起按钮（面板自己折叠，不依赖外部悬浮按钮） */
@@ -58,10 +64,12 @@
         padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
         box-shadow: 0 6px 20px rgba(15,23,42,.16); font-family: inherit;
     }
-    #panelHandle:hover { background: #f0fdfa; }
+    #panelHandle:hover { background: #f1f5f9; }
     #panelHandle.show { display: block; }
     .seg { display: flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 2px; flex: none; }
-    .seg button { border: none; background: none; padding: 4px 9px; border-radius: 7px; font-size: 12px; cursor: pointer; color: #64748b; font-weight: 600; }
+    .seg button { border: none; background: none; padding: 4px 9px; border-radius: 7px; font-size: 12px; cursor: pointer; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .ic { display: inline-flex; width: 14px; height: 14px; }
+    .ic svg { width: 100%; height: 100%; }
     .seg button.on { background: #0f766e; color: #fff; }
     #panel .sub { font-size: 12px; color: #64748b; margin-bottom: 10px; }
     .chips { display: flex; gap: 6px; margin-bottom: 12px; }
@@ -72,28 +80,29 @@
         padding: 6px 4px; font-size: 11px; color: #475569; line-height: 1.35;
         overflow: hidden;
     }
-    .chip b { display: block; font-size: 14px; color: #0f766e; }
+    .chip b { display: block; font-size: 14px; color: #0f172a; font-weight: 600; }   /* S24：数字退回正文 */
     .day-list { list-style: none; margin: 0; padding: 0; }
     .day-list li {
         display: flex; align-items: center; gap: 8px;
         padding: 7px 8px; border-radius: 9px; cursor: pointer;
+        border-left: 3px solid transparent;   /* S24：选中竖线占位，激活不跳动 */
         font-size: 12.5px; transition: background .15s;
     }
     .day-list li:hover { background: #f1f5f9; }
-    .day-list li.active { background: #fff7ed; outline: 1px solid #fdba74; }
+    .day-list li.active { background: #fff; border-left: 3px solid #0f766e; }   /* S24：绿竖线，无色块 */
     .day-tag {
         flex: none; width: 38px; text-align: center; font-weight: 700; font-size: 11px;
-        color: #0f766e; background: #ccfbf1; border-radius: 6px; padding: 3px 0;
+        color: #475569; background: #f1f5f9; border-radius: 6px; padding: 3px 0;
     }
-    li.active .day-tag { background: #ea580c; color: #fff; }
+    li.active .day-tag { background: #f0fdfa; color: #0f766e; font-weight: 700; }
     /* day-meta 必须显式 flex column：title/note 是两个 inline span，
        不设 column 就会横向并排 —— 窄视口一挤压就变成"标题里插了备注" */
     .day-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
     /* 标题行 + 备注行在窄面板里会互相挤 → 标题只能显示 "西宁 → 青..."。
        行高固定、允许省略号，但优先保证标题拿到宽度（备注行右边有 km，标题行没有）。 */
     .day-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .day-note { color: #94a3b8; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .day-km { flex: none; color: #64748b; font-size: 11px; }
+    .day-note { color: #94a3b8; font-size: 12px; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .day-km { flex: none; color: #94a3b8; font-size: 12px; letter-spacing: .04em; }
     /* sparkline 是最低信息密度的一块：面板宽度不足时先把它收窄，
        而不是让标题先被截断（标题被截断用户根本不知道点的是哪一天）。 */
     .day-spark {
@@ -101,7 +110,7 @@
         background: #f8fafc; border: 1px solid #e2e8f0; overflow: hidden;
     }
     .day-spark svg { display: block; }
-    li.active .day-spark { border-color: #fdba74; background: #fff7ed; }
+    li.active .day-spark { border-color: #0f766e; background: #f8fafc; }
     /* 窄视口：sparkline 先让位（信息密度最低），保住标题+里程可读 */
     @media (max-width: 860px) {
         .day-spark { display: none; }
@@ -124,19 +133,19 @@
     .dot.fuel { background: #dc2626; }
     .dot.ev { background: #16a34a; }
     .dot.cls { background: #c026d3; }
-    .dot.line { background: #0d9488; height: 4px; border-radius: 2px; }
+    .dot.line { background: #0f766e; height: 4px; border-radius: 2px; }
     .switch { position: relative; width: 32px; height: 18px; flex: none; }
     .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 2; }
     .switch .track { position: absolute; inset: 0; background: #cbd5e1; border-radius: 9px; transition: background .15s; }
     .switch .knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
-    .switch input:checked ~ .track { background: #0d9488; }
+    .switch input:checked ~ .track { background: #0f766e; }
     .switch input:checked ~ .knob { left: 16px; }
     .btn-fit {
         display: block; width: 100%; margin-top: 10px; padding: 8px 0;
         border: none; border-radius: 9px; background: #0f766e; color: #fff;
         font-size: 13px; font-weight: 600; cursor: pointer;
     }
-    .btn-fit:hover { background: #0d9488; }
+    .btn-fit:hover { background: #0f766e; }
     .evcard { border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; }
     .evrow { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #475569; margin-bottom: 6px; }
     .evrow input[type="range"] { accent-color: #0f766e; }
@@ -188,7 +197,7 @@
        抽屉独立浮在地图与侧栏之上，不与侧栏抢空间（不再需要避让计算）。 */
     #elev {
         position: fixed; left: 14px; right: 14px; bottom: 14px; z-index: var(--z-drawer);
-        background: #fff; border-radius: 16px;
+        background: #fff; border-radius: 12px;
         box-shadow: 0 -6px 28px rgba(15,23,42,.18);
         padding: 0 16px 10px; box-sizing: border-box;
         font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: #1f2937;
@@ -317,6 +326,7 @@
         .switch input:checked ~ .knob { left: 23px; }
         #panelFold { width: 34px; height: 34px; }
         .btn-fit { padding: 12px 0; }
+        .brand-creed { margin-top: 10px; font-size: 12px; letter-spacing: .18em; color: #94a3b8; }   /* S24 */
         /* 标题/chips：chips 保持一行紧凑（三块在 390 宽下本就能挤下，已由 720 块降字号保证；
            不做 overflow-x 横滑——滚动容器在列 flex 里会被 Chromium 算成 0 高） */
         #panel h1 { font-size: 16px; }
@@ -348,6 +358,9 @@
             font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
         }
         #mobBar b#mobRouteName { font-size: 15px; color: #0f172a; flex: none; max-width: 32vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #mobBrandMark { width: 20px; height: 20px; flex: none; display: inline-flex; color: #0f766e; }
+        #mobBrandMark svg { width: 100%; height: 100%; }
+        .mob-evsw button svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
         #mobStartSlot { flex: none; min-height: 34px; }
         #mobStartSlot .seg button { min-height: 34px; padding: 4px 10px; }
         .mob-evsw { display: flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 2px; flex: none; }
@@ -418,7 +431,7 @@
     .edit-bar { margin-top: 8px; padding: 8px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 9px; font-size: 11px; color: #92400e; line-height: 1.6; }
     .edit-hint { display: block; margin-bottom: 6px; }
     .edit-mini { border: none; background: #0f766e; color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 11px; cursor: pointer; margin-right: 6px; font-family: inherit; }
-    .edit-mini:hover { background: #0d9488; }
+    .edit-mini:hover { background: #0f766e; }
     .day-seg { display: block; margin-top: 2px; }
     .day-seg-sel { font-size: 10.5px; max-width: 96px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; color: #475569; }
     .day-seg-hint { display: block; margin-top: 2px; font-size: 10px; color: #94a3b8; }
@@ -487,7 +500,7 @@
             box.id = '__keyHint';
             box.setAttribute('style',
                 'position:fixed;inset:0;z-index:var(--z-tip);display:flex;align-items:center;justify-content:center;' +
-                'background:linear-gradient(160deg,#f8fafc,#e2e8f0);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;' +
+                'background:#f8fafc;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;' +
                 'padding:24px;box-sizing:border-box;overflow:auto;');
             var items = problems.map(function (p) {
                 return '<li style="margin:0 0 14px;"><b style="color:#b91c1c;font-size:14px;">' + p.t + '</b>' +
@@ -521,6 +534,7 @@
 <button id="panelHandle" title="展开行程面板">☰ 行程</button>
 
 <div id="panel">
+    <div class="brand-mini"><span class="bm-mark"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 27 L15 12 L22 21 L29 8 L37 19 L43 27"/><path d="M9 33 q4.5 -3.5 9 0 t9 0 t9 0 t9 0"/><path d="M13 39 q4.5 -3.5 9 0 t9 0"/></svg></span><span class="bm-word">自驾线路图</span></div>
     <h1><span id="routeName">自驾线路图</span>
         <span class="seg" id="startSeg"></span>
         <button id="panelFold" title="收起侧栏">‹</button>
@@ -544,8 +558,8 @@
         <div class="evcard">
         <div class="evrow">
             <span class="seg">
-                <button id="btnEv" class="on">⚡ 电车</button>
-                <button id="btnFuel">⛽ 油车</button>
+                <button id="btnEv" class="on"><i class="ic" id="icEv"></i>电车</button>
+                <button id="btnFuel"><i class="ic" id="icFuel"></i>油车</button>
             </span>
             <span id="rngLabel">满电续航</span>
         </div>
@@ -559,7 +573,8 @@
         <div class="evplan" id="planBox"></div>
     </div>
     <button class="btn-fit" id="btnFit">回到全览</button>
-    <div class="tip">点击图标看详情 · 点击某天地图飞行 + 剖面高亮 · 底部可展开海拔剖面。<span id="dataCaveat">加油站/充电站为公开资料整理，出发前请复核营业状态。</span></div>
+    <div class="tip">点击图标看详情 · 点击某天地图飞行 + 剖面高亮 · 底部可展开海拔剖面。<span id="dataCaveat">加油站/充电站为公开资料整理，出发前请复核营业状态。</span>
+        <div class="brand-creed">一张有观点的地图。</div></div>
 </div>
 
 <!-- 电车提示：作为抽屉内的通知项，不再用魔法数字固定在页面中部 -->
@@ -612,8 +627,9 @@
         document.write('<script src="key.local.js"><\/script>');
         document.write('<script src="engine/boot-route.js"><\/script>');
     } else {
-        // 选线器页：manifest + 首页线稿（物化的小数据）+ picker，不加载任何线路包/引擎/底图
+        // 选线器页：manifest + 首页线稿（物化的小数据）+ 品牌 + picker，不加载任何线路包/引擎/底图
         document.write('<script src="route-defs/hero-curves.js"><\/script>');
+        document.write('<script src="engine/logo.js"><\/script>');
         document.write('<script src="engine/picker.js"><\/script>');
     }
 </script>

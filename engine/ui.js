@@ -14,7 +14,16 @@
     if (typeof ROUTE_META !== 'undefined') {
         document.title = ROUTE_META.title || document.title;
         var rnEl = document.getElementById('routeName');
-        if (rnEl && ROUTE_META.name) rnEl.textContent = ROUTE_META.name;
+        if (rnEl && ROUTE_META.name) {
+            /* S24：标题去 emoji（渲染层剥离，不动数据） */
+            rnEl.textContent = (typeof BRAND !== 'undefined' && BRAND.stripEmoji) ? BRAND.stripEmoji(ROUTE_META.name) : ROUTE_META.name;
+        }
+        /* S24：电车/油车切换的线性图标（替换 ⚡⛽ emoji） */
+        try {
+            var icE = document.getElementById('icEv'), icF = document.getElementById('icFuel');
+            if (icE && typeof BRAND !== 'undefined') icE.innerHTML = BRAND.bolt;
+            if (icF && typeof BRAND !== 'undefined') icF.innerHTML = BRAND.pump;
+        } catch (e) {}
         var rsEl = document.getElementById('routeSub');
         if (rsEl && ROUTE_META.sub) rsEl.textContent = ROUTE_META.sub;
         var ntEl = document.getElementById('evNotice');
