@@ -192,7 +192,7 @@
         box-shadow: 0 -6px 28px rgba(15,23,42,.18);
         padding: 0 16px 10px; box-sizing: border-box;
         font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: #1f2937;
-        transform: translateY(calc(100% - var(--peek, 46px) + 14px));
+        transform: translateY(calc(100% - var(--elev-peek, 46px) + 14px));
         transition: transform .26s cubic-bezier(.32,.72,0,1);
         display: flex; flex-direction: column;
     }
@@ -296,7 +296,7 @@
         /* 两张表上下叠放（地图软件惯例）：行程单 peek 时，剖面把手贴在行程单下沿之上，
            地图容器相应缩短，三带互不重叠（--sheet-visible 由 mobile.js 按档位写入） */
         #map { height: calc(100vh - var(--elev-occupy, 0px) - var(--sheet-visible, 0px)); }
-        #elev { transform: translateY(calc(100% - var(--peek, 46px) + 14px - var(--sheet-visible, 0px))); }
+        #elev { transform: translateY(calc(100% - var(--elev-peek, 46px) + 14px - var(--sheet-visible, 0px))); }
         #elev.open { transform: translateY(calc(-1 * var(--sheet-visible, 0px))); }
         body.mob-elev { --sheet-visible: 0px; }                 /* 剖面成为主表：落回贴底 */
         body.mob-full #elev { visibility: hidden; }              /* 全展看行程单时，不被剖面把手压住 */

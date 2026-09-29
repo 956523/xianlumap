@@ -33,10 +33,17 @@
     }
 
     /* 把抽屉实际占用的高度写进 --elev-occupy，地图容器据此让位。
-       收起态只露 peek，让位量就是 peek；展开态让位量是抽屉实际高度。 */
+       收起态只露 peek，让位量就是 peek；展开态让位量是抽屉实际高度。
+       S17：剖面把手改为「仅聚焦某天/手动展开时常显」——全览（body.elev-hide）时
+       收起态让位量与露出的把手高度都归 0，不占布局。 */
     function syncMapOccupy() {
-        var occupy = isOpen() ? drawerH : PEEK;
-        document.documentElement.style.setProperty('--elev-occupy', occupy + 'px');
+        var gripOn = !(document.body && document.body.classList && document.body.classList.contains('elev-hide'));
+        var occupy = isOpen() ? drawerH : (gripOn ? PEEK : 0);
+        var root = document.documentElement;
+        if (root && root.style && typeof root.style.setProperty === 'function') {
+            root.style.setProperty('--elev-occupy', occupy + 'px');
+            root.style.setProperty('--elev-peek', gripOn ? (PEEK + 'px') : '0px');
+        }
     }
 
     function isOpen() { return elevEl.classList.contains('open'); }
@@ -126,8 +133,7 @@
         return s;
     }
 
-    /* --- 按天切片：从序列中取 [a,b] 区间（端点插值），返回 {pts, up, down} --- */
-    function altSlice(series, a, b) {
+    /* --- 按天切片：从序列中取 [a,b] 区间（端点插值），返回 {pts, up, down} --- */    function altSlice(series, a, b) {
         function interp(km) {
             for (var i = 1; i < series.length; i++) {
                 if (series[i].km >= km) {
@@ -148,6 +154,28 @@
         return { pts: pts, up: Math.round(up), down: Math.round(down) };
     }
 
+    /* --- Catmull-Rom → 三次贝塞尔平滑（S17：纯视觉插值，不改数据） ---
+       曲线严格过所有采样点（CR 的固有性质），切线由相邻点估计。
+       铁律：平滑不得越过真实尖峰制造假地形——单点尖峰被两侧控制点夹住过不去；
+       数据侧的尖峰检测仍由 tools/validate V1 对原始数据负责，这里只管画。 */
+    function smoothD(pts) {
+        function f(v) { return (+v).toFixed(1); }
+        if (!pts || pts.length < 3) {
+            return 'M' + (pts || []).map(function (p) { return f(p[0]) + ',' + f(p[1]); }).join(' L');
+        }
+        var d = 'M' + f(pts[0][0]) + ',' + f(pts[0][1]);
+        for (var i = 0; i < pts.length - 1; i++) {
+            var p0 = pts[i - 1] || pts[i];
+            var p1 = pts[i];
+            var p2 = pts[i + 1];
+            var p3 = pts[i + 2] || p2;
+            d += ' C' + f(p1[0] + (p2[0] - p0[0]) / 6) + ',' + f(p1[1] + (p2[1] - p0[1]) / 6) +
+                 ' ' + f(p2[0] - (p3[0] - p1[0]) / 6) + ',' + f(p2[1] - (p3[1] - p1[1]) / 6) +
+                 ' ' + f(p2[0]) + ',' + f(p2[1]);
+        }
+        return d;
+    }
+
     /* --- 侧栏每日 mini 海拔曲线 --- */
     function sparkSVG(d) {
         if (!d.altKm || !d.km) return '<span class="day-spark"></span>';
@@ -160,7 +188,7 @@
         var x0 = sl.pts[0].km, x1 = sl.pts[sl.pts.length - 1].km;
         function fx(km) { return P + (km - x0) / (x1 - x0) * (W - 2 * P); }
         function fy(alt) { return (H - P) - (alt - minA) / (maxA - minA) * (H - 2 * P); }
-        var line = sl.pts.map(function (p) { return fx(p.km).toFixed(1) + ',' + fy(p.alt).toFixed(1); }).join(' ');
+        var line = sl.pts.map(function (p) { return [fx(p.km), fy(p.alt)]; });
         var dots = '';
         altSeries().forEach(function (p) {
             if (p.pass && p.km >= x0 && p.km <= x1) {
@@ -169,7 +197,7 @@
         });
         return '<span class="day-spark" title="海拔 ' + minA + '–' + maxA + 'm · 爬升' + sl.up + 'm / 下降' + sl.down + 'm">' +
             '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
-            '<polyline points="' + line + '" fill="none" stroke="' + (sl.down > sl.up * 2 ? '#0ea5e9' : '#0d9488') + '" stroke-width="1.8" stroke-linejoin="round"/>' +
+            '<path d="' + smoothD(line) + '" fill="none" stroke="' + (sl.down > sl.up * 2 ? '#0ea5e9' : '#0d9488') + '" stroke-width="1.8" stroke-linejoin="round"/>' +
             dots + '</svg></span>';
     }
 
@@ -221,8 +249,8 @@
         for (var tv = Math.ceil(yMin / step) * step; tv <= yMax; tv += step) yTicks.push(tv);
         function yF(alt) { return (H - B) - (alt - yMin) / (yMax - yMin) * (H - T - B); }
         var pts = series.map(function (p) { return [xF(p.km), yF(p.alt)]; });
-        var line = pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
-        var area = 'M' + pts[0][0].toFixed(1) + ',' + (H - B) + ' L' + line.split(' ').join(' L') + ' L' + pts[pts.length - 1][0].toFixed(1) + ',' + (H - B) + ' Z';
+        var curveD = smoothD(pts);   // S17：平滑曲线（过所有采样点）
+        var area = curveD + ' L' + pts[pts.length - 1][0].toFixed(1) + ',' + (H - B) + ' L' + pts[0][0].toFixed(1) + ',' + (H - B) + ' Z';
         // 网格与刻度
         var grid = '';
         yTicks.forEach(function (a) {
@@ -277,7 +305,7 @@
             '<stop offset="1" stop-color="' + (focus ? '#f97316' : '#14b8a6') + '" stop-opacity=".04"/></linearGradient></defs>' +
             grid +
             '<path d="' + area + '" fill="url(#eg)"/>' +
-            '<polyline points="' + line + '" fill="none" stroke="' + LINE_C + '" stroke-width="' + (focus ? 3 : 2.5) + '" stroke-linejoin="round"/>' +
+            '<path d="' + curveD + '" fill="none" stroke="' + LINE_C + '" stroke-width="' + (focus ? 3 : 2.5) + '" stroke-linejoin="round"/>' +
             dots + labels + ends +
             (focus ? '<text x="' + L + '" y="14" font-size="11.5" font-weight="600" fill="#c2410c">' + focusTitle + '</text>' : '');
         box.appendChild(svg);

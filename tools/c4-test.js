@@ -209,7 +209,7 @@ function runRoute(routeId) {
     ok('每日列表项生成', lis.length >= totalDays, lis.length + ' 项（包内 ' + totalDays + ' 天）');
     const withSpark = lis.filter(el => el.innerHTML.includes('day-spark') && el.innerHTML.includes('<svg'));
     ok('除休整日外每项含 mini 海拔曲线', withSpark.length >= lis.length - 2, withSpark.length + '/' + lis.length + '（休整日无路线不画）');
-    const sparkOk = lis.filter(el => el.innerHTML.includes('polyline points='));
+    const sparkOk = lis.filter(el => el.innerHTML.includes('polyline points=') || el.innerHTML.includes('<path d='));
     ok('mini 曲线有几何数据（≥行程日数）', sparkOk.length >= driveDays, sparkOk.length + ' 项带 polyline（' + driveDays + ' 个行程日）');
     elCache['chartBox'].appendChild = function (c) { this.children.push(c); };
     lis[0].onclick();
@@ -289,7 +289,7 @@ function runRoute(routeId) {
     lis[4] && lis[4].onclick();
     const tFoc = elCache['chartBox'].children[elCache['chartBox'].children.length - 1].innerHTML;
     ok('聚焦态曲线与站点同色系', /stroke="#ea580c"/.test(tFoc) && /fill="#ea580c"/.test(tFoc), '橙色统一');
-    ok('聚焦态 Y 轴压缩（起伏 <250m 也成型）', /polyline/.test(tFoc), '');
+    ok('聚焦态 Y 轴压缩（起伏 <250m 也成型）', /polyline|<path d=/.test(tFoc), '');
 
     console.log('\n【8】层级体系（v8 修复关键 bug）');
     const zPanel = (htmlSrc.match(/--z-panel:\s*(\d+)/) || [])[1];

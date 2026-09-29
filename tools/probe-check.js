@@ -27,6 +27,7 @@ const pickerSrc = fs.readFileSync(path.join(ROOT, 'engine', 'picker.js'), 'utf8'
 
 /* ---------- mock（与 c4-test 同构，精简注释） ---------- */
 const calls = { polyline: [], markers: [], labels: [] };
+let MOCK_ZOOM = 7.3;   // S17：可变 zoom，驱动远景/中景分级断言
 function FakeLayer(kind, opts) {
     this.kind = kind; this.opts = opts || {};
     this.setMap = function () {}; this.on = function () {}; this.setStyles = function () {}; this.setGeometries = function () { return this; };
@@ -36,7 +37,7 @@ function FakeLayer(kind, opts) {
 }
 // AMap mock（S9）：形状对齐 engine/map-adapter.js 用到的高德原语（单实例记录 opts）
 const AMap = {
-    Map: function () { this.on = function () {}; this.getZoom = function () { return 7.3; }; this.resize = function () {}; this.setZoomAndCenter = function () {}; },
+    Map: function () { this.on = function () {}; this.getZoom = function () { return MOCK_ZOOM; }; this.resize = function () {}; this.setZoomAndCenter = function () {}; },
     LngLat: function (lng, lat) { this.lng = lng; this.lat = lat; },
     Pixel: function (x, y) { this.x = x; this.y = y; },
     Marker: function (o) { FakeLayer.call(this, 'marker', o); this.setMap = function () {}; this.on = function () {}; },
@@ -48,8 +49,18 @@ const created = [];
 function fakeEl(id) {
     const el = {
         id: id, textContent: '', innerHTML: '', value: '500',
-        checked: true, style: { setProperty() {}, getPropertyValue() { return ''; } },
-        classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
+        checked: true, clientWidth: 1200,   // S17：地图容器宽口径（窄屏断言用，可按需覆写）
+        style: { setProperty(k, v) { this.__set = this.__set || {}; this.__set[k] = v; },   // S17：记录 CSS 变量写入
+                 getPropertyValue(k) { return (this.__set && this.__set[k]) || ''; } },
+        classList: (function () {   // S17：真实化（Set），剖面 elev-hide 状态机可断言
+            var s = new Set();
+            return {
+                add(c) { s.add(c); },
+                remove(c) { s.delete(c); },
+                toggle(c, f) { if (f === undefined) f = !s.has(c); if (f) s.add(c); else s.delete(c); return f; },
+                contains(c) { return s.has(c); }
+            };
+        })(),
         addEventListener() {}, appendChild() {}, remove() {}, setAttribute() {},
         getBoundingClientRect() { return { top: 0, left: 0, width: 1200, height: 300, bottom: 300, right: 1200 }; },
         children: [],
@@ -488,6 +499,52 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     ok('点 mobFit 走 fitAll 不崩（mock 无动画事件）', (function () {
         try { elCache['mobFit'].onclick(); return true; } catch (e) { return false; }
     })(), '');
+
+    /* ---------- S17 真机反馈三修：远景降密 / 剖面把手状态机 / 曲线平滑 ---------- */
+    console.log('\n【12】S17：移动远景降密 + 剖面把手 + 平滑曲线');
+    // 胶囊识别：badge 样式（白底 rgba(255,255,255,.88)）= 景点胶囊；每次 boot 末段批量出现
+    function capsuleCount(before) {
+        return calls.labels.slice(before).filter(function (l) {
+            var o = l.opts || l;
+            return o.style && o.style['background-color'] === 'rgba(255,255,255,.88)';
+        }).length;
+    }
+    // ① 窄屏全览（容器 390 + z=6）：景点胶囊 ≤12，规划标注收起
+    MOCK_ZOOM = 6.0;
+    elCache['map'].clientWidth = 390;
+    var labelsBefore = calls.labels.length;
+    var mobFar = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+    ok('窄屏全览：景点胶囊硬上限 ≤12（60km 桶 + 强信号>手打>距主线近）',
+        !mobFar.err && capsuleCount(labelsBefore) <= 12 && capsuleCount(labelsBefore) > 0,
+        capsuleCount(labelsBefore) + ' 个胶囊');
+    ok('窄屏全览：必充/必加标注（图标 + 充至/加满文字）收起，近景自动恢复',
+        !mobFar.err && mobFar.sandbox.window.__planFarHidden === true, '');
+    // ② 桌面宽屏同 z：胶囊显著更多（双维口径：容器宽 ≥700 不受 12 上限约束）
+    elCache['map'].clientWidth = 1280;
+    var labelsBefore2 = calls.labels.length;
+    var deskFar = bootRoute('qinghai-gansu');
+    ok('桌面宽屏同缩放：胶囊不受 12 上限约束（25km 桶，>12 个）且规划标注照常',
+        !deskFar.err && capsuleCount(labelsBefore2) > 12 &&
+        deskFar.sandbox.window.__planFarHidden === false,
+        capsuleCount(labelsBefore2) + ' 个胶囊');
+    elCache['map'].clientWidth = 1200;
+    MOCK_ZOOM = 7.3;
+    // ③ 剖面把手状态机：全览隐藏不占位（--elev-peek 0）→ 聚焦天恢复 46
+    elCache['elev'].classList.remove('open');   // 前段聚焦测试残留的抽屉态，清掉再验全览语义
+    var pe = bootRoute('chuanxi');
+    ok('全览：剖面把手隐藏且不占布局（--elev-peek/--elev-occupy 归 0）',
+        !pe.err && document.documentElement.style.__set && document.documentElement.style.__set['--elev-peek'] === '0px' &&
+        document.documentElement.style.__set['--elev-occupy'] === '0px', JSON.stringify(document.documentElement.style.__set || {}));
+    ok('聚焦某天：把手恢复（--elev-peek=46px）且剖面画出平滑贝塞尔（过采样点）',
+        (function () {
+            var lis = created.filter(function (el) { return el.id === 'dyn:li'; });
+            try { lis[2].onclick(); } catch (e) { return 'THROW ' + e.message; }   // 聚焦 D3
+            var svg = elCache['chartBox'].innerHTML;
+            var peek = document.documentElement.style.__set['--elev-peek'];
+            var hasC = /<path d="M[^"]* C/.test(svg);
+            if (!(peek === '46px' && hasC)) return 'peek=' + peek + ' hasC=' + hasC + ' svglen=' + svg.length;
+            return true;
+        })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

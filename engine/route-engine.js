@@ -185,14 +185,32 @@
         geometries: labelGeos(CITIES)
     });
 
-    /* --- 景点胶囊分级（S0 同构：桶选代表点，优先级 = 名称强信号 > 原顺序） ---
+    /* --- 景点胶囊分级（S0 同构 + S17 移动远景降密） ---
        远景 z<8：每 25km 桶 1 个；中景 8≤z<10：每桶 2 个；近景 z≥10：全显。
+       S17：窄容器（地图可视宽度 <700 CSS px，口径用容器宽而非纯 zoom——同 z 下
+       窄屏每个标签占屏比例大得多）且 z<7（手机全览档）时改用 60km 桶 + 全局硬
+       上限 12 个；优先级 = 名称强信号 > 手打文案（d 非"候选库收录"）> 距主线近。
+       桌面 1600px 宽屏保持 25km 桶（屏幕容纳得下）。
        触发链复用 S0：planner 的 zoomchange 防抖回调里顺带调用 renderSpotLabels()。 */
     var SPOT_FAR_Z = 8, SPOT_MID_Z = 10, SPOT_BUCKET_KM = 25;
+    var SPOT_FAR_MOB_BUCKET_KM = 60, SPOT_FAR_CAP = 12, NARROW_MAP_PX = 700;
     var SPOT_STRONG = /雪山|冰川|湖|海子|垭口|国家|大峡谷|瀑布|丹霞|雅丹|石窟|古城|遗址|草原/;
     var spotLabels = null;
     var spotLabelOn = true;      // tgSpot 图层开关状态位（整层重建后旧引用失效，同 S0 状态位模式）
     var spotKmCache = [];        // 每个景点的沿线里程（renderAll 时按环线表最近点算，供分桶）
+    var spotOffKm = [];          // 距主线的垂直距离（km 近似，仅作优先级 tiebreak）
+    function spotHand(s) { return !!(s.d && !/候选库/.test(s.d)); }   // 手打文案 vs 候选库收录
+    function spotIdxCmp(a, c) {
+        var sa = SPOT_STRONG.test(SPOTS[a].n) ? 0 : 1;
+        var sc = SPOT_STRONG.test(SPOTS[c].n) ? 0 : 1;
+        if (sa !== sc) return sa - sc;                 // ① 强信号词
+        var ha = spotHand(SPOTS[a]) ? 0 : 1;
+        var hc = spotHand(SPOTS[c]) ? 0 : 1;
+        if (ha !== hc) return ha - hc;                 // ② 手打 > 候选库
+        var da = spotOffKm[a] || 0, dc = spotOffKm[c] || 0;
+        if (da !== dc) return da - dc;                 // ③ 距主线近
+        return a - c;
+    }
     function rebuildSpotKm() {
         // 环线 km→经纬度表（与 renderWarnings 同法：天 path 按 altKm 线性插值）
         var table = [];
@@ -203,13 +221,16 @@
                 table.push([d.altKm[0] + (d.altKm[1] - d.altKm[0]) * i / (n - 1), p[0], p[1]]);
             });
         });
-        spotKmCache = SPOTS.map(function (s) {
+        spotKmCache = [];
+        spotOffKm = [];
+        SPOTS.forEach(function (s) {
             var best = 0, bd = 1e9;
             for (var i = 0; i < table.length; i++) {
                 var dd = (table[i][1] - s.p[0]) * (table[i][1] - s.p[0]) + (table[i][2] - s.p[1]) * (table[i][2] - s.p[1]);
                 if (dd < bd) { bd = dd; best = table[i][0]; }
             }
-            return best;
+            spotKmCache.push(best);
+            spotOffKm.push(Math.sqrt(bd) * 95);   // 度²→km 近似；只做相对排序，不追求精确
         });
     }
     function renderSpotLabels(zoom) {
@@ -217,22 +238,23 @@
         if (!spotLabelOn) return;
         var z = (zoom == null) ? 7.3 : zoom;
         try { if (typeof map.getZoom === 'function') z = map.getZoom(); } catch (e) {}
+        var mapW = 0;   // 容器 CSS 宽：双维判定的「视口」口径
+        try { var me = document.getElementById('map'); mapW = (me && me.clientWidth) || 0; } catch (e) {}
+        var farMobile = mapW > 0 && mapW < NARROW_MAP_PX && z < SPOT_FAR_Z - 1;   // 窄屏 z<7
         var picked = SPOTS;
         if (z < SPOT_MID_Z) {
-            var cap = z < SPOT_FAR_Z ? 1 : 2;
+            var bucketKm = farMobile ? SPOT_FAR_MOB_BUCKET_KM : SPOT_BUCKET_KM;
+            var cap = farMobile ? 1 : (z < SPOT_FAR_Z ? 1 : 2);
             var buckets = {};
             SPOTS.forEach(function (s, i) {
-                var b = Math.floor((spotKmCache[i] || 0) / SPOT_BUCKET_KM);
+                var b = Math.floor((spotKmCache[i] || 0) / bucketKm);
                 (buckets[b] = buckets[b] || []).push(i);
             });
             var idx = [];
             Object.keys(buckets).forEach(function (b) {
-                buckets[b].sort(function (a, c) {
-                    var sa = SPOT_STRONG.test(SPOTS[a].n) ? 0 : 1;
-                    var sc = SPOT_STRONG.test(SPOTS[c].n) ? 0 : 1;
-                    return sa - sc || a - c;   // 强信号优先；同信号按原顺序（手打在前）
-                }).slice(0, cap).forEach(function (i) { idx.push(i); });
+                buckets[b].sort(spotIdxCmp).slice(0, cap).forEach(function (i) { idx.push(i); });
             });
+            if (farMobile) idx = idx.sort(spotIdxCmp).slice(0, SPOT_FAR_CAP);   // 远景全局硬上限
             picked = idx.sort(function (a, c) { return a - c; }).map(function (i) { return SPOTS[i]; });
         }
         spotLabels = createLabelLayer({
@@ -426,10 +448,19 @@
     }
 
     var activeIdx = -1;
+    /* S17：剖面把手「仅聚焦/手动展开常显」。聚焦 → 亮把手；返回全览 → 收起（不占布局）。
+       由 fitAll/focusDay 两处驱动（含桌面——这是对桌面的小行为修正，docs §25 留痕）。 */
+    function elevGripShow(on) {
+        try {
+            if (document.body && document.body.classList) document.body.classList.toggle('elev-hide', !on);
+            if (typeof syncMapOccupy === 'function') syncMapOccupy();
+        } catch (e) {}
+    }
     function focusDay(i) {
         if (activeIdx === i) { fitAll(); return; } // 再点同一天 → 取消聚焦
         var d = DAYS[i];
         activeIdx = i;
+        elevGripShow(true);
         var listEl = document.getElementById('dayList');
         Array.prototype.forEach.call(listEl.children, function (li, j) {
             li.classList.toggle('active', j === i);
@@ -511,6 +542,7 @@
 
     function fitAll(redraw) {
         activeIdx = -1;
+        elevGripShow(false);   // S17：返回全览 → 剖面把手收起不占位（含桌面，docs §25 留痕）
         var listEl = document.getElementById('dayList');
         Array.prototype.forEach.call(listEl.children, function (li) { li.classList.remove('active'); });
         dayLines.forEach(function (pl) { if (pl) pl.setStyles({ default: NORMAL }); });

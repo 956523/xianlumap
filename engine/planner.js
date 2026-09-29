@@ -366,8 +366,15 @@
         // 计划层（必充/必加站）
         planData = plan.filter(function (p) { return p.st; });
         var isFuel = evState.mode === 'fuel';
+        /* S17：手机全览（窄容器 + 远景 z<7，口径与景点胶囊一致）收起必充/必加标注——
+           国家缩放级别只留极少量信息；近景或聚焦天（fly 后 z 必然 ≥7）自动恢复，
+           规划结果仍有 #planPeek 概要行兜底，信息不丢。 */
+        var mapW = 0;
+        try { var mEl = document.getElementById('map'); mapW = (mEl && mEl.clientWidth) || 0; } catch (e) {}
+        var hidePlanFar = mapW > 0 && mapW < 700 && z < 7;
+        try { window.__planFarHidden = hidePlanFar; } catch (e) {}   // S17 测试钩子：规划标注远景收起状态
         planM = createMarkerLayer({
-            map: map,
+            map: hidePlanFar ? null : map,
             styles: { p: ({ src: IC_PLAN[isFuel ? 'fuel' : 'ev'], width: 38, height: 38, anchor: { x: 19, y: 19 } }) },
             geometries: planData.map(function (p, i) {
                 return { id: 'p' + i, styleId: 'p', position: LL(p.st.lat, p.st.lng) };
@@ -381,7 +388,7 @@
                 '<br><b style="color:#ea580c">D' + dayOf(p.st.km) + ' · 到达剩 ' + Math.round(p.arrive * 100) + '% · ' + (isFuel ? '建议加满' : '建议充至 ' + Math.round(p.target * 100) + '%') + '</b>');
         });
         planLb = createLabelLayer({
-            map: map,
+            map: hidePlanFar ? null : map,
             styles: { p: ({ color: '#c2410c', size: 11, offset: { x: 0, y: -26 } }) },
             geometries: planData.map(function (p, i) {
                 var isF = evState.mode === 'fuel';
