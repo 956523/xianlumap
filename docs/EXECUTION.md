@@ -931,3 +931,65 @@ S2 思路的 vm 逐字节对比（临时脚本，跑完即删）：git HEAD 引�
 5. **编辑模式键盘遮挡**只做几何锚点（底部弹层），输入时抽屉状态未联动。
 6. **横屏**只保证不破版（限高 82vh），未做横屏专属两栏。
 7. 真机未测：无触屏设备可滑，手势全部为代码审查 + 状态机单测，未过真手。
+
+## 23. 方案云同步（2026-09-29，排期第 4 项：Gist 私有备份/恢复）
+
+编辑 overlay + 途经点 overlay + 出发日期统称「方案」。复用 S12 向导的 PAT
+（localStorage `xlm-gh-config`，仅存本机），编辑模式新增「☁️ 云同步」区
+（engine/sync.js，edit.js 之后 / ui.js 之前加载）。
+
+### Gist 结构（选了「一个 gist 多文件」）
+
+- 每用户**一个私有 Gist**（`public: false`），描述固定 `☁️ xianlumap 方案同步`
+  作标记；按描述搜索定位（`GET /gists?per_page=100`），不需要在设备间传 gist id。
+- 每条线路一个文件 `route-<key>.json`，内容为
+  `{app:"xianlumap", kind:"user-scheme", route, updatedAt, edit:{days,seg,marks,meta}, waypoints:{list}}`。
+  比「每线一 gist」稳：不 proliferate、PATCH 单文件天然按线路隔离。
+- 同步检查点 `localStorage xianlumap.sync.<key>` = `{gistId, cloudUpdatedAt, snapshot, localUpdatedAt}`：
+  snapshot 是上次同步时方案的 JSON 快照（精确比对，不靠哈希撞运气）；localUpdatedAt 由
+  editSave/wpSave 里的 bumpLocal 钩子维护。
+
+### 冲突语义（诚实边界：绝不静默合并）
+
+- 上传：云端文件存在 且 本机有未同步改动 且 云端 updatedAt ≠ 上次同步的 cloudUpdatedAt
+  → confirm 展示两边时间二选一（「确定」= 保留本机覆盖云端；「取消」= 不动，先去恢复看云端）。
+- 恢复：本机有未同步改动 → confirm 展示两边时间二选一（「确定」= 用云端覆盖本机；
+  「取消」= 保留本机）。
+- 覆盖 = 镜像语义：云端空的 edit 也会清掉本机 overlay（不残留半合并状态）。
+
+### 失败处理（人话，不甩原始错误）
+
+401 →「PAT 校验失败：token 失效或权限不够…重新生成 fine-grained token，只勾 Gists」；
+403 → 权限不够或限流；其他 HTTP → 带状态码的通用提示；网络断 →「连不上 GitHub」；
+401 的原始 message（Bad credentials 等）不透出。无 PAT 时区域显示申请引导
+（fine-grained token：Repository access 选 Public Repositories (read) 即可——
+Gist 不走仓库权限——Account permissions 只勾 Gists: Read and write）。
+
+### 验证
+
+- probe-check【10】7 项（mock fetch 最小 GitHub 服务）：上传建私有 gist（描述/单文件/
+  public:false）、payload 三类方案 + checkpoint 写回、恢复到「新设备」、上传冲突按
+  updatedAt 提示且取消即中止（云端未被覆盖）、恢复方向二选一（确认后覆盖本机）、
+  token 失效人话提示不泄原始错误——63 全绿；c4-test 282 全绿。
+- 真实浏览器冒烟（CDP）：编辑模式内云同步区渲染完整（PAT 输入/申请引导/双按钮/
+  徽标「未配置 PAT」），页面零 JS 报错（/tmp/sync-smoke.png）。
+- api.github.com 契约静态核对：`GET /gists` 匿名 200（公共列表）、无效 Bearer →
+  401 `{message:"Bad credentials"}`——与 auth 分支断言的形状一致。未用真实 PAT 做
+  端到端（避免把测试数据写进用户 GitHub 账号）。
+- **顺手修的坑**：probe-check 原文件结尾本就有一行 `process.exit(fail ? 1 : 0);`，
+  同步测试改为 async 后这行会在微任务排空前秒杀进程（症状=异步断言集体蒸发、
+  exit=0 的"假绿"）——已并入 .then 尾部。
+
+### 分享钥匙（Kimi 数据库方案）在此基础上还差什么
+
+Gist 方案是「同一个人、自己的 GitHub 账号、自己可见」的备份恢复；要做成「把方案
+当钥匙分享给同行」（对方只读/可装），还差：
+1. **可读性外发**：把 gist 改 public 或导出只读分享链接 + 导入端「从链接/文件安装」
+   （导入校验 route 标记已有，缺的只是入口与「对方不需要 PAT」的匿名拉取路径——
+   public gist 匿名 GET 即可）。
+2. **只读与署名**：payload 里没有 author/只读标记，分享后无法阻止接收方再改再传
+   （版权与版本出处的最小诚实字段）。
+3. **多方案并存**：一个 route 一个文件是「单槽」，分享钥匙要支持「我的方案」与
+   「收到的方案」并列（导入为副本而非覆盖，或文件名带作者后缀）。
+4. **冲突半径**：跨作者的合并语义（现在只有整文件覆盖/保留二选一）——字段级
+   合并或「只取途经点/只取出发日期」的选择性导入。

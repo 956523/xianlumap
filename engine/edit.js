@@ -28,6 +28,7 @@
     function editSave() {
         var s = editStore();
         if (s) s.setItem(EDIT_KEY, JSON.stringify(Edit.overlay));
+        try { if (typeof Sync !== 'undefined' && Sync.bumpLocal) Sync.bumpLocal(); } catch (e) {}
     }
     function editClearStore() {
         var s = editStore();
@@ -448,6 +449,7 @@
         }
         editBar = document.createElement('div');
         editBar.className = 'edit-bar';
+        editBar.id = 'editBar';            // S15：sync.js 按 id 挂「云同步」区
         editBar.style.display = 'none';
         var hint = document.createElement('span');
         hint.className = 'edit-hint';
@@ -629,6 +631,7 @@
             if (list && list.length) localStorage.setItem(WP_KEY, JSON.stringify({ list: list }));
             else localStorage.removeItem(WP_KEY);
         } catch (e) {}
+        try { if (typeof Sync !== 'undefined' && Sync.bumpLocal) Sync.bumpLocal(); } catch (e) {}
         refreshWpBadge();
     }
     /* 初始列表 = 包内现有途经点（键与顺序保留）；overlay 存在则以 overlay 为准 */
@@ -671,6 +674,11 @@
             this.list = wpBaseList();
             try { localStorage.removeItem(WP_KEY); } catch (e) {}
             refreshWpBadge();
+        },
+        /* 云同步恢复用：整体替换 overlay（null = 清除回包内基准；wpSave 顺带刷徽标） */
+        replaceAll: function (list) {
+            this.list = (list && list.length) ? list : wpBaseList();
+            wpSave((list && list.length) ? this.list : null);
         },
         /* 生成 legs 初分：每段 from + ≤4 via + to（自动初分，标题/备注待人工润色） */
         buildLegs: function () {

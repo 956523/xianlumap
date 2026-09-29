@@ -95,10 +95,15 @@ function bootRoute(routeKey, opts) {
     let err = null;
     const win = Object.assign({}, window, {
         innerWidth: (opts && opts.innerWidth) || window.innerWidth,
-        innerHeight: (opts && opts.innerHeight) || window.innerHeight
+        innerHeight: (opts && opts.innerHeight) || window.innerHeight,
+        confirm: (opts && opts.confirm) || function () { return true; }   // S15 云同步冲突二选一（默认放行）
     });
     const sandbox = {
         AMap, document, window: win, console, localStorage: localStorageMock,
+        confirm: (opts && opts.confirm) || function () { return true; },
+        fetch: (opts && opts.fetch) || function () {   // S15：默认「网络不通」形状，不抛
+            return Promise.resolve({ status: 0, json: function () { return Promise.resolve(null); } });
+        },
         setTimeout: (fn) => { try { fn(); } catch (e) {} return 0; }, clearTimeout: () => {},
         encodeURIComponent, parseFloat, parseInt, getComputedStyle,
         ResizeObserver: function (cb) { this.observe = function () {}; this.disconnect = function () {}; }
@@ -354,5 +359,112 @@ const desk = bootRoute('chuanxi');
 ok('桌面 boot 不接管（isMobile=false，桌面渲染零变化）',
     !desk.err && desk.sandbox.window.__mobile && desk.sandbox.window.__mobile.isMobile() === false, '');
 
-console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
-process.exit(fail ? 1 : 0);
+/* ---------- 云同步（S15）：上传→恢复→冲突二选一→token 失效（vm + mock fetch） ---------- */
+function ghServer(store) {
+    // 最小 GitHub Gist API mock：一个 gist 列表，POST 建 / PATCH 改 / GET 查
+    function res(status, data) {
+        return Promise.resolve({ status: status, json: function () { return Promise.resolve(data); } });
+    }
+    return {
+        fetch: function (url, opts) {
+            opts = opts || {};
+            var p = String(url).replace('https://api.github.com', '');
+            if (p.indexOf('/gists?') === 0) {
+                return res(200, store.gists.map(function (g) { return { id: g.id, description: g.description, files: g.files }; }));
+            }
+            if (p === '/gists' && opts.method === 'POST') {
+                var b = JSON.parse(opts.body);
+                var ng = { id: 'gist_' + (store.gists.length + 1), description: b.description, public: !!b.public, files: b.files };
+                store.gists.push(ng);
+                return res(201, { id: ng.id });
+            }
+            var m = p.match(/^\/gists\/([^/?]+)$/);
+            if (m) {
+                var g = store.gists.filter(function (x) { return x.id === m[1]; })[0];
+                if (!g) return res(404, { message: 'Not Found' });
+                if (opts.method === 'PATCH') {
+                    var pb = JSON.parse(opts.body);
+                    Object.keys(pb.files || {}).forEach(function (fn) { g.files[fn] = { content: pb.files[fn].content }; });
+                    if (pb.description) g.description = pb.description;
+                    return res(200, { id: g.id });
+                }
+                return res(200, { id: g.id, description: g.description, files: g.files });
+            }
+            return res(404, { message: 'no route' });
+        }
+    };
+}
+console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
+(async function () {
+    var ghStore = { gists: [] };
+    var gh = ghServer(ghStore);
+    ['xianlumap.overlay.chuanxi', 'xianlumap.waypoints.chuanxi', 'xianlumap.sync.chuanxi'].forEach(function (k) { delete lsStore[k]; });
+    lsStore['xlm-gh-config'] = JSON.stringify({ token: 'TEST-PAT' });
+    // ① 上传：有方案的机器 → 建私有 gist（描述标记，每线一文件）
+    var UP = bootRoute('chuanxi', { fetch: gh.fetch }).sandbox;
+    UP.Edit.setDayField(2, 'title', '云端同步标题');
+    UP.Edit.setDeparture('2026-10-01');
+    var upRes = null;
+    try { upRes = await UP.Sync.upload(); } catch (e) { upRes = { err: e.message }; }
+    ok('上传到云端：建私有 gist（描述标记 + 每线一文件）',
+        upRes && upRes.ok === true && ghStore.gists.length === 1 && ghStore.gists[0].public === false &&
+        ghStore.gists[0].description === UP.Sync.SYNC_DESC && !!ghStore.gists[0].files['route-chuanxi.json'],
+        ghStore.gists.length + ' 个 gist');
+    ok('上传内容 = 三类方案（编辑层/出发日期），写回 checkpoint',
+        upRes && upRes.ok === true && (function () {
+            var f = JSON.parse(ghStore.gists[0].files['route-chuanxi.json'].content);
+            var cp = JSON.parse(lsStore['xianlumap.sync.chuanxi'] || '{}');
+            return f.app === 'xianlumap' && f.kind === 'user-scheme' && f.route === 'chuanxi' &&
+                f.edit.days['2'].title === '云端同步标题' && f.edit.meta.departureDate === '2026-10-01' && !!f.updatedAt &&
+                cp.cloudUpdatedAt === f.updatedAt && cp.snapshot === UP.Sync.stateJSON();
+        })(), '');
+    // ② 恢复：模拟换设备/清浏览器（本机键全清，同一云端）
+    ['xianlumap.overlay.chuanxi', 'xianlumap.waypoints.chuanxi', 'xianlumap.sync.chuanxi'].forEach(function (k) { delete lsStore[k]; });
+    var DN = bootRoute('chuanxi', { fetch: gh.fetch }).sandbox;
+    var dnRes = null;
+    try { dnRes = await DN.Sync.restore(); } catch (e) { dnRes = { err: e.message }; }
+    ok('从云端恢复到「新设备」：编辑层 + 出发日期落地',
+        dnRes && dnRes.ok === true && DN.DAYS.filter(function (d) { return d.id === 2; })[0].title === '云端同步标题' &&
+        DN.ROUTE_META.departureDate === '2026-10-01', '');
+    // ③ 冲突：本机再改 + 云端被别的设备更新 → 按 updatedAt 提示二选一，不许静默合并
+    DN.Edit.setDayField(2, 'title', '本机新改动');
+    var cloudF = JSON.parse(ghStore.gists[0].files['route-chuanxi.json'].content);
+    cloudF.updatedAt = new Date(Date.now() + 3600e3).toISOString();   // 云端在别处更新了
+    ghStore.gists[0].files['route-chuanxi.json'].content = JSON.stringify(cloudF);
+    var prompts = [];
+    var CF = bootRoute('chuanxi', {
+        fetch: gh.fetch,
+        confirm: function (msg) { prompts.push(String(msg)); return false; }   // 用户选「取消 = 不动」
+    }).sandbox;
+    var cfUp = null;
+    try { cfUp = await CF.Sync.upload(); } catch (e) { cfUp = { err: e.message }; }
+    ok('上传冲突：提示两边 updatedAt，取消即中止（不静默合并）',
+        cfUp && cfUp.error === 'cancelled' && prompts.length === 1 &&
+        /两边都有改动/.test(prompts[0]) && /本机方案最后改于/.test(prompts[0]) && /云端版本改于/.test(prompts[0]),
+        prompts[0] ? prompts[0].replace(/\n/g, ' ').slice(0, 50) : '无提示');
+    ok('取消后云端文件未被覆盖',
+        JSON.parse(ghStore.gists[0].files['route-chuanxi.json'].content).edit.days['2'].title === '云端同步标题', '');
+    var prompts2 = [];
+    var CF2 = bootRoute('chuanxi', {
+        fetch: gh.fetch,
+        confirm: function (msg) { prompts2.push(String(msg)); return true; }   // 用户选「用云端覆盖本机」
+    }).sandbox;
+    var cf2Res = null;
+    try { cf2Res = await CF2.Sync.restore(); } catch (e) { cf2Res = { err: e.message }; }
+    ok('恢复方向二选一：确认后用云端覆盖本机',
+        cf2Res && cf2Res.ok === true && CF2.DAYS.filter(function (d) { return d.id === 2; })[0].title === '云端同步标题' &&
+        prompts2.length === 1 && /用云端覆盖本机/.test(prompts2[0]) && /保留本机不动/.test(prompts2[0]),
+        prompts2[0] ? prompts2[0].replace(/\n/g, ' ').slice(0, 50) : '无提示');
+    // ④ token 失效：401 → 人话提示，不甩原始错误
+    var badGh = { fetch: function () { return Promise.resolve({ status: 401, json: function () { return Promise.resolve({ message: 'Bad credentials' }); } }); } };
+    var TK = bootRoute('chuanxi', { fetch: badGh.fetch }).sandbox;
+    var tkRes = null;
+    try { tkRes = await TK.Sync.upload(); } catch (e) { tkRes = { err: e.message }; }
+    ok('token 失效：人话提示（PAT 校验失败），不暴露原始错误',
+        tkRes && tkRes.error === 'auth' && /PAT 校验失败/.test(elCache['syncLog'].textContent) &&
+        !/Bad credentials/.test(elCache['syncLog'].textContent),
+        elCache['syncLog'].textContent.slice(0, 46));
+})().then(function () {
+    console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
+    process.exit(fail ? 1 : 0);
+});
