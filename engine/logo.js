@@ -25,6 +25,15 @@ var BRAND = {
         '<path d="M14 13 h2 a3 3 0 0 1 3 3 v2.5 a2 2 0 0 1-4 0 V16"/>' +
         '<path d="M8 8.5 h4"/>' +
         '</svg>',
+    /* 月亮（休整点，S29） */
+    moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5z"/>' +
+        '</svg>',
+    /* 旗标（打卡点，S29） */
+    flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M5 21 V4"/>' +
+        '<path d="M5 4 h13 l-2.6 4 L18 12 H5"/>' +
+        '</svg>',
     /* 渲染层 emoji 剥离（不动数据：manifest/包一致性断言不受影响） */
     stripEmoji: function (s) {
         return String(s == null ? '' : s).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\uFE0F?|\u{1F000}-\u{1F0FF}/gu, '').trim();

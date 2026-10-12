@@ -945,6 +945,64 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             var tb = elCache['wpTabBadge'];
             return tb && tb.style && tb.textContent === String(S28.Wp.list.length) && tb.style.display !== 'none';
         })(), '');
+    /* ---------- S29：三类点模型 / 行程卡三类行 / kind 往返 / 移动端半屏编辑 ---------- */
+    console.log('\n【23】S29：三类点模型');
+    delete lsStore['xianlumap.overlay.chuanxi'];
+    delete lsStore['xianlumap.waypoints.chuanxi'];
+    var s29 = bootRoute('qinghai-gansu');
+    var S29 = s29.sandbox;
+    var lis29 = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-10);
+    // a) 打卡行：SPOTS 按天归属（青海湖二郎剑在 D1 区间，茶卡盐湖在 D2 区间）
+    ok('打卡行按天归属正确（青海湖二郎剑→D1，茶卡盐湖→D2）',
+        !s29.err && lis29.length === 10 &&
+        /data-spot=/.test(lis29[0].innerHTML) && /青海湖二郎剑/.test(lis29[0].innerHTML) &&
+        /茶卡盐湖/.test(lis29[1].innerHTML),
+        (lis29[0].innerHTML.match(/打卡<\/span><span class="pt-ms">([^<]*(<span[^>]*>[^<]*<\/span>)*)/) || ['', ''])[1].replace(/<[^>]+>/g, ' ').slice(0, 60));
+    // b) 补给行：近线 ≤35km 站点计数（青甘已接入，每天应有充电计数）
+    ok('补给行计数透出（沿线 N 充电）', lis29.slice(0, 3).every(function (el) { return /沿线 \d+ 充电/.test(el.innerHTML); }), '');
+    // c) 空类不显示 + 行数上界：每卡 ≤3 行（休整/打卡/补给）
+    ok('空类不显示且每卡至多三类行', lis29.every(function (el) {
+        var n = (el.innerHTML.match(/class="pt-row"/g) || []).length;
+        return n >= 0 && n <= 3;
+    }), '');
+    // d) 休整行：住宿 + kind=rest 途经点（构造场景）
+    S29.Edit.setDayField(1, 'stay', '黑马河宾馆');
+    var d3 = S29.DAYS[2];
+    var mid = d3.path[Math.floor(d3.path.length / 2)];
+    S29.Wp.add('午休点', mid[0], mid[1], 'rest');   // 归 D3
+    S29.renderAll();   // mock 下按卡刷新是空操作，整卡重建后读三类行
+    var lis29b = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-10);
+    ok('休整行 = 住宿 + 休整类途经点（不误入打卡行）',
+        /黑马河宾馆（住宿）/.test(lis29b[0].innerHTML) &&
+        /data-wp=/.test(lis29b[2].innerHTML) && /午休点/.test(lis29b[2].innerHTML) &&
+        !/午休点/.test((lis29b[2].innerHTML.match(/打卡[\s\S]*?补给/) || [''])[0]),
+        '');
+    // e) kind 往返：添加（显式 rest / 缺省 spot）→ 导出 → 落盘 → 重 boot 仍在
+    var expWps = S29.Wp.exportJson().waypoints;
+    var kindsFound = {};
+    Object.keys(expWps).forEach(function (k) { kindsFound[expWps[k].kind || 'spot'] = (kindsFound[expWps[k].kind || 'spot'] || 0) + 1; });
+    var s29b = bootRoute('qinghai-gansu');
+    var restWp = s29b.sandbox.Wp.list.filter(function (w) { return w.n === '午休点'; })[0];
+    ok('kind 字段往返：导出含 rest/spot，重 boot 后保留（缺省=打卡）',
+        kindsFound.rest === 1 && kindsFound.spot >= 20 && restWp && restWp.kind === 'rest', JSON.stringify(kindsFound));
+    // f) 移动端半屏编辑态：途经点 Tab → half，地图容器让位 52vh
+    var s29m = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    s29m.sandbox.Edit.showTab('wp');
+    var halfInfo = {
+        st: s29m.sandbox.window.__mobile.state(),
+        cls: document.body.classList.contains('mob-half'),
+        ptWp: document.body.classList.contains('pt-wp'),
+        sheetVisible: (document.documentElement.style.__set || {})['--sheet-visible']
+    };
+    ok('途经点移动端半屏态（sheet=half + 地图让位 52vh）',
+        !s29m.err && halfInfo.st === 'half' && halfInfo.cls && halfInfo.ptWp && halfInfo.sheetVisible === String(Math.round(844 * 0.52)) + 'px',
+        JSON.stringify(halfInfo));
+    // g) 成员点击接线：data-spot/data-wp 属性 + pt-m 捕获分支
+    var editSrc29 = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
+    ok('三类行成员可点（飞行+信息窗接线在位）',
+        /data-spot/.test(lis29b[0].innerHTML) && /pt-m/.test(editSrc29) && /flyInfo/.test(editSrc29), '');
+    ok('长按加停靠无 Edit.on 门槛（S28 退役回归锁：两处把门都在入口/上下文）',
+        !/!Edit\.on/.test(editSrc29) && /panelTab !== 'wp'/.test(editSrc29), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

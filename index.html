@@ -112,6 +112,26 @@
     }
     .day-list li:hover .day-note { border-bottom-color: #e2e8f0; }
     .day-list .et-chips { margin: 2px 0 0; }
+    /* S29 三类点分组行（休整/打卡/补给）：线性图标 + 类型名 + 成员（· 分隔，超 4 收「等N处」） */
+    .day-pts { display: flex; flex-direction: column; gap: 2px; margin-top: 3px; padding-top: 3px; border-top: 1px dashed #f1f5f9; }
+    .pt-row { display: flex; align-items: baseline; gap: 5px; font-size: 11.5px; color: #475569; line-height: 1.5; }
+    .pt-ic { flex: none; width: 13px; height: 13px; color: #0f766e; transform: translateY(1.5px); }
+    .pt-ic svg { display: block; width: 13px; height: 13px; }
+    .pt-lb { flex: none; font-weight: 600; color: #334155; }
+    .pt-ms { flex: 1; min-width: 0; }
+    .pt-m { cursor: pointer; border-bottom: 1px dashed transparent; }
+    .pt-m:hover { color: #0f766e; border-bottom-color: #99f6e4; }
+    .pt-sep { color: #cbd5e1; margin: 0 2px; }
+    .pt-cap { color: #94a3b8; }
+    .pt-sum { color: #64748b; }
+    /* S29 加点类型选择（途经点 Pane + 长按弹窗同款分段） */
+    .wp-kindseg { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; font-size: 11px; color: #92400e; }
+    .wp-kindseg button { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 3px 12px; font-size: 11.5px; color: #64748b; cursor: pointer; font-family: inherit; }
+    .wp-kindseg button.on { background: #f0fdfa; border-color: #0f766e; color: #0f766e; font-weight: 600; }
+    .wps-kind { display: flex; gap: 6px; margin-bottom: 8px; }
+    .wps-kind button { flex: 1; min-height: 38px; border: 1px solid #e2e8f0; background: #fff; border-radius: 9px; font-size: 13px; color: #64748b; cursor: pointer; font-family: inherit; }
+    .wps-kind button.on { background: #f0fdfa; border-color: #0f766e; color: #0f766e; font-weight: 600; }
+    .et-wp-kind { flex: none; color: #b45309; font-size: 12px; }
     .day-stay {
         align-self: flex-start; font-size: 10.5px; color: #b45309;
         background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 5px; padding: 0 5px;
@@ -355,6 +375,8 @@
         body.mob-full #panel { transform: none; height: calc(100vh - 48px - env(safe-area-inset-top)); max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
         /* S20 Bug1①：full 态面板严格从标题条（48px+safe-area）下沿起算——表头不再被标题条压住截断 */
         body.mob-hidden #panel { transform: translateY(100%); }
+        /* S29-C：途经点半屏编辑态——下半屏面板（贴底定高），上半屏地图可见可取点 */
+        body.mob-half #panel { transform: none; height: 52vh; max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; border-radius: 16px 16px 0 0; }
         body.mob-elev #panel { transform: translateY(100%); }   /* 剖面抽屉打开时行程单让位 */
         /* 两张表上下叠放（地图软件惯例）：行程单 peek 时，剖面把手贴在行程单下沿之上，
            地图容器相应缩短，三带互不重叠（--sheet-visible 由 mobile.js 按档位写入） */

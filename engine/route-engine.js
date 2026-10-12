@@ -412,11 +412,122 @@
         }), [dN]);
     }
 
+    /* --- S29 三类点按天归属：统一的「沿线里程 → 第几天」推导 ---
+       口径与 edit.js wpDayIdx 一致（当前视角 DAYS altKm ±0.5 容差 + 最近天兜底），
+       但基于本文件自维护的里程表（DAYS 当前区间，含 overlay 分段改动，renderAll 时重建）。
+       三类点：休整（天 stay + kind=rest 途经点）、打卡（SPOTS + kind=spot 途经点）、
+       补给（STATION_DATA 近线 ≤35km 站点——与景点库物化 MAX_DIST=35 同口径）。 */
+    var _dayKmTable = [];
+    function rebuildDayKmTable() {
+        _dayKmTable = [];
+        DAYS.forEach(function (d) {
+            if (!d.path || !d.altKm) return;
+            var n = d.path.length;
+            d.path.forEach(function (p, i) {
+                _dayKmTable.push([d.altKm[0] + (d.altKm[1] - d.altKm[0]) * i / (n - 1), p[0], p[1]]);
+            });
+        });
+        _dayKmTable.sort(function (a, b) { return a[0] - b[0]; });
+    }
+    function kmOfPoint(lat, lng) {
+        var best = 0, bd = 1e9;
+        for (var i = 0; i < _dayKmTable.length; i++) {
+            var t = _dayKmTable[i];
+            var dd = (t[1] - lat) * (t[1] - lat) + (t[2] - lng) * (t[2] - lng);
+            if (dd < bd) { bd = dd; best = t[0]; }
+        }
+        return best;
+    }
+    function dayIdxOfKm(km) {
+        var merged = (typeof Edit !== 'undefined' && Edit._mergedIds) ? Edit._mergedIds() : [];
+        for (var i = 0; i < DAYS.length; i++) {
+            var d = DAYS[i];
+            if (merged.indexOf(d.id) >= 0) continue;
+            if (d.altKm && km >= d.altKm[0] - 0.5 && km <= d.altKm[1] + 0.5) return i;
+        }
+        var nearest = -1, nd = 1e18;   // 区间外归最近天（跨段点上/接入段不丢）
+        for (var j = 0; j < DAYS.length; j++) {
+            var dj = DAYS[j];
+            if (!dj.altKm) continue;
+            var dist = km < dj.altKm[0] ? dj.altKm[0] - km : km - dj.altKm[1];
+            if (dist < nd) { nd = dist; nearest = j; }
+        }
+        return nearest;
+    }
+
+    /* --- S29 行程卡三类分组行（休整/打卡/补给） ---
+       行内格式：线性图标 + 类型名 + 成员（· 分隔，超 4 个收「等N处」）；
+       成员可点（data-spot/data-wp → 地图飞行 + 信息窗，edit.js 捕获监听）；空类整行不显示。
+       补给行是计数摘要（沿线 X 充电 + Y 加油）——站点本身已在地图分级层可点。 */
+    function dayPtsHTML(d, gIdx, supEv, supFuel) {
+        var ic = function (name) {
+            return '<span class="pt-ic">' + ((typeof BRAND !== 'undefined' && BRAND[name]) || '') + '</span>';
+        };
+        var msHTML = function (list, kind) {
+            var shown = list.slice(0, 4);
+            var h = shown.map(function (m) {
+                var attr = kind === 'ckin' && m.spotIdx != null ? ' data-spot="' + m.spotIdx + '"' :
+                    (m.wpIdx != null ? ' data-wp="' + m.wpIdx + '"' : '');
+                return '<span class="pt-m"' + attr + '>' + m.n + '</span>';
+            }).join('<span class="pt-sep">·</span>');
+            if (list.length > 4) h += '<span class="pt-sep">·</span><span class="pt-cap">等' + list.length + '处</span>';
+            return h;
+        };
+        var rows = '';
+        /* ① 休整：住宿 + kind=rest 途经点（天归属按坐标） */
+        var rest = [];
+        if (d.stay) rest.push({ n: d.stay + '（住宿）' });
+        if (typeof Wp !== 'undefined' && Wp && Wp.list && d.altKm) {
+            Wp.list.forEach(function (w, wi) {
+                if (w.kind !== 'rest') return;
+                if (dayIdxOfKm(kmOfPoint(w.p[0], w.p[1])) !== gIdx) return;
+                rest.push({ n: w.n, wpIdx: wi });
+            });
+        }
+        if (rest.length) rows += '<div class="pt-row">' + ic('moon') + '<span class="pt-lb">休整</span><span class="pt-ms">' + msHTML(rest, 'rest') + '</span></div>';
+        /* ② 打卡：SPOTS 归属天 + kind=spot（缺省打卡，向后兼容）途经点 */
+        if (d.altKm) {
+            var ckin = [];
+            if (typeof SPOTS !== 'undefined' && SPOTS) {
+                SPOTS.forEach(function (s, si) {
+                    if (dayIdxOfKm(kmOfPoint(s.p[0], s.p[1])) !== gIdx) return;
+                    ckin.push({ n: s.n, spotIdx: si });
+                });
+            }
+            if (typeof Wp !== 'undefined' && Wp && Wp.list) {
+                Wp.list.forEach(function (w, wi) {
+                    if (w.kind === 'rest') return;   // 缺省/spot 都是打卡
+                    if (dayIdxOfKm(kmOfPoint(w.p[0], w.p[1])) !== gIdx) return;
+                    ckin.push({ n: w.n, wpIdx: wi });
+                });
+            }
+            if (ckin.length) rows += '<div class="pt-row">' + ic('flag') + '<span class="pt-lb">打卡</span><span class="pt-ms">' + msHTML(ckin, 'ckin') + '</span></div>';
+            /* ③ 补给：近线 ≤35km 站点按天归属，计数摘要 */
+            var nEv = 0, nFuel = 0;
+            supEv.forEach(function (s) { if (dayIdxOfKm(s.km) === gIdx) nEv++; });
+            supFuel.forEach(function (s) { if (dayIdxOfKm(s.km) === gIdx) nFuel++; });
+            if (nEv + nFuel > 0) {
+                var sum = '沿线 ' + (nEv ? nEv + ' 充电' : '') + (nEv && nFuel ? ' + ' : '') + (nFuel ? nFuel + ' 加油' : '');
+                rows += '<div class="pt-row">' + ic('bolt') + '<span class="pt-lb">补给</span><span class="pt-ms"><span class="pt-sum">' + sum + '</span></span></div>';
+            }
+        }
+        return rows ? '<div class="day-pts">' + rows + '</div>' : '';
+    }
+
     function renderAll() {
         // 清掉旧线
         dayLines.forEach(function (pl) { if (pl) pl.setMap(null); });
         dayLines = [];
         DAYS = buildDays(start);
+        /* S29：三类点归属的里程表 + 近线补给清单（每轮渲染只算一次，行内复用） */
+        rebuildDayKmTable();
+        var supEv = [], supFuel = [];
+        if (typeof stationsAll === 'function' && typeof STATION_DATA !== 'undefined' && STATION_DATA) {
+            try {
+                supEv = stationsAll('ev').filter(function (s) { return (s.d == null ? 99 : s.d) <= 35; });
+                supFuel = stationsAll('fuel').filter(function (s) { return (s.d == null ? 99 : s.d) <= 35; });
+            } catch (e) {}
+        }
         DAYS.forEach(function (d) {
             if (!d.path) { dayLines.push(null); return; }
             dayLines.push(createPolylineLayer({
@@ -459,6 +570,7 @@
                 '<span class="day-km">' + (rest ? '—' : (d.km ? d.km + 'km' : '—')) + '</span></span>' +
                 '<span class="day-title">' + d.title + '</span>' +
                 '<span class="day-note">' + noteTxt + '</span>' +
+                dayPtsHTML(d, DAYS.indexOf(d), supEv, supFuel) +
                 '<span class="et-chips">' + ((typeof wpChips === 'function') ? wpChips(d, true) : '') + '</span>' +
                 '</span>' +
                 (rest ? '' : sparkSVG(d));

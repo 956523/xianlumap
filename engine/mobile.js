@@ -27,12 +27,13 @@ function setSheet(st) {
     if (b && b.classList) {
         b.classList.remove('mob-drag');
         b.classList.toggle('mob-full', st === 'full');
+        b.classList.toggle('mob-half', st === 'half');   // S29：半屏编辑态
         b.classList.toggle('mob-hidden', st === 'hidden');
     }
     // 行程单露出高度 → CSS 变量：地图容器缩短、剖面把手贴其下沿（两张表叠放）
     var root = document.documentElement;
     if (root && root.style && typeof root.style.setProperty === 'function') {
-        root.style.setProperty('--sheet-visible', (st === 'peek' ? MOBILE_PEEK : 0) + 'px');
+        root.style.setProperty('--sheet-visible', (st === 'peek' ? MOBILE_PEEK : (st === 'half' ? Math.round(window.innerHeight * 0.52) : 0)) + 'px');
     }
     var p = document.getElementById('panel');
     if (p && p.classList) {
@@ -62,8 +63,9 @@ if (sheetPanel) {
 var sheetDrag = null;
 
 function sheetBase(panelH, st) {
-    // 各档位的 translateY：full=0，peek=露出 MOBILE_PEEK，hidden=完全出屏
+    // 各档位的 translateY：full=0，half=露上半屏地图（S29 编辑半屏化），peek=露出 MOBILE_PEEK，hidden=完全出屏
     if (st === 'full') return 0;
+    if (st === 'half') return Math.max(0, panelH - Math.round(window.innerHeight * 0.52));
     if (st === 'hidden') return panelH;
     return Math.max(0, panelH - MOBILE_PEEK);
 }
@@ -114,9 +116,12 @@ function onSheetEnd() {
     if (d.vy > 0.45) target = 'full';                                  // 快速上滑：直接全展
     else if (d.vy < -0.45) target = (ty > h - MOBILE_PEEK * 0.5) ? 'hidden' : 'peek';
     else {
-        // 按最近档位 snap
-        var dF = Math.abs(ty - 0), dP = Math.abs(ty - Math.max(0, h - MOBILE_PEEK)), dH = Math.abs(ty - h);
-        target = (dP <= dF && dP <= dH) ? 'peek' : (dF <= dH ? 'full' : 'hidden');
+        // 按最近档位 snap（途经点 Tab 半屏态把 half 加进候选，S29）
+        var cands = ['full', 'peek', 'hidden'];
+        if (document.body && document.body.classList && document.body.classList.contains('pt-wp')) cands.push('half');
+        var best = cands[0], bd2 = Infinity;
+        cands.forEach(function (c) { var dd = Math.abs(ty - sheetBase(h, c)); if (dd < bd2) { bd2 = dd; best = c; } });
+        target = best;
     }
     setSheet(target);
 }
@@ -331,9 +336,8 @@ function buildIA() {
     var mEdit = document.getElementById('mobMenuEdit');
     if (mEdit) mEdit.onclick = function () {
         toggleClass('mob-menu', false);
-        /* S28：编辑模式退役——途经点 Tab 一步可达（抽屉同时全展，结构操作有地方下手） */
+        /* S29：途经点 Tab 一步可达；半屏态由 showTab 内部落位（上半屏地图可取点） */
         try { if (typeof Edit !== 'undefined' && Edit.showTab) Edit.showTab('wp'); } catch (e) {}
-        try { if (typeof setSheet === 'function') setSheet('full'); } catch (e) {}
     };
     var mSync = document.getElementById('mobMenuSync');
     if (mSync) mSync.onclick = function () {
@@ -499,7 +503,7 @@ function refreshMob() {
     if (!now) {
         var b = document.body;
         if (b && b.classList) {
-            b.classList.remove('mob-full'); b.classList.remove('mob-hidden');
+            b.classList.remove('mob-full'); b.classList.remove('mob-half'); b.classList.remove('mob-hidden');
             b.classList.remove('mob-elev'); b.classList.remove('mob-drag');
             b.classList.remove('mob-menu'); b.classList.remove('mob-layers');
         }
