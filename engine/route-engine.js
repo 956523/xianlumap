@@ -383,12 +383,13 @@
     /* ============ 出发地 & 每日路线构建 ============
        S2：出发地差异全部由数据包 ROUTE_STARTS 声明（接入轨迹/海拔点/首末日文案），
        引擎按契约拼接；无接入段的出发地直接返回 CORE+TAIL。 */
+    /* S33 地图减重：主线 4→3px、描边 2→1（去光晕）；聚焦态同步收敛 */
     var NORMAL = ({
-        color: '#0d9488', width: 4, borderWidth: 2, borderColor: '#ffffff',
+        color: '#0d9488', width: 3, borderWidth: 1, borderColor: '#ffffff',
         lineCap: 'round', arrowOptions: { width: 8 }
     });
     var ACTIVE = ({
-        color: '#ea580c', width: 7, borderWidth: 2, borderColor: '#ffffff',
+        color: '#ea580c', width: 4.5, borderWidth: 1, borderColor: '#ffffff',
         lineCap: 'round', arrowOptions: { width: 10 }
     });
     var dayLines = [];
@@ -520,6 +521,66 @@
         return rows ? '<div class="day-pts">' + rows + '</div>' : '';
     }
 
+    /* ============ S33 链式行程 + 逆行方向 ============
+       模型：节点（起点/休整点/终点）+ 链段（天行程）。休整点 = 链段之间的「关节」，
+       双时间属性（晚抵达 / 次日出发）。起点/终点不可删；节点删除 = 前后链段合并（mergeDay）。
+       逆行（仅环线 ROUTE_META.loop）：显示层天序反排 + altKm 镜像（km' = T - km），
+       overlay 保持原口径——seg 镜像 = 同一 overlay 在镜像坐标系的呈现，不重写数据。 */
+    var routeDir = 1;   // 1 顺时针 / -1 逆时针（仅主出发地视角；overlay.meta.dir 持久）
+    function isLoopRoute() { return !(typeof ROUTE_META !== 'undefined' && ROUTE_META && ROUTE_META.loop === false); }
+    function mainTotalKm() { return STARTS[0].totalKm; }
+    function mirrorDay(d) {
+        var T = mainTotalKm();
+        var m = { orig: d, id: d.id, title: d.title, note: d.note, km: d.km, zoom: d.zoom,
+            energy: d.energy, stay: d.stay, center: d.center,
+            altKm: d.altKm ? [+(T - d.altKm[1]).toFixed(1), +(T - d.altKm[0]).toFixed(1)] : null,
+            path: d.path ? d.path.slice().reverse() : d.path };
+        return m;
+    }
+    function origOf(d) { return d && d.orig ? d.orig : d; }
+    function currentDisp() {
+        var merged = (typeof Edit !== 'undefined' && Edit._mergedIds) ? Edit._mergedIds() : [];
+        var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
+        return (routeDir < 0 && start === STARTS[0].id) ? vis.slice().reverse().map(mirrorDay) : vis;
+    }
+    function dayDest(d) {
+        var p = String(d.title || '').split('→');
+        return (p.length > 1 ? p[p.length - 1] : d.title || '').trim().slice(0, 20);
+    }
+    function nodeName(d) { return (d.stay || dayDest(d)).slice(0, 20); }
+    function nodeDates(vi) {   // vi = 该节点前那条链段的显示序号（0 基）
+        if (!ROUTE_META.departureDate) return '夜宿点';
+        try {
+            var a = new Date(ROUTE_META.departureDate + 'T00:00:00');
+            a.setDate(a.getDate() + vi);
+            var b = new Date(a); b.setDate(b.getDate() + 1);
+            var f = function (x) { return (x.getMonth() + 1) + '月' + x.getDate() + '日'; };
+            return '夜宿 · ' + f(a) + ' 晚抵达 · ' + f(b) + ' 出发';
+        } catch (e) { return '夜宿点'; }
+    }
+    /* 站点/规划的按天标注 → 显示层编号（逆行时天序反排） */
+    function dayTagOf(km) {
+        var id = dayOf(km);
+        var disp = currentDisp();
+        for (var i = 0; i < disp.length; i++) if (origOf(disp[i]).id === id) return 'D' + (i + 1);
+        return 'D' + id;
+    }
+    function setRouteDir(dir) {
+        routeDir = (dir < 0) ? -1 : 1;
+        if (typeof Edit !== 'undefined' && Edit.overlay) {
+            Edit.overlay.meta = Edit.overlay.meta || {};
+            Edit.overlay.meta.dir = routeDir;
+            try { if (typeof editSave === 'function') editSave(); } catch (e) {}   // 草稿标脏（edit.js 运行时加载）
+        }
+        renderAll();
+    }
+
+    function escapeHtml2(t) {
+        return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        });
+    }
+
     function renderAll() {
         // 清掉旧线
         dayLines.forEach(function (pl) { if (pl) pl.setMap(null); });
@@ -553,33 +614,63 @@
         var mergedIds = (typeof Edit !== 'undefined' && Edit.overlay && Edit.overlay.meta &&
             Array.isArray(Edit.overlay.meta.merged)) ? Edit.overlay.meta.merged : [];
         var visibleDays = DAYS.filter(function (d) { return mergedIds.indexOf(d.id) < 0; });
+        /* S33 逆行：显示层 = 可见天反排 + 镜像（仅主出发地视角；overlay 保持原口径） */
+        if (typeof Edit !== 'undefined' && Edit.overlay && Edit.overlay.meta && Edit.overlay.meta.dir === -1) routeDir = -1;
+        if (start !== STARTS[0].id) routeDir = 1;   // 第二出发地视角不镜像（口径保守）
+        var disp = currentDisp();
         document.body.classList.toggle('has-dep', !!ROUTE_META.departureDate);
-        visibleDays.forEach(function (d, vi) {
+        var loopRt = isLoopRoute();
+        var startNodeName = ((STARTS[0].head && STARTS[0].head.n) || STARTS[0].name);
+        disp.forEach(function (dd, vi) {
+            var d = origOf(dd);   // 编辑/归属一律落原对象；显示用 dd（镜像时 altKm/path 已换）
             var li = document.createElement('li');
-            var rest = !d.altKm || (d.altKm[1] - d.altKm[0]) < 1;   // 切空/无区间 = 休整（显示占位，不消失）
+            li.className = 'ch-item';
+            var rest = !dd.altKm || (dd.altKm[1] - dd.altKm[0]) < 1;   // 切空/无区间 = 休整占位
             if (rest) li.classList.add('rest');
-            li.title = d.energy;
-            var tag = 'D' + (vi + 1);   // 连续编号（显示层，按可见序列）
+            li.title = dd.energy;
+            var tag = 'D' + (vi + 1);   // 连续编号（显示层序；逆行自动反排）
             if (ROUTE_META.departureDate) {
                 var dep = new Date(ROUTE_META.departureDate + 'T00:00:00');
-                dep.setDate(dep.getDate() + vi);   // 第 vi 张可见卡 = 出发 + vi 天（含休整顺延）
+                dep.setDate(dep.getDate() + vi);
                 tag += ' · ' + (dep.getMonth() + 1) + '月' + dep.getDate() + '日 周' +
                     '日一二三四五六'.charAt(dep.getDay());
             }
             if (rest) tag += ' · 休整';
-            /* S28 新层级：第一行 = 起点 → 终点（最大字号、全名不截断）；日期+里程是小号次行；
-               备注再次行；途经 chips 保持。点击卡片其余区域仍是聚焦飞行，点文字就地编辑（edit.js 捕获）。 */
-            var noteTxt = rest ? '休整占位 · 在「途经点」里归点可复活，或并入前一天'
-                : d.note + (d.stay ? ' · 住' + d.stay : '');
-            li.innerHTML = '<span class="day-col">' +
+            /* 起点节点（列表最顶） */
+            var pre = '';
+            if (vi === 0) {
+                pre = '<div class="ch-node ch-start" data-node="start">' +
+                    '<span class="ch-node-dot"></span>' +
+                    '<div class="ch-node-tx"><b>' + escapeHtml2(startNodeName) + '</b>' +
+                    '<span>起点' + (ROUTE_META.departureDate ? ' · ' + (function () { var a0 = new Date(ROUTE_META.departureDate + 'T00:00:00'); return (a0.getMonth() + 1) + '月' + a0.getDate() + '日'; })() + ' 出发' : '') + '</span></div></div>';
+            }
+            var noteTxt = rest ? '休整占位 · 链上点「＋」拆分，或并回前后段'
+                : dd.note + (dd.stay ? ' · 住' + dd.stay : '');
+            var card = '<div class="ch-card' + (rest ? ' rest' : '') + '">' +
                 '<span class="day-top"><span class="day-tag">' + tag + '</span>' +
-                '<span class="day-km">' + (rest ? '—' : (d.km ? d.km + 'km' : '—')) + '</span></span>' +
-                '<span class="day-title">' + d.title + '</span>' +
+                '<span class="day-km">' + (rest ? '—' : (dd.km ? dd.km + 'km' : '—')) + '</span></span>' +
+                '<span class="day-title">' + dd.title + '</span>' +
                 '<span class="day-note">' + noteTxt + '</span>' +
-                dayPtsHTML(d, DAYS.indexOf(d), supEv, supFuel) +
+                dayPtsHTML(dd, DAYS.indexOf(d), supEv, supFuel) +
                 '<span class="et-chips">' + ((typeof wpChips === 'function') ? wpChips(d, true) : '') + '</span>' +
-                '</span>';   // S32：移除 sparkline（产品拍板），从→到占满行宽
-            li.onclick = rest ? null : (function (dayId) {   // 按 ID 在点击时解析：setStart 重建 DAYS 后旧卡闭包仍正确
+                '</div>';
+            /* 中缝「＋」= 多住一晚（拆分该链段）；节点 = 夜宿关节 */
+            var seam = rest ? '' : '<button class="ch-seam-add" data-seam="' + d.id + '" title="在此多住一晚（拆分）">＋</button>';
+            var isLast = vi === disp.length - 1;
+            var node = '';
+            if (!isLast) {
+                node = '<div class="ch-node" data-node-day="' + d.id + '">' +
+                    '<span class="ch-node-ic">' + ((typeof BRAND !== 'undefined' && BRAND.moon) || '⛺') + '</span>' +
+                    '<div class="ch-node-tx"><b>' + escapeHtml2(nodeName(dd)) + '</b><span>' + nodeDates(vi) + '</span></div></div>';
+            } else {
+                node = loopRt
+                    ? '<div class="ch-node ch-end" data-node="end"><span class="ch-node-dot"></span>' +
+                      '<div class="ch-node-tx"><b>' + escapeHtml2(startNodeName) + '</b><span>终点 · 环线闭合</span></div></div>'
+                    : '<div class="ch-node ch-end" data-node="end"><span class="ch-node-dot"></span>' +
+                      '<div class="ch-node-tx"><b>' + escapeHtml2(dayDest(dd)) + '</b><span>终点</span></div></div>';
+            }
+            li.innerHTML = pre + card + seam + node;
+            li.onclick = rest ? null : (function (dayId) {
                 return function () {
                     var idx = -1;
                     DAYS.forEach(function (x, j) { if (x.id === dayId) idx = j; });
@@ -589,13 +680,19 @@
             listEl.appendChild(li);
         });
         // 统计（全部从数据算出，不再写死 —— 写死的数会跟数据脱节）
+        /* S33 修复 4259 叠加 bug：必须按【可见/显示天】合计——merged 天虽隐藏，其 km 仍挂在
+           DAYS 里，而并入它的天已被 setSeg 延长，全量合计把同一段路算了两遍
+           （全合并时 2164 → 4259）。 */
         var totalKm = 0, driveDays = 0;
-        DAYS.forEach(function (d) {
+        disp.forEach(function (d) {
             totalKm += d.km;
             if (d.km > 0) driveDays++;
         });
         document.getElementById('chipKm').textContent = totalKm;
-        document.getElementById('chipDays').textContent = driveDays;
+        var chipDaysEl = document.getElementById('chipDays');
+        chipDaysEl.textContent = disp.length;
+        var chipDaysLb = document.getElementById('chipDaysLb');
+        if (chipDaysLb) chipDaysLb.textContent = '天 · ' + (disp.length - 1 + (loopRt ? 0 : 1)) + ' 休整点';
         var altPeak = peakAlt();
         document.getElementById('chipMaxAlt').textContent = altPeak.alt;
         document.getElementById('chipMaxAlt').title = '最高点：' + altPeak.n + '（' + altPeak.alt + 'm）';
@@ -610,6 +707,7 @@
         // S28：行程卡默认态控件（住宿点入口等，就地编辑时代替原「编辑模式」注入）
         if (typeof Edit !== 'undefined' && Edit.refreshDayControls) Edit.refreshDayControls();
         renderRestMarkers();   // S31 休整点层（住宿/午休变动后随 renderAll 重建）
+        try { renderDirSeg(); } catch (e) {}
     }
 
     /* --- 长盲区上图（S4 可信度透出）---
@@ -650,7 +748,8 @@
             var color = w.type === 'fuel' ? '#b45309' : '#dc2626';
             warnLines.push(createPolylineLayer({
                 map: map,
-                styles: { default: ({ color: color, width: 6, borderWidth: 2, borderColor: '#ffffff', lineCap: 'round' }) },
+                /* S33 减重：盲区段 大色块→红虚线警示（宽 6→3，去白描边）+ 单个胶囊标注 */
+                styles: { default: ({ color: color, width: 3, dash: [7, 5], lineCap: 'round' }) },
                 geometries: [{
                     id: 'warn' + wi, styleId: 'default',
                     paths: seg.map(function (t) { return LL(t[1], t[2]); })
@@ -903,6 +1002,19 @@
         if (typeof Edit !== 'undefined' && Edit.refreshDayControls) Edit.refreshDayControls();
     }
     renderStartButtons();
+    /* S33 逆行方向切换（仅环线 ROUTE_META.loop !== false；单线 318 不显示） */
+    function renderDirSeg() {
+        var seg = document.getElementById('dirSeg');
+        if (!seg) return;
+        if (!isLoopRoute() || STARTS.length < 1) { seg.style.display = 'none'; return; }
+        seg.style.display = 'inline-flex';   // CSS 默认 none，必须显式给值（空串会回落到 CSS 的 none）
+        seg.innerHTML = '<button data-dir="1">顺时针</button><button data-dir="-1">逆时针</button>';
+        Array.prototype.forEach.call(seg.querySelectorAll ? seg.querySelectorAll('button') : [], function (b) {
+            if (!b.addEventListener || !b.getAttribute) return;
+            if (b.classList) b.classList.toggle('on', +b.getAttribute('data-dir') === routeDir);
+            b.addEventListener('click', function () { setRouteDir(+b.getAttribute('data-dir')); });
+        });
+    }
 
     /* --- 图层开关 ---
        tgFuel / tgEv 不绑到固定的 marker 变量上：它们控制的是【renderStations() 里

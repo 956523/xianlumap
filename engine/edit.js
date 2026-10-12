@@ -279,6 +279,92 @@
             return true;
         },
         wpRowDelete: function (i) { return wpRowDelete(i); },
+        /* S33 链式：多住一晚 = 在 [a,b] 的 atKm 处拆出前半段（新克隆天，带夜宿名）。
+           overlay.split 持久；连续编号由显示层保证。起点/终点节点不可删（mergeDay 侧同理守卫）。 */
+        splitDay: function (id, name, atKm) {
+            if (STARTS.length > 1 && start !== STARTS[0].id) { editNotice(this.segViewHint()); return false; }
+            var day = editDayById(id);
+            if (!day || !day.altKm) return false;
+            var a = day.altKm[0], b = day.altKm[1];
+            if (atKm == null) {
+                /* 默认插到该天【最近的途经点】；无途经点取中点 */
+                var best = null, bd = 1e9;
+                if (typeof Wp !== 'undefined' && Wp.list) {
+                    Wp.list.forEach(function (w) {
+                        var k = routeKmOf(w.p[0], w.p[1]);
+                        if (k > a + 0.5 && k < b - 0.5 && Math.abs(k - (a + b) / 2) < bd) { bd = Math.abs(k - (a + b) / 2); best = k; }
+                    });
+                }
+                atKm = best != null ? best : +((a + b) / 2).toFixed(1);
+            }
+            atKm = Math.min(b - 1, Math.max(a + 1, +(+atKm).toFixed(1)));
+            if (b - atKm < 1 || atKm - a < 1) { editNotice('拆分后行程不足 1km，已取消。'); return false; }
+            var cloneId = 1;
+            (CORE || []).concat([TAIL]).forEach(function (d) { if (d.id >= cloneId) cloneId = d.id + 1; });
+            this.overlay.split = this.overlay.split || [];
+            this.overlay.split.push({ srcId: id, atKm: atKm, name: String(name || '中途休整').slice(0, 20), cloneId: cloneId });
+            applySplit({ srcId: id, atKm: atKm, name: name, cloneId: cloneId });
+            editSave();
+            renderAll();
+            this.refreshDayControls();
+            try { refreshEditTabs(); } catch (e) {}
+            return cloneId;
+        },
+        /* S33 天数均分：目标 n 段。先调链段数（多了并、少了拆），再均分边界（applySeg 直写 + 单轮渲染）。
+           预览走 Edit.previewEvenSplit(n)（弹层用）。 */
+        previewEvenSplit: function (n) {
+            var T = STARTS[0].totalKm;
+            n = Math.max(1, Math.round(n));
+            if (T / n < 2) return null;   // 每天至少 2km 才有意义
+            var out = [];
+            for (var i = 0; i < n; i++) {
+                var a = +(T * i / n).toFixed(1), b = +(T * (i + 1) / n).toFixed(1);
+                var nmA = nearestMarkName(a), nmB = nearestMarkName(b);
+                out.push({ a: a, b: b, km: Math.round(b - a), from: nmA, to: nmB });
+            }
+            return out;
+        },
+        evenSplit: function (n) {
+            if (STARTS.length > 1 && start !== STARTS[0].id) { editNotice(this.segViewHint()); return false; }
+            n = Math.max(1, Math.round(n));
+            var T = STARTS[0].totalKm;
+            if (T / n < 2) { editNotice('总里程 ' + T + 'km 分不出 ' + n + ' 天（每天至少 2km）。'); return false; }
+            var merged = this._mergedIds().slice();
+            var visNow = function () { return DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; }); };
+            var guard = 0;
+            while (visNow().length > n && guard++ < 60) {   // 多了：并最后一段入前段
+                var v = visNow();
+                var last = v[v.length - 1];
+                if (!last.altKm) { merged.push(last.id); continue; }   // 休整占位直接隐藏
+                var prev = null;
+                for (var j = v.length - 2; j >= 0; j--) { if (v[j].altKm) { prev = v[j]; break; } }
+                if (!prev) break;
+                if (this.setSeg(prev.id, prev.altKm[0], last.altKm[1]) === false) break;
+                merged.push(last.id);
+            }
+            while (visNow().length < n && guard++ < 120) {   // 少了：拆最长段
+                var v2 = visNow(), longest = null;
+                v2.forEach(function (d) { if (d.altKm && (!longest || (d.altKm[1] - d.altKm[0]) > (longest.altKm[1] - longest.altKm[0]))) longest = d; });
+                if (!longest || (longest.altKm[1] - longest.altKm[0]) < 4) break;   // 拆不出 ≥1km 两半
+                if (this.splitDay(longest.id, '中途休整', +((longest.altKm[0] + longest.altKm[1]) / 2).toFixed(1)) === false) break;
+            }
+            this.overlay.meta = this.overlay.meta || {};
+            this.overlay.meta.merged = merged;
+            var bounds = [];
+            for (var k = 0; k <= visNow().length - 1; k++) bounds.push(+(T * k / visNow().length).toFixed(1));
+            var v3 = visNow();
+            for (var m = 0; m < v3.length; m++) {
+                var bb = (m === v3.length - 1) ? T : bounds[m + 1];
+                this.overlay.seg = this.overlay.seg || {};
+                this.overlay.seg[v3[m].id] = { fromKm: +(T * m / v3.length).toFixed(1), toKm: +bb.toFixed(1) };
+                applySeg(v3[m].id, +(T * m / v3.length).toFixed(1), +bb.toFixed(1));
+            }
+            editSave();
+            renderAll();
+            this.refreshDayControls();
+            try { refreshEditTabs(); } catch (e) {}
+            return true;
+        },
         wpChipsHTML: function (day) { return wpChips(day); },        // S19：行程卡途经 chips（HTML）,
         /* S20 归天直改：把途经点 wpIdx 归到第 dayIdx 天。
            口径与 S19 徽标一致（当前视角 DAYS altKm 区间 + 边界就近 EPS）：
@@ -447,6 +533,11 @@
                （不是线路包出厂态——已保存的改动保留；localStorage 不动，确认弹窗写清楚） */
             if (editAsk('放弃未保存的修改，恢复到上次保存的状态？\n（上次保存之后的改动会丢失；线路出厂数据不再是此按钮的职责）', '确定') === null) return false;
             var savedOv = JSON.parse(JSON.stringify(this.saved || {}));
+            /* S33：拆分可能往 CORE 插过克隆天——整表恢复出厂（数组长度与字段都还原） */
+            if (typeof CORE !== 'undefined' && Array.isArray(CORE)) {
+                CORE.length = 0;
+                EDIT_PRISTINE.core.forEach(function (pd) { CORE.push(JSON.parse(JSON.stringify(pd))); });
+            }
             EDIT_PRISTINE.core.concat([EDIT_PRISTINE.tail]).forEach(function (pd) {
                 var day = editDayById(pd.id);
                 if (!day) return;
@@ -545,8 +636,7 @@
         refreshDayControls: function () {
             var listEl = document.getElementById('dayList');
             if (!listEl) return;
-            var merged = this._mergedIds();
-            var visible = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });   // S25：与 renderAll 同口径
+            var visible = (typeof currentDisp === 'function') ? currentDisp() : DAYS.filter(function (d) { return Edit._mergedIds().indexOf(d.id) < 0; });   // S33：显示层序（与 renderAll 同口径）
             Array.prototype.forEach.call(listEl.children, function (li, i) {
                 var day = visible[i];
                 if (!day) return;
@@ -560,10 +650,9 @@
             });
         },
         updateDayRow: function (id) {
-            var merged = this._mergedIds();
-            var visible = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });   // S25：显示序列口径
+            var visible = (typeof currentDisp === 'function') ? currentDisp() : DAYS.filter(function (d) { return Edit._mergedIds().indexOf(d.id) < 0; });   // S33：显示层序
             var i = -1;
-            visible.forEach(function (d, j) { if (d.id === id) i = j; });
+            visible.forEach(function (d, j) { if ((d.orig ? d.orig.id : d.id) === id) i = j; });
             var listEl = document.getElementById('dayList');
             if (i < 0 || !listEl || !listEl.children[i]) return;
             var li = listEl.children[i];
@@ -574,13 +663,41 @@
         }
     };
 
+    function nearestMarkName(km) {
+        var best = '', bd = 1e9;
+        EDIT_MARKS.forEach(function (mk) { var dd = Math.abs(mk.km - km); if (dd < bd) { bd = dd; best = mk.n; } });
+        return best;
+    }
     /* 分段候选：环线里程表（km 升序）。起点基准 = 主出发地（enter 时已切回）。 */
     var EDIT_MARKS = ALT_MARKS.map(function (m) { return { n: m.n, km: m.km }; })
         .sort(function (a, b) { return a.km - b.km; });
 
     /* ---------- overlay → 数据合并（启动时一次；导入编辑层时复用同一函数） ---------- */
+    /* S33 拆分重放：overlay.split = [{srcId, atKm, name, cloneId}]——克隆天插入 CORE（紧随原天）、
+       原天收窄到 [atKm,b]；clone 带 stay=夜宿名。幂等（clone 已存在则跳过）。
+       CORE 数组全局可变；reset 用 EDIT_PRISTINE 整表恢复（见 Edit.reset）。 */
+    function applySplit(s) {
+        if (!s || editDayById(s.cloneId)) return;
+        var src = editDayById(s.srcId);
+        if (!src || !src.altKm) return;
+        var a = src.altKm[0], b = src.altKm[1];
+        var atKm = Math.min(b - 1, Math.max(a + 1, +(+s.atKm).toFixed(1)));
+        var clone = JSON.parse(JSON.stringify(src));
+        clone.id = s.cloneId;
+        clone.stay = String(s.name || '中途休整').slice(0, 20);
+        var coreArr = (typeof CORE !== 'undefined') ? CORE : null;
+        if (!coreArr) return;
+        var idx = -1;
+        coreArr.forEach(function (d, i) { if (d.id === s.srcId) idx = i; });
+        if (idx < 0) return;
+        coreArr.splice(idx + 1, 0, clone);
+        applySeg(s.cloneId, a, atKm);
+        applySeg(s.srcId, atKm, b);
+        delete src.stay;   // 夜宿名归前半段（节点 = 前半段终点）
+    }
     function applyOverlay(ov) {
         if (!ov) return;
+        if (ov.split) ov.split.forEach(applySplit);
         if (ov.days) Object.keys(ov.days).forEach(function (id) { applyDayFields(+id, ov.days[id]); });
         if (ov.seg) Object.keys(ov.seg).forEach(function (id) { applySeg(+id, ov.seg[id].fromKm, ov.seg[id].toKm); });
         if (ov.marks) applyMarks(ov.marks);
@@ -624,11 +741,10 @@
 
     /* 就地编辑：点行程卡上的标题/备注/住宿 → 原位变输入框（Enter/失手保存，Esc 取消）。
        mock DOM 无 parentNode/insertBefore，直接跳过（vm 断言走 Edit.setDayField 同一提交路径）。 */
-    function visibleDayAt(idx) {
+    function visibleDayAt(idx) {   // 显示层（S33：逆行时 = 镜像序列；返回显示对象，编辑经 Edit API 落原对象）
         if (idx < 0) return null;
-        var merged = Edit._mergedIds();
-        var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
-        return vis[idx] || null;
+        var disp = (typeof currentDisp === 'function') ? currentDisp() : DAYS.filter(function (d) { return Edit._mergedIds().indexOf(d.id) < 0; });
+        return disp[idx] || null;
     }
     function openInlineField(li, day, field) {
         var span = li.querySelector ? li.querySelector('.day-' + field) : null;
@@ -663,6 +779,11 @@
         return true;
     }
 
+    /* 跨 IIFE 桥：buildPanelChrome（链 UI/头部按钮）→ buildWaypointPanel（添加对话框） */
+    function openStopDlg(lng, lat, name) {
+        try { if (window.__wpStop && typeof window.__wpStop.open === 'function') window.__wpStop.open(lng, lat, name); } catch (e) {}
+    }
+
     (function buildPanelChrome() {
         var panel = document.getElementById('panel');
         if (!panel) return;
@@ -688,34 +809,43 @@
         /* 2) 途经点管理区（S32 统一行程视图：收进列表顶部，dayList 之前） */
         var wpSec = document.createElement('div');
         wpSec.id = 'wpSec';
-        wpSec.className = 'wp-sec-box';
+        wpSec.className = 'wp-sec-box slim';
+        /* S33：黄色盒霸屏整改——收进可折叠管理区；搜索/类型选择移进「添加停靠点」对话框 */
         wpSec.innerHTML =
-            '<div class="wp-head">➕ 途经点<span class="wp-badge" id="wpBadge">待保存生效</span></div>' +
-            '<div class="wp-note">搜索、地图点选，或<b>长按地图任意位置</b>添加停靠点（类型：打卡/休整）。每行 [Dn] 是它属于的第几天——' +
-            '<b>拖动天卡里的点芯片到另一天卡也能归天</b>；改动进草稿，点上方「保存修改」存本机，「保存我的版本」重新生成线路后才画进地图。</div>' +
-            '<div class="wp-kindseg" id="wpKindSeg">' +
-            '<span class="wp-kindseg-lb">加点类型</span>' +
-            '<button class="on" data-wk="spot">⚑ 打卡</button>' +
-            '<button data-wk="rest">☾ 休整</button>' +
-            '</div>' +
+            '<button class="wp-sec-t" id="wpSecT" type="button">途经点管理（<span id="wpCount">0</span>）<span class="wp-badge" id="wpBadge">待保存生效</span><span class="wp-sec-ar">▾</span></button>' +
+            '<div class="wp-sec-body" id="wpSecBody" style="display:none">' +
+            '<div class="wp-note">行内：☰ 拖动排序 · 右键/左滑删除 · [Dn] 归天（拖天卡芯片也能归天）；' +
+            '地图：📍 点选 / 长按。添加走头部「＋ 添加」（选类型 ⚑打卡/⛺休整）。改动进草稿，「保存修改」存本机。</div>' +
             '<div id="wpList"></div>' +
-            '<input class="wp-search" id="wpSearch" placeholder="搜索地名（高德输入提示）…" autocomplete="off">' +
             '<div class="wp-row">' +
             '<button class="edit-mini" id="wpPick">📍 地图点选</button>' +
             '<button class="edit-mini" id="wpGuideBtn">维护指南</button>' +
             '</div>' +
-            '<button id="wpGen" class="et-gen">💾 保存我的版本（导出 + 重新生成线路）</button>';
+            '<button id="wpGen" class="et-gen">💾 保存我的版本（导出 + 重新生成线路）</button></div>';
         var dayListEl = document.getElementById('dayList');
         if (dayListEl && dayListEl.parentNode && typeof dayListEl.parentNode.insertBefore === 'function') {
             dayListEl.parentNode.insertBefore(wpSec, dayListEl);
         } else if (panel.appendChild) panel.appendChild(wpSec);
-        /* S29 加点类型状态（默认打卡；搜索/点选/长按都读它） */
-        var kindSeg = document.getElementById('wpKindSeg');
-        if (kindSeg && kindSeg.addEventListener) {
-            Array.prototype.forEach.call(kindSeg.querySelectorAll ? kindSeg.querySelectorAll('button') : [], function (b) {
-                if (!b.getAttribute) return;
-                b.addEventListener('click', function () { setAddKind(b.getAttribute('data-wk')); });
-            });
+        var wpSecT = document.getElementById('wpSecT');
+        if (wpSecT) wpSecT.onclick = function () {
+            var b = document.getElementById('wpSecBody');
+            var open = b && b.style.display === 'none';
+            if (b) b.style.display = open ? '' : 'none';
+            wpSecT.setAttribute && wpSecT.setAttribute('data-open', open ? '1' : '');
+            var ar = wpSecT.querySelector ? wpSecT.querySelector('.wp-sec-ar') : null;
+            if (ar) ar.textContent = open ? '▴' : '▾';
+        };
+        /* 头部「＋ 添加」「分享」按钮 */
+        var addBtn = document.getElementById('btnAddWp');
+        if (addBtn) addBtn.onclick = function () { openStopDlg(null, null, ''); };
+        var shareBtn = document.getElementById('btnShare');
+        if (shareBtn) shareBtn.onclick = buildSharePng;
+        /* 「N 天」chip 可点：天数均分弹层 */
+        var chipDaysEl = document.getElementById('chipDays');
+        if (chipDaysEl && chipDaysEl.parentNode) {
+            chipDaysEl.parentNode.style.cursor = 'pointer';
+            chipDaysEl.parentNode.title = '点我调整天数（自动均分，链上/剖面可再微调）';
+            chipDaysEl.parentNode.onclick = function () { openDaysDialog(); };
         }
         /* 3) ⋯ 更多设置页（S32 大扫除：只留云同步/恢复原始/导入编辑层/显示续航设置/帮助/关于；
                地名改名迁到 ⚑ 打卡行成员长按菜单；副标题/通知条编辑撤销） */
@@ -824,10 +954,22 @@
         function closePtMenu() { var m = document.getElementById('ptMenu'); if (m && m.remove) m.remove(); }
         function openPtMenu(clientX, clientY, memberEl) {
             closePtMenu();
+            /* S33 设计稿第二节：链段内点成员菜单补「改为打卡/休整」（当前类型置灰）。
+               仅途经点（data-wp）可改类型；SPOTS 本质是打卡点，不显示类型项。 */
+            var wpIdx = (memberEl.getAttribute && memberEl.getAttribute('data-wp') != null) ? +memberEl.getAttribute('data-wp') : -1;
+            if (wpIdx < 0 && memberEl.getAttribute && memberEl.getAttribute('data-wk') != null) {
+                /* chips 带的是 data-wk（key）——反查索引 */
+                var wk = memberEl.getAttribute('data-wk');
+                Wp.list.forEach(function (w, j) { if (w.key === wk) wpIdx = j; });
+            }
+            var curKind = (wpIdx >= 0 && Wp.list[wpIdx]) ? (Wp.list[wpIdx].kind === 'rest' ? 'rest' : 'spot') : null;
             var m = document.createElement('div');
             m.id = 'ptMenu';
             m.className = 'pt-menu';
-            m.innerHTML = '<button data-a="fly">🧭 飞到地图</button><button data-a="rename">✎ 改名</button>';
+            m.innerHTML = '<button data-a="fly">🧭 飞到地图</button><button data-a="rename">✎ 改名</button>' +
+                (wpIdx >= 0 ?
+                    '<button data-a="kind-spot"' + (curKind === 'spot' ? ' disabled class="cur"' : '') + '>⚑ 改为打卡点</button>' +
+                    '<button data-a="kind-rest"' + (curKind === 'rest' ? ' disabled class="cur"' : '') + '>⛺ 改为休整点</button>' : '');
             if (document.body && document.body.appendChild) document.body.appendChild(m);
             try {
                 m.style.left = Math.max(8, Math.min(clientX, window.innerWidth - 150)) + 'px';
@@ -839,7 +981,8 @@
                     var a = b.getAttribute('data-a');
                     closePtMenu();
                     if (a === 'fly') flyPtMember(memberEl);
-                    else renamePtMember(memberEl);
+                    else if (a === 'rename') renamePtMember(memberEl);
+                    else if (a === 'kind-spot' || a === 'kind-rest') Edit.setWpKind(wpIdx, a === 'kind-rest' ? 'rest' : 'spot');
                 });
             });
             setTimeout(function () {
@@ -848,6 +991,225 @@
                 } catch (e) {}
             }, 10);
         }
+        /* 改途经点类型（点成员菜单「改为打卡/休整」共用 API）：kind 落草稿 + 全链刷新
+           （途经点列表/行程卡三类行与 chips/徽标/地图休整层一并更新） */
+        Edit.setWpKind = function (wpIdx, kind) {
+            var w = (typeof Wp !== 'undefined' && Wp.list) ? Wp.list[wpIdx] : null;
+            if (!w) return false;
+            var nk = (kind === 'rest') ? 'rest' : 'spot';
+            if ((w.kind === 'rest' ? 'rest' : 'spot') === nk) return true;
+            w.kind = nk;
+            wpSave(Wp.list);
+            if (Wp.renderList) Wp.renderList();
+            try { refreshEditTabs(); } catch (e) {}        // chips + 三类行 + 徽标
+            try { if (typeof renderRestMarkers === 'function') renderRestMarkers(); } catch (e) {}   // 地图休整层
+            try { etToast('已改为' + (nk === 'rest' ? '休整点' : '打卡点') + '：' + w.n); } catch (e) {}
+            return true;
+        };
+        /* ============ S33 分享图 PNG（链式结构画布绘制） ============ */
+        function buildSharePng() {
+            try {
+                var cv = document.createElement('canvas');
+                if (!cv.getContext) { editNotice('当前环境不支持 canvas，无法生成分享图。'); return; }
+                var disp = (typeof currentDisp === 'function') ? currentDisp() : [];
+                var W = 750, pad = 48, y = 0;
+                var rowH = 64;
+                var H = 260 + disp.length * rowH + 120;
+                cv.width = W; cv.height = H;
+                var ctx = cv.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+                ctx.fillStyle = '#0f172a';
+                ctx.font = '600 30px "PingFang SC", system-ui, sans-serif';
+                ctx.fillText('去旷野，见山海', pad, y += 52);
+                ctx.font = '600 40px "PingFang SC", system-ui, sans-serif';
+                ctx.fillText((typeof BRAND !== 'undefined' && BRAND.stripEmoji ? BRAND.stripEmoji(ROUTE_META.name) : ROUTE_META.name), pad, y += 58);
+                ctx.fillStyle = '#64748b';
+                ctx.font = '26px "PingFang SC", system-ui, sans-serif';
+                var info = (ROUTE_META.departureDate ? ROUTE_META.departureDate.slice(5).replace('-', '月') + '日出发 · ' : '') +
+                    disp.length + ' 天 · ' + STARTS[0].totalKm + 'km';
+                ctx.fillText(info, pad, y += 40);
+                y += 30;
+                ctx.fillStyle = '#0f766e';
+                ctx.beginPath(); ctx.arc(pad + 8, y - 8, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#0f172a'; ctx.font = '600 26px "PingFang SC", system-ui, sans-serif';
+                ctx.fillText(((STARTS[0].head && STARTS[0].head.n) || STARTS[0].name), pad + 30, y);
+                disp.forEach(function (dd, i) {
+                    var d = dd.orig ? dd.orig : dd;
+                    y += rowH;
+                    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(pad + 8, y - rowH + 8); ctx.lineTo(pad + 8, y + 8); ctx.stroke();
+                    ctx.fillStyle = '#334155'; ctx.font = '24px "PingFang SC", system-ui, sans-serif';
+                    ctx.fillText('D' + (i + 1) + ' · ' + dd.km + 'km', pad + 30, y - 18);
+                    ctx.fillStyle = '#94a3b8'; ctx.font = '22px "PingFang SC", system-ui, sans-serif';
+                    ctx.fillText(String(dd.title).slice(0, 24), pad + 30, y + 10);
+                    ctx.fillStyle = '#b45309'; ctx.font = '600 24px "PingFang SC", system-ui, sans-serif';
+                    ctx.fillText('⛺ ' + String(dd.stay || (dd.title.split('→').pop() || '').trim()).slice(0, 16), pad + 30, y + 40);
+                });
+                y += rowH;
+                ctx.fillStyle = '#0f766e';
+                ctx.beginPath(); ctx.arc(pad + 8, y - 18, 8, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#0f172a'; ctx.font = '600 26px "PingFang SC", system-ui, sans-serif';
+                var loopRt2 = !(ROUTE_META.loop === false);
+                ctx.fillText(loopRt2 ? ((STARTS[0].head && STARTS[0].head.n) || STARTS[0].name) + '（环线闭合）' : '终点', pad + 30, y - 8);
+                ctx.fillStyle = '#94a3b8'; ctx.font = '22px "PingFang SC", system-ui, sans-serif';
+                var peak = (typeof peakAlt === 'function') ? peakAlt() : { alt: '-' };
+                var maxGapTxt = '';
+                try {
+                    if (typeof STATION_DATA !== 'undefined' && STATION_DATA && STATION_DATA.ev && STATION_DATA.ev.length && typeof stationsAll === 'function') {
+                        var stops = stationsAll('ev'), mg = 0, pv = 0;
+                        stops.forEach(function (s) { mg = Math.max(mg, s.km - pv); pv = s.km; });
+                        mg = Math.max(mg, (typeof curTotal === 'function' ? curTotal() : 0) - pv);
+                        maxGapTxt = ' · 最长无充 ' + Math.round(mg) + 'km';
+                    }
+                } catch (e) {}
+                ctx.fillText('xianlumap.ok.kimi.link · 最高 ' + peak.alt + 'm' + maxGapTxt, pad, H - 42);
+                var a = document.createElement('a');
+                a.href = cv.toDataURL('image/png');
+                a.download = 'share-' + ROUTE_META.key + '.png';
+                if (document.body && document.body.appendChild) { document.body.appendChild(a); a.click(); a.remove(); }
+                editNotice('分享图已生成下载（链式行程结构）。');
+            } catch (e) {
+                editNotice('分享图生成失败：' + (e && e.message ? e.message.slice(0, 60) : '未知'));
+            }
+        }
+
+        /* ============ S33 链对话框族 ============ */
+        function dayByIdAny(id) {
+            var hit = null;
+            DAYS.forEach(function (d) { if (d.id === id) hit = d; });
+            return hit;
+        }
+        function flyToNode(nodeEl) {
+            var dayId = nodeEl.getAttribute && nodeEl.getAttribute('data-node-day');
+            if (dayId == null) return;
+            var d = dayByIdAny(+dayId);
+            if (d && d.path && d.path.length) {
+                var p = d.path[d.path.length - 1];
+                try { map.setZoomAndCenter(11, [p[1], p[0]]); } catch (e) {}
+            }
+        }
+        function closeChainDlg() {
+            ['splitDlg', 'nodeMenu', 'daysDlg'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el && el.remove) el.remove();
+            });
+        }
+        /* 中缝「＋」拆分弹层：命名（预填该天最近途经点）→ splitDay */
+        function openSplitDialog(dayId) {
+            closeChainDlg();
+            var d = dayByIdAny(dayId);
+            if (!d || !d.altKm) return;
+            var a = d.altKm[0], b = d.altKm[1];
+            var guess = '', gKm = null, bd = 1e9;
+            Wp.list.forEach(function (w) {
+                var k = routeKmOf(w.p[0], w.p[1]);
+                if (k > a + 0.5 && k < b - 0.5 && Math.abs(k - (a + b) / 2) < bd) { bd = Math.abs(k - (a + b) / 2); guess = w.n; gKm = k; }
+            });
+            var m = document.createElement('div');
+            m.id = 'splitDlg';
+            m.className = 'chain-dlg';
+            m.innerHTML = '<div class="cd-t">在此多住一晚（拆分）</div>' +
+                '<div class="cd-sub">「' + escapeHtml(d.title) + '」将拆成两天' + (gKm != null ? '，拆分点最近途经点：' + escapeHtml(guess) : '，拆分点取中点 km' + ((a + b) / 2).toFixed(1)) + '</div>' +
+                '<input type="text" id="cdName" maxlength="20" placeholder="夜宿名（如：茶卡镇）" value="' + escapeHtml(guess) + '">' +
+                '<div class="cd-row"><button class="edit-mini" id="cdOk">拆分</button>' +
+                '<button class="edit-mini" id="cdNo">取消</button></div>';
+            if (document.body && document.body.appendChild) document.body.appendChild(m);
+            var okB = document.getElementById('cdOk');
+            if (okB) okB.onclick = function () {
+                var nm = document.getElementById('cdName');
+                var name = (nm && String(nm.value).trim()) ? String(nm.value).trim() : (guess || '中途休整');
+                closeChainDlg();
+                var nid = Edit.splitDay(dayId, name, gKm);
+                if (nid !== false) { try { etToast('已拆分：' + name + '（多住一晚）'); } catch (e) {} }
+            };
+            var noB = document.getElementById('cdNo');
+            if (noB) noB.onclick = closeChainDlg;
+        }
+        /* 节点长按菜单：飞到/改名/在此后多住一晚/删除休整点（合并后段） */
+        function openNodeMenu(x, y, dayId) {
+            closeChainDlg();
+            var d = dayByIdAny(dayId);
+            if (!d) return;
+            var m = document.createElement('div');
+            m.id = 'nodeMenu';
+            m.className = 'pt-menu';
+            m.innerHTML = '<button data-a="fly">🧭 飞到地图</button>' +
+                '<button data-a="rename">✎ 改名</button>' +
+                '<button data-a="split">＋ 在此后多住一晚（拆分）</button>' +
+                '<button data-a="del">✕ 删除休整点（前后两段合并成一天）</button>';
+            if (document.body && document.body.appendChild) document.body.appendChild(m);
+            try {
+                m.style.left = Math.max(8, Math.min(x, window.innerWidth - 260)) + 'px';
+                m.style.top = Math.max(60, y - 10) + 'px';
+            } catch (e) {}
+            Array.prototype.forEach.call(m.querySelectorAll ? m.querySelectorAll('button') : [], function (b) {
+                if (!b.addEventListener || !b.getAttribute) return;
+                b.addEventListener('click', function () {
+                    var a = b.getAttribute('data-a');
+                    closeChainDlg();
+                    if (a === 'fly') {
+                        if (d.path && d.path.length) { var p = d.path[d.path.length - 1]; try { map.setZoomAndCenter(11, [p[1], p[0]]); } catch (e) {} }
+                    } else if (a === 'rename') {
+                        var v = editAsk('夜宿名（写在该天住宿上）', d.stay || '');
+                        if (v !== null) Edit.setDayField(d.id, 'stay', String(v).trim());
+                    } else if (a === 'split') {
+                        openSplitDialog(d.id);
+                    } else if (a === 'del') {
+                        /* 删除节点 = 后一天并入该天（mergeDay 现成语义） */
+                        var merged = Edit._mergedIds();
+                        var vis = (typeof currentDisp === 'function') ? currentDisp() : DAYS;
+                        var next = null;
+                        for (var i = 0; i < vis.length; i++) {
+                            var oi = vis[i].orig ? vis[i].orig : vis[i];
+                            if (oi.id === dayId) { for (var j = i + 1; j < vis.length; j++) { var oj = vis[j].orig ? vis[j].orig : vis[j]; if (merged.indexOf(oj.id) < 0 && oj.altKm) { next = oj; break; } } break; }
+                        }
+                        if (!next) { editNotice('终点节点不可删除。'); return; }
+                        if (Edit.mergeDay(next.id)) { try { etToast('已合并：' + next.title); } catch (e) {} }
+                    }
+                });
+            });
+            setTimeout(function () {
+                try { document.addEventListener('click', function h() { closeChainDlg(); document.removeEventListener('click', h); }); } catch (e) {}
+            }, 10);
+        }
+        /* 「10 天」chip 弹层：输入目标天数 → 均分预览 → 应用 */
+        function openDaysDialog() {
+            closeChainDlg();
+            var disp = (typeof currentDisp === 'function') ? currentDisp() : [];
+            var m = document.createElement('div');
+            m.id = 'daysDlg';
+            m.className = 'chain-dlg';
+            m.innerHTML = '<div class="cd-t">调整天数</div>' +
+                '<div class="cd-sub">当前 ' + disp.length + ' 段 · 总里程 ' + STARTS[0].totalKm + ' km</div>' +
+                '<div class="cd-row"><span>天数</span><input type="number" id="cdDays" min="1" max="60" value="' + disp.length + '" style="width:70px">' +
+                '<button class="edit-mini" id="cdPrev">预览</button></div>' +
+                '<div class="cd-prev" id="cdPrevBox"></div>' +
+                '<div class="cd-row"><button class="edit-mini" id="cdApply">应用（均分，链上/剖面可再微调）</button>' +
+                '<button class="edit-mini" id="cdCancel">取消</button></div>';
+            if (document.body && document.body.appendChild) document.body.appendChild(m);
+            function doPreview() {
+                var n = +((document.getElementById('cdDays') || {}).value || disp.length);
+                var rows = Edit.previewEvenSplit(n);
+                var box = document.getElementById('cdPrevBox');
+                if (!box) return;
+                if (!rows) { box.innerHTML = '<div class="cd-sub">总里程分不出 ' + n + ' 天（每天至少 2km）</div>'; return; }
+                box.innerHTML = rows.map(function (r, i) {
+                    return '<div class="cd-prevrow">D' + (i + 1) + ' ' + escapeHtml(r.from) + ' → ' + escapeHtml(r.to) + '（' + r.km + 'km）</div>';
+                }).join('') + '<div class="cd-sub">共 ' + rows.length + ' 天 · 日均 ' + Math.round(STARTS[0].totalKm / rows.length) + 'km</div>';
+            }
+            var prevB = document.getElementById('cdPrev');
+            if (prevB) prevB.onclick = doPreview;
+            doPreview();
+            var applyB = document.getElementById('cdApply');
+            if (applyB) applyB.onclick = function () {
+                var n = +((document.getElementById('cdDays') || {}).value || disp.length);
+                closeChainDlg();
+                if (Edit.evenSplit(n)) { try { etToast('已均分为 ' + n + ' 天（链上可再微调）'); } catch (e) {} }
+            };
+            var cancelB = document.getElementById('cdCancel');
+            if (cancelB) cancelB.onclick = closeChainDlg;
+        }
+
         /* 行程卡交互（捕获阶段拦截，避免触发 focusDay）：
            文字 → 就地输入框；点成员单击 → 飞行；长按/右键 → 菜单；拖芯片 → 归天 */
         var listEl = document.getElementById('dayList');
@@ -862,31 +1224,67 @@
                 Array.prototype.forEach.call(listEl.children, function (c, j) { if (c === li) idx = j; });
                 var day = visibleDayAt(idx);
                 if (!day) return;
+                if (t.className === 'ch-seam-add') {
+                    /* S33 中缝「＋」= 多住一晚：弹层命名（预填该天最近途经点）→ 拆分 */
+                    e.stopPropagation();
+                    openSplitDialog(+t.getAttribute('data-seam'));
+                    return;
+                }
+                if (t.className === 'ch-node' || (t.className && t.className.indexOf('ch-node') === 0)) {
+                    /* 节点点击 = 飞到该夜宿点（位置 = 前段终点） */
+                    e.stopPropagation();
+                    flyToNode(t);
+                    return;
+                }
                 if (t.className === 'day-title') { e.stopPropagation(); openInlineField(li, day, 'title'); }
                 else if (t.className === 'day-note') { e.stopPropagation(); openInlineField(li, day, 'note'); }
                 else if (t.className === 'day-stay') { e.stopPropagation(); openInlineField(li, day, 'stay'); }
                 else if (t.className === 'pt-m') { e.stopPropagation(); flyPtMember(t); }
                 else if (t.className === 'et-chip add' || (t.className.indexOf('et-chip') === 0 && t.getAttribute && t.getAttribute('data-add'))) {
-                    /* S32「＋添加」入口：聚焦途经点区搜索框 */
+                    /* S33「＋添加」= 打开添加对话框（搜索/选类型） */
                     e.stopPropagation();
-                    try { focusWpSec(); } catch (er) {}
+                    openStopDlg(null, null, '');
                 }
             }, true);
             /* 右键菜单（桌面） */
             listEl.addEventListener('contextmenu', function (e) {
                 var t = e.target;
+                var node = t;
+                while (node && !(node.className && String(node.className).indexOf('ch-node') === 0)) node = node.parentNode;
+                if (node && node.getAttribute && node.getAttribute('data-node-day') != null) {
+                    if (e.preventDefault) e.preventDefault();
+                    e.stopPropagation();
+                    openNodeMenu(e.clientX, e.clientY, +node.getAttribute('data-node-day'));
+                    return;
+                }
+                /* S33 补：chips 也是点成员（含 data-wp 的归天芯片），右键同样出成员菜单 */
+                var chip = t;
+                while (chip && !(chip.className && String(chip.className).indexOf('et-chip') === 0 && chip.getAttribute && chip.getAttribute('data-wk') != null)) chip = chip.parentNode;
+                if (e.preventDefault) e.preventDefault();
+                e.stopPropagation();
+                if (chip) { openPtMenu(e.clientX, e.clientY, chip); return; }
                 if (!t || t.className !== 'pt-m') return;
                 if (e.preventDefault) e.preventDefault();
                 e.stopPropagation();
                 openPtMenu(e.clientX, e.clientY, t);
             }, true);
             /* 触屏长按 500ms → 菜单（move/end 取消） */
-            var lpMenuTimer = null, lpMenuEl = null;
+            var lpMenuTimer = null, lpMenuEl = null, lpNodeDay = null;
             listEl.addEventListener('touchstart', function (e) {
                 var t = e.target;
-                if (!t || t.className !== 'pt-m') return;
+                var node = t;
+                while (node && !(node.className && String(node.className).indexOf('ch-node') === 0)) node = node.parentNode;
                 var tt = e.touches && e.touches[0];
                 if (!tt) return;
+                if (node && node.getAttribute && node.getAttribute('data-node-day') != null) {
+                    lpNodeDay = +node.getAttribute('data-node-day');
+                    lpMenuTimer = setTimeout(function () {
+                        lpMenuTimer = null;
+                        openNodeMenu(tt.clientX, tt.clientY, lpNodeDay);
+                    }, 500);
+                    return;
+                }
+                if (!t || t.className !== 'pt-m') return;
                 lpMenuEl = t;
                 lpMenuTimer = setTimeout(function () {
                     lpMenuTimer = null;
@@ -964,11 +1362,10 @@
         return html;
     }
     function refreshChips() {
-        /* S29：chips 与三类点分组行都按卡刷新（途经点/住宿变动后立即反映，无需整卡重建） */
+        /* S29：chips 与三类点分组行都按卡刷新；S33：按显示层序（currentDisp）对卡 */
         var listEl = document.getElementById('dayList');
         if (!listEl || !listEl.children) return;
-        var merged = Edit._mergedIds();
-        var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
+        var vis = (typeof currentDisp === 'function') ? currentDisp() : DAYS.filter(function (d) { return Edit._mergedIds().indexOf(d.id) < 0; });
         var supEv = [], supFuel = [];
         if (typeof dayPtsHTML === 'function' && typeof stationsAll === 'function') {
             try {
@@ -979,12 +1376,13 @@
         Array.prototype.forEach.call(listEl.children, function (li, i) {
             var day = vis[i];
             if (!day) return;
+            var oday = day.orig ? day.orig : day;   // 归属/wpChips 用原对象（wpDayIdx 是原口径）
             var box = li.querySelector ? li.querySelector('.et-chips') : null;
-            if (box) box.innerHTML = wpChips(day, true);
+            if (box) box.innerHTML = wpChips(oday, true);
             var ptsBox = li.querySelector ? li.querySelector('.day-pts') : null;
             if (ptsBox && ptsBox.parentNode && typeof ptsBox.parentNode.replaceChild === 'function' && typeof dayPtsHTML === 'function') {
                 var tmp = document.createElement('div');
-                tmp.innerHTML = dayPtsHTML(day, DAYS.indexOf(day), supEv, supFuel);
+                tmp.innerHTML = dayPtsHTML(day, DAYS.indexOf(oday), supEv, supFuel);
                 var fresh = tmp.querySelector ? tmp.querySelector('.day-pts') : null;
                 if (fresh) ptsBox.parentNode.replaceChild(fresh, ptsBox);
                 else if (typeof ptsBox.remove === 'function') ptsBox.remove();
@@ -1074,7 +1472,9 @@
     }
     var Wp = {
         list: (wpLoad() || {}).list || wpBaseList(),
-        dirty: function () { return !!wpLoad(); },
+        dirty: function () {   // S32 草稿语义：任何未保存改动都算脏（wp localStorage 只在 commit 时写）
+            return (typeof Edit !== 'undefined' && Edit.isDirty) ? Edit.isDirty() : !!wpLoad();
+        },
         add: function (name, gcjLat, gcjLng, kind) {   // S29：kind='rest' 休整点，缺省 'spot' 打卡点
             var p = WP_INPUT_WGS ? gcj2wgsB(gcjLat, gcjLng) : [gcjLat, gcjLng];
             var key = 'wp' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
@@ -1167,8 +1567,8 @@
     function refreshWpBadge() {
         var b = document.getElementById('btnEdit');
         var n = Wp.dirty() ? Wp.list.length : 0;
-        var tb = document.getElementById('wpTabBadge');   // S28：Tab 上的待保存计数（编辑按钮已退役）
-        if (tb) { tb.style.display = n ? '' : 'none'; tb.textContent = String(n); }
+        var cnt = document.getElementById('wpCount');   // S33：折叠管理区计数
+        if (cnt) cnt.textContent = String(Wp.list.length);
         try { refreshEditTabs(); } catch (e) {}   // S19：途经点增删 → 行程 chips / [Dn] 徽标联动
     }
     (function buildWaypointPanel() {
@@ -1349,28 +1749,27 @@
                 var row = document.createElement('div');
                 row.className = 'et-wp';
                 /* S23 行结构：左滑删除 underlay + body 包裹层（桌面视觉不变，移动手势挂 body） */
+                /* S33 桌面手势统一：撤 ↑↓✕ 小钮（与移动端同构）——☰ DnD 排序 + 右键删除 + [Dn] 归天；
+                   接线一律按 class 选择器（不再按 querySelectorAll 下标，display:none 的 delunder 曾把下标顶偏） */
                 row.innerHTML = '<button class="et-wp-delunder">删除</button>' +
                     '<div class="et-wp-body">' +
                     '<span class="grip" title="拖动排序（桌面 HTML5 拖，触屏长按 ☰ 拖动）">☰</span>' +
                     (w.kind === 'rest' ? '<span class="et-wp-kind" title="休整点">☾</span>' : '') +
                     '<span class="t" title="' + escapeHtml(w.n) + '（悬停看全名）">' + escapeHtml(w.n) + '</span>' +
-                    '<button class="et-dayno" title="点我改归属天">' + wpDayBadge(w) + '</button>' +
-                    '<button class="mv" title="上移">↑</button><button class="mv" title="下移">↓</button>' +
-                    '<button class="del" title="删除">✕</button></div>';
-                var bs = row.querySelectorAll('button');
-                if (!bs.length) { el.appendChild(row); return; }   // mock DOM 无 querySelectorAll 结果
-                /* 接线顺序：徽标也是 <button>，先接 ↑↓✕（桌面的操作列），再接徽标（S20 归天） */
-                bs[0].onclick = function () { Wp.move(i, -1); renderList(); };
-                bs[1].onclick = function () { Wp.move(i, 1); renderList(); };
-                bs[2].onclick = function () {
-                    if (editAsk('删除途经点「' + w.n + '」？', '确定') !== null) { Wp.remove(i); renderList(); }
-                };
+                    '<button class="et-dayno" title="点我改归属天">' + wpDayBadge(w) + '</button></div>';
                 var badgeBtn = row.querySelector ? row.querySelector('.et-dayno') : null;
                 if (badgeBtn && typeof badgeBtn.onclick !== 'undefined') {
                     badgeBtn.onclick = function (ev) {
                         if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
                         openDayPick(i);
                     };
+                }
+                var bodyEl = row.querySelector ? row.querySelector('.et-wp-body') : null;
+                if (bodyEl && bodyEl.addEventListener) {
+                    bodyEl.addEventListener('contextmenu', function (ev) {
+                        if (ev.preventDefault) ev.preventDefault();
+                        if (editAsk('删除途经点「' + w.n + '」？', '确定') !== null) { Wp.remove(i); renderList(); }
+                    });
                 }
                 /* 桌面拖动排序（HTML5 DnD；触屏走长按☰，见下） */
                 var body = row.querySelector ? row.querySelector('.et-wp-body') : null;
@@ -1399,23 +1798,7 @@
         renderList();
         Wp.renderList = renderList;
 
-        /* 搜索：高德输入提示（AMap.AutoComplete 插件；key 来自 key.local.js 模式） */
-        (function setupSearch() {
-            var input = document.getElementById('wpSearch');
-            if (!input || typeof AMap === 'undefined' || !AMap.plugin) return;
-            try {
-                AMap.plugin(['AMap.AutoComplete', 'AMap.Geocoder'], function () {
-                    var ac = new AMap.AutoComplete({ input: input, citylimit: false });
-                    ac.on('select', function (e) {
-                        var poi = e.poi;
-                        if (!poi || !poi.location) return;
-                        Wp.add(poi.name, poi.location.getLat(), poi.location.getLng(), wpAddKind);
-                        input.value = '';
-                        renderList();
-                    });
-                });
-            } catch (err) {}
-        })();
+        /* S33：全局搜索移进「添加停靠点」对话框（bindDlgSearch 在对话框打开时接管） */
 
         /* 地图点选：开 → 点击地图取坐标，逆地理出名字 */
         var picking = false;
@@ -1429,25 +1812,9 @@
                 if (typeof map === 'undefined' || !map || !map.on) return;
                 if (picking) {
                     pickHandler = function (e) {
+                        /* S33：点选 → 打开「添加停靠点」对话框（选类型/命名确认后才落点） */
                         var lnglat = e.lnglat;
-                        var lat = lnglat.getLat(), lng = lnglat.getLng();
-                        var name = '点选点(' + lat.toFixed(3) + ',' + lng.toFixed(3) + ')';
-                        Wp.add(name, lat, lng, wpAddKind);
-                        renderList();
-                        try {
-                            if (AMap && AMap.plugin) {
-                                AMap.plugin('AMap.Geocoder', function () {
-                                    new AMap.Geocoder().getAddress([lng, lat], function (st, res) {
-                                        if (st === 'complete' && res.regeocode) {
-                                            var cd = res.regeocode.addressComponent;
-                                            var nm = (cd.township || cd.district || cd.street || '').toString();
-                                            var item = Wp.list.filter(function (w) { return w.n === name; })[0];
-                                            if (item && nm) { item.n = nm.slice(0, 20); wpSave(Wp.list); renderList(); }
-                                        }
-                                    });
-                                });
-                            }
-                        } catch (err) {}
+                        openStopConfirm(lnglat.getLng(), lnglat.getLat(), '');
                     };
                     map.on('click', pickHandler);
                 } else if (pickHandler) {
@@ -1510,46 +1877,88 @@
             if (lpMarker && lpMarker.setMap) { try { lpMarker.setMap(null); } catch (e) {} }
             lpMarker = null;
         }
-        function openStopConfirm(lng, lat) {   // 高德口径 lnglat；Wp.add 收 [lat,lng]
+        /* S33 添加停靠点对话框：搜索（高德输入提示）+ 命名 + 类型（⚑打卡/⛺休整，默认打卡）——
+           不再依赖前置开关。入口：头部「＋ 添加」、地图点选、长按地图、天卡「＋ 添加」chip。
+           确认 = Wp.add + 地图落针动画 + toast「已添加：XX（打卡点/休整点）」。 */
+        var dlgPick = { lat: null, lng: null };
+        function bindDlgSearch(input) {
+            if (!input || typeof AMap === 'undefined' || !AMap.plugin) return;
+            try {
+                AMap.plugin(['AMap.AutoComplete'], function () {
+                    var ac = new AMap.AutoComplete({ input: input, citylimit: false });
+                    ac.on('select', function (e) {
+                        var poi = e.poi;
+                        if (!poi || !poi.location) return;
+                        dlgPick.lat = poi.location.getLat();
+                        dlgPick.lng = poi.location.getLng();
+                        input.value = poi.name;
+                        var nm = document.getElementById('wpStopName');
+                        if (nm) nm.value = String(poi.name).slice(0, 20);
+                    });
+                });
+            } catch (e) {}
+        }
+        function pinDrop(lat, lng, kind) {
+            try {
+                if (typeof AMap === 'undefined' || !AMap.Marker || lat == null) return;
+                var mk = new AMap.Marker({
+                    position: new AMap.LngLat(lng, lat),
+                    content: '<div class="pin-drop ' + (kind === 'rest' ? 'rest' : '') + '">' +
+                        '<div class="pin-drop-ic">' + (kind === 'rest' ? '☾' : '⚑') + '</div></div>',
+                    offset: new AMap.Pixel(-13, -34), zIndex: 160
+                });
+                if (mk.setMap) mk.setMap(map);
+                try { if (map.setCenter) map.setCenter([lng, lat]); } catch (e) {}
+                setTimeout(function () { try { if (mk.setMap) mk.setMap(null); } catch (e) {} }, 1600);
+            } catch (e) {}
+        }
+        function openStopConfirm(lng, lat, presetName) {   // 高德口径 lnglat；均可空（纯搜索模式）
             closeStopConfirm();
+            dlgPick = { lat: lat == null ? null : lat, lng: lng == null ? null : lng };
             var wrap = document.createElement('div');
             wrap.id = 'wpStop';
             wrap.innerHTML =
-                '<div class="wps-t">在此添加停靠</div>' +
-                '<div class="wps-sub">经度 ' + lng.toFixed(4) + ' · 纬度 ' + lat.toFixed(4) + '</div>' +
-                '<input type="text" id="wpStopName" maxlength="20" placeholder="停靠点名称">' +
+                '<div class="wps-t">添加停靠点</div>' +
+                '<div class="wps-sub">' + (lng != null ? '经度 ' + lng.toFixed(4) + ' · 纬度 ' + lat.toFixed(4) : '搜索选择地点，或先关闭本框去地图点选/长按') + '</div>' +
+                '<input class="wp-search" id="wpSearch" placeholder="搜索地名（高德输入提示）…" autocomplete="off">' +
+                '<input type="text" id="wpStopName" maxlength="20" placeholder="名称（搜索可自动带出）">' +
                 '<div class="wps-kind" id="wpStopKind">' +
-                '<button data-wk="spot" class="' + (wpAddKind === 'spot' ? 'on' : '') + '">⚑ 打卡</button>' +
-                '<button data-wk="rest" class="' + (wpAddKind === 'rest' ? 'on' : '') + '">☾ 休整</button>' +
+                '<button data-wk="spot" class="' + (wpAddKind === 'spot' ? 'on' : '') + '">⚑ 打卡点</button>' +
+                '<button data-wk="rest" class="' + (wpAddKind === 'rest' ? 'on' : '') + '">⛺ 休整点</button>' +
                 '</div>' +
                 '<div class="wps-row">' +
-                '<button class="edit-mini" id="wpStopOk">加入途经点</button>' +
+                '<button class="edit-mini" id="wpStopOk">添加</button>' +
                 '<button class="edit-mini" id="wpStopNo">取消</button></div>';
             if (document.body && typeof document.body.appendChild === 'function') document.body.appendChild(wrap);
             var input = document.getElementById('wpStopName');
-            var defName = '停靠点(' + lat.toFixed(3) + ',' + lng.toFixed(3) + ')';
-            if (input) input.value = defName;
-            /* 逆地理取名（高德 Geocoder；失败留默认名，可手改） */
-            try {
-                if (typeof AMap !== 'undefined' && AMap.plugin) {
-                    AMap.plugin('AMap.Geocoder', function () {
-                        new AMap.Geocoder().getAddress([lng, lat], function (st, res) {
-                            if (st === 'complete' && res.regeocode) {
-                                var cd = res.regeocode.addressComponent;
-                                var nm = (cd.township || cd.district || cd.street || '').toString();
-                                if (nm && input) input.value = nm.slice(0, 20);
-                            }
+            var defName = lng != null ? '停靠点(' + lat.toFixed(3) + ',' + lng.toFixed(3) + ')' : '';
+            if (input && (presetName || defName)) input.value = presetName || defName;
+            bindDlgSearch(document.getElementById('wpSearch'));
+            /* 逆地理取名（长按/点选入口；失败留默认名，可手改） */
+            if (lng != null) {
+                try {
+                    if (typeof AMap !== 'undefined' && AMap.plugin) {
+                        AMap.plugin('AMap.Geocoder', function () {
+                            new AMap.Geocoder().getAddress([lng, lat], function (st, res) {
+                                if (st === 'complete' && res.regeocode) {
+                                    var cd = res.regeocode.addressComponent;
+                                    var nm = (cd.township || cd.district || cd.street || '').toString();
+                                    if (nm && input && !String(input.value || '').trim()) input.value = nm.slice(0, 20);
+                                }
+                            });
                         });
-                    });
-                }
-            } catch (err) {}
+                    }
+                } catch (err) {}
+            }
             /* 按压位置的小记号（确认/取消时移除） */
-            try {
-                if (typeof AMap !== 'undefined' && AMap.Marker && AMap.LngLat) {
-                    lpMarker = new AMap.Marker({ position: new AMap.LngLat(lng, lat), content: '<div style="width:12px;height:12px;border-radius:50%;background:#0f766e;border:2px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,.4)"></div>' });
-                    if (lpMarker.setMap) lpMarker.setMap(map);
-                }
-            } catch (e) {}
+            if (lng != null) {
+                try {
+                    if (typeof AMap !== 'undefined' && AMap.Marker && AMap.LngLat) {
+                        lpMarker = new AMap.Marker({ position: new AMap.LngLat(lng, lat), content: '<div style="width:12px;height:12px;border-radius:50%;background:#0f766e;border:2px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,.4)"></div>' });
+                        if (lpMarker.setMap) lpMarker.setMap(map);
+                    }
+                } catch (e) {}
+            }
             var stopKindSeg = document.getElementById('wpStopKind');
             if (stopKindSeg) {
                 Array.prototype.forEach.call(stopKindSeg.querySelectorAll ? stopKindSeg.querySelectorAll('button') : [], function (b) {
@@ -1559,11 +1968,15 @@
             }
             var okB = document.getElementById('wpStopOk');
             if (okB) okB.onclick = function () {
-                var nm = (input && input.value && String(input.value).trim()) ? String(input.value).trim() : defName;
-                Wp.add(nm, lat, lng, wpAddKind);
+                var nm = (input && input.value && String(input.value).trim()) ? String(input.value).trim() : '';
+                var alat = dlgPick.lat, alng = dlgPick.lng;
+                if (alat == null || !nm) { editNotice('请先搜索选点（或地图点选/长按），并给个名称。'); return; }
+                var kindTxt = wpAddKind === 'rest' ? '休整点' : '打卡点';
+                Wp.add(nm, alat, alng, wpAddKind);
                 if (Wp.renderList) Wp.renderList();
                 closeStopConfirm();
-                etToast('已加入途经点（待保存生效）');
+                pinDrop(alat, alng, wpAddKind);
+                try { etToast('已添加：' + nm + '（' + kindTxt + '）'); } catch (e) {}
             };
             var noB = document.getElementById('wpStopNo');
             if (noB) noB.onclick = closeStopConfirm;

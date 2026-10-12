@@ -387,9 +387,8 @@
         /* S17：手机全览（窄容器 + 远景 z<7，口径与景点胶囊一致）收起必充/必加标注——
            国家缩放级别只留极少量信息；近景或聚焦天（fly 后 z 必然 ≥7）自动恢复，
            规划结果仍有 #planPeek 概要行兜底，信息不丢。 */
-        var mapW = 0;
-        try { var mEl = document.getElementById('map'); mapW = (mEl && mEl.clientWidth) || 0; } catch (e) {}
-        var hidePlanFar = mapW > 0 && mapW < 700 && z < 7;
+        /* S33：规划标注全端同窄屏规则——近景/聚焦天才显示「充至 80%」（不再桌面例外） */
+        var hidePlanFar = z < 7;
         try { window.__planFarHidden = hidePlanFar; } catch (e) {}   // S17 测试钩子：规划标注远景收起状态
         planM = createMarkerLayer({
             map: hidePlanFar ? null : map,

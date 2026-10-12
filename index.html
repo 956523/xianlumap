@@ -163,6 +163,7 @@
     .pt-menu { position: fixed; z-index: var(--z-guide,1400); background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.18); padding: 4px; display: flex; flex-direction: column; min-width: 132px; }
     .pt-menu button { border: none; background: none; text-align: left; min-height: 40px; padding: 0 12px; font-size: 13px; color: #1f2937; border-radius: 7px; cursor: pointer; font-family: inherit; }
     .pt-menu button:hover { background: #f0fdfa; }
+    .pt-menu button.cur, .pt-menu button:disabled { color: #cbd5e1; cursor: default; background: none; }
     .ms-check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #334155; padding: 4px 0; cursor: pointer; }
     #moreBk { position: fixed; inset: 0; z-index: var(--z-guide,1400); background: rgba(15,23,42,.4); display: none; }   /* 与 moreSheet 同层，DOM 序在后=压在上面 */
     body.more-open #moreBk { display: block; }
@@ -178,6 +179,52 @@
     #moreSheet .et-mark button { min-height: 34px; padding: 0 10px; border: 1px solid #e2e8f0; background: #fff; border-radius: 7px; font-size: 12px; cursor: pointer; font-family: inherit; }
     /* sparkline 是最低信息密度的一块：面板宽度不足时先把它收窄，
        而不是让标题先被截断（标题被截断用户根本不知道点的是哪一天）。 */
+    /* ============ S33 链式行程 + 配套 ============ */
+    .day-list li.ch-item { flex-direction: column; align-items: stretch; gap: 0; position: relative; padding-left: 20px; }
+    .day-list li.ch-item::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: #e2e8f0; }   /* 链竖线 */
+    .ch-card { display: flex; flex-direction: column; gap: 2px; }
+    /* 中缝「＋」= 多住一晚 */
+    .ch-seam-add { align-self: flex-start; margin: 2px 0 2px 6px; width: 22px; height: 22px; border-radius: 50%; border: 1px dashed #99f6e4; background: #f0fdfa; color: #0f766e; font-size: 14px; line-height: 1; cursor: pointer; font-family: inherit; }
+    .ch-seam-add:hover { background: #0f766e; color: #fff; }
+    /* 节点：⛺ 琥珀色块 */
+    .ch-node { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; padding: 6px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 9px; }
+    .ch-node-ic { flex: none; width: 18px; height: 18px; color: #b45309; }
+    .ch-node-ic svg { display: block; width: 18px; height: 18px; }
+    .ch-node-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #0f766e; margin: 0 4px; }
+    .ch-node-tx { display: flex; flex-direction: column; min-width: 0; }
+    .ch-node-tx b { font-size: 12.5px; color: #92400e; }
+    .ch-node-tx span { font-size: 10.5px; color: #b45309; }
+    .ch-node.ch-start, .ch-node.ch-end { background: #f0fdfa; border-color: #99f6e4; }
+    .ch-node.ch-start .ch-node-tx b, .ch-node.ch-end .ch-node-tx b { color: #0f766e; }
+    .ch-node.ch-start .ch-node-tx span, .ch-node.ch-end .ch-node-tx span { color: #0f766e; }
+    /* 链对话框 */
+    .chain-dlg { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: var(--z-guide,1400); width: min(420px, calc(100vw - 40px)); background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 16px 48px rgba(15,23,42,.22); padding: 16px 18px; font-family: inherit; }
+    .chain-dlg .cd-t { font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+    .chain-dlg .cd-sub { font-size: 11.5px; color: #64748b; line-height: 1.6; margin-bottom: 8px; }
+    .chain-dlg input[type=text], .chain-dlg input[type=number] { width: 100%; box-sizing: border-box; min-height: 42px; font-size: 14px; border: 1px solid #e2e8f0; border-radius: 9px; padding: 0 10px; margin-bottom: 8px; font-family: inherit; }
+    .chain-dlg .cd-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .chain-dlg .cd-row .edit-mini { flex: 1; min-height: 42px; margin-right: 0; }
+    .chain-dlg .cd-prev { max-height: 200px; overflow-y: auto; margin-bottom: 8px; }
+    .chain-dlg .cd-prevrow { font-size: 12px; color: #334155; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; }
+    /* 落针动画 */
+    @keyframes pinDropKf { 0% { transform: translateY(-46px); opacity: 0; } 60% { transform: translateY(4px); opacity: 1; } 80% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
+    .pin-drop { width: 26px; height: 34px; animation: pinDropKf .55s ease-out; }
+    .pin-drop-ic { width: 26px; height: 26px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); background: #0f766e; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(15,23,42,.35); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
+    .pin-drop-ic { transform: rotate(-45deg); }
+    .pin-drop-ic { } .pin-drop.rest .pin-drop-ic { background: #b45309; }
+    .pin-drop-ic { line-height: 26px; text-align: center; }
+    /* wpSec 瘦身（可折叠管理区） */
+    .wp-sec-box.slim { background: #fff; border-color: #e2e8f0; padding: 4px 8px; }
+    .wp-sec-t { display: flex; align-items: center; gap: 6px; width: 100%; border: none; background: none; min-height: 36px; font-size: 12.5px; font-weight: 600; color: #92400e; cursor: pointer; font-family: inherit; padding: 0 2px; }
+    .wp-sec-ar { color: #94a3b8; margin-left: auto; }
+    .wp-sec-body { padding-top: 6px; }
+    /* 逆行切换 + pt-bar 新钮 */
+    .dir-seg { display: none; margin-left: 4px; }
+    .dir-seg button { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 2px 9px; font-size: 11px; color: #64748b; cursor: pointer; font-family: inherit; }
+    .dir-seg button.on { background: #f0fdfa; border-color: #0f766e; color: #0f766e; font-weight: 600; }
+    .pt-add, .pt-share { border: none; background: #f1f5f9; color: #475569; border-radius: 8px; min-height: 32px; padding: 0 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-right: 2px; }
+    .pt-add:hover, .pt-share:hover { background: #e2e8f0; }
+    .chip-days { cursor: pointer; }
     /* S32：sparkline 已移除（产品拍板），从→到占满行宽 */
     @media (max-width: 860px) {
         .day-list li { gap: 6px; padding: 6px 6px; }
@@ -612,17 +659,20 @@
 <div id="panel">
     <h1><span class="bm-mark" title="自驾线路图"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 27 L15 12 L22 21 L29 8 L37 19 L43 27"/><path d="M9 33 q4.5 -3.5 9 0 t9 0 t9 0 t9 0"/><path d="M13 39 q4.5 -3.5 9 0 t9 0"/></svg></span><span id="routeName">自驾线路图</span>
         <span class="seg" id="startSeg"></span>
+        <span class="seg dir-seg" id="dirSeg" title="环线方向"></span>
         <button id="panelFold" title="收起侧栏">‹</button>
     </h1>
     <div class="sub" id="routeSub"></div>
     <div class="pt-tabs pt-bar">
         <span class="pt-title">行程</span>
         <button id="btnDraftSave" class="pt-save" style="display:none" type="button">💾 保存修改</button>
+        <button id="btnAddWp" class="pt-add" title="添加停靠点（搜索/选类型）" type="button">＋ 添加</button>
+        <button id="btnShare" class="pt-share" title="生成链式分享图 PNG" type="button">分享</button>
         <button id="panelMore" class="pt-more" title="更多设置" type="button">⋯</button>
     </div>
     <div class="chips">
         <div class="chip"><b id="chipKm">—</b>总里程 km</div>
-        <div class="chip"><b id="chipDays">—</b>建议天数</div>
+        <div class="chip chip-days"><b id="chipDays">—</b><span id="chipDaysLb">建议天数</span></div>
         <div class="chip"><b id="chipMaxAlt">—</b>最高海拔 m</div>
     </div>
     <ul class="day-list" id="dayList"></ul>

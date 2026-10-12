@@ -569,9 +569,9 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         deskFar.sandbox.window.__spotLabels(true);
         capD = capsuleCount(labelsBefore2);
     }
-    ok('桌面宽屏同缩放：胶囊不受 12 上限约束（25km 桶，>12 个）且规划标注照常',
+    ok('桌面宽屏同缩放：胶囊不受 12 上限约束（25km 桶，>12 个）；规划标注全端同规则（S33：z<7 收起）',
         !deskFar.err && capD > 12 &&
-        deskFar.sandbox.window.__planFarHidden === false,
+        deskFar.sandbox.window.__planFarHidden === true,
         capD + ' 个胶囊');
     elCache['map'].clientWidth = 1200;
     MOCK_ZOOM = 7.3;
@@ -934,12 +934,13 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var editSrc = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
     // a) 行程卡 DOM 层级：第一行 = 起点 → 终点（主元素），日期+里程是小号次行
     var lis28 = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-5);
-    ok('行程卡新层级：from→to 是主元素（day-col 内 day-title 全名，day-top 次行）',
+    ok('行程卡新层级（S33 链式）：ch-card 内 from→to 是主元素，节点/链段同 li',
         !s28.err && lis28.length === 5 &&
         lis28.every(function (el) {
-            return /<span class="day-col"><span class="day-top"><span class="day-tag">D\d/.test(el.innerHTML) &&
+            return /<div class="ch-card[ "]/.test(el.innerHTML) &&
                 /<span class="day-title">[^<]+ → [^<]+<\/span>/.test(el.innerHTML);
-        }), lis28[0] ? lis28[0].innerHTML.slice(0, 80) : '无');
+        }) && /class="ch-node"/.test(lis28[0].innerHTML) && /ch-seam-add/.test(lis28[0].innerHTML),
+        lis28[0] ? lis28[0].innerHTML.slice(0, 80) : '无');
     // b) 就地编辑：点文字 → 原位输入框（捕获监听 + 输入框样式 + 提交走 setDayField）
     ok('就地编辑接线在位（捕获监听 + day-inline 输入框 + setDayField 提交路径）',
         /listEl\.addEventListener\('click'/.test(editSrc) &&
@@ -1096,6 +1097,110 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     ok('续航设置默认隐藏（evsetToggle display:none）+ 设置页「显示续航设置」开关',
         /id="evsetToggle" type="button" style="display:none"/.test(html) &&
         /id="msEvset"/.test(editSrc32) && !/id="msEvset"[^>]*checked/.test(editSrc32), '');
+    /* ---------- S33：链式行程 / 拆分合并 / 天数均分 / 4259 修复 / 逆行 / 季节性 ---------- */
+    console.log('\n【26】S33：链式行程正统化');
+    delete lsStore['xianlumap.overlay.qinghai-gansu'];
+    delete lsStore['xianlumap.waypoints.qinghai-gansu'];
+    var s33 = bootRoute('qinghai-gansu');
+    var S33b = s33.sandbox;
+    // a) 链结构渲染：节点（起点 + 休整点 + 终点）+ 中缝「＋」
+    var lis33 = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-10);
+    var nodeN = 0, seamN = 0, startEnd = 0;
+    lis33.forEach(function (el) {
+        nodeN += (el.innerHTML.match(/class="ch-node[ "]|class="ch-node /g) || []).length;
+        seamN += (el.innerHTML.match(/ch-seam-add/g) || []).length;
+        if (/ch-start|ch-end/.test(el.innerHTML)) startEnd++;
+    });
+    ok('链式渲染：10 链段 + 起点/终点节点 + 每段一个中缝「＋」',
+        !s33.err && lis33.length === 10 && nodeN >= 11 && seamN >= 9 && startEnd >= 2,
+        'nodes=' + nodeN + ' seams=' + seamN + ' startEnd=' + startEnd);
+    // b) 节点双时间属性（设出发日期后）
+    S33b.Edit.setDeparture('2026-10-01');
+    var lis33b = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-10);
+    ok('节点双时间：夜宿 · 10月1日 晚抵达 · 10月2日 出发',
+        /晚抵达 · 10月2日 出发/.test(lis33b[0].innerHTML), '');
+    // c) 拆分（多住一晚）：天数 +1、连续编号、clone 带夜宿名、overlay.split 草稿
+    var d5 = S33b.DAYS.filter(function (d) { return d.id === 5; })[0];
+    var nid = S33b.Edit.splitDay(5, '大柴旦多住', +(d5.altKm[0] + 60).toFixed(1));
+    var tags33 = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-11).map(function (el) {
+        return (el.innerHTML.match(/<span class="day-tag">([^<]+)</) || [])[1];
+    });
+    var cloneStay = S33b.DAYS.filter(function (d) { return d.id === nid; })[0];
+    ok('拆分：天数 +1、编号连续 D1..D11、新段带夜宿名、overlay.split 草稿',
+        nid !== false && tags33.length === 11 && tags33[0].indexOf('D1') === 0 && tags33[10].indexOf('D11') === 0 &&
+        cloneStay && cloneStay.stay === '大柴旦多住' && S33b.Edit.isDirty() === true &&
+        (S33b.Edit.overlay.split || []).length === 1, tags33.join('|'));
+    // d) 合并（节点删除口径）：删节点 = 后段（原天后半）并入前段（clone）→ mergeDay(原天 id)
+    var okMerge33 = S33b.Edit.mergeDay(5) === true;
+    var tags33c = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-10).map(function (el) {
+        return (el.innerHTML.match(/<span class="day-tag">([^<]+)</) || [])[1];
+    });
+    ok('合并（删节点）：后半并入前半 → 回到 10 段连续编号',
+        okMerge33 && tags33c.length === 10 && tags33c[0].indexOf('D1') === 0 && tags33c[9].indexOf('D10') === 0, tags33c.join('|'));
+    // e) 天数均分：预览 4 行；应用后 4 段均分边界
+    var prev4 = S33b.Edit.previewEvenSplit(4);
+    var okEven = S33b.Edit.evenSplit(4);
+    var vis4 = S33b.DAYS.filter(function (d) { return S33b.Edit._mergedIds().indexOf(d.id) < 0; });
+    var boundsOk = vis4.length === 4;
+    for (var bi = 0; bi < 4 && boundsOk; bi++) {
+        var expectA = +(S33b.STARTS[0].totalKm * bi / 4).toFixed(1);
+        if (Math.abs(vis4[bi].altKm[0] - expectA) > 1.5) boundsOk = false;
+    }
+    ok('天数均分：预览 4 行 + 应用后 4 段均分（边界 ±1.5km）', prev4 && prev4.length === 4 && okEven && boundsOk,
+        prev4 ? prev4.length + ' 行 / ' + vis4.length + ' 段' : '无预览');
+    // f) 4259 修复：合并后首屏总里程 = 可见合计（不双计）
+    var totBefore = S33b.DAYS.filter(function (d) { return S33b.Edit._mergedIds().indexOf(d.id) < 0; })
+        .reduce(function (a, d) { return a + d.km; }, 0);
+    var lastV = vis4[vis4.length - 1];
+    S33b.Edit.mergeDay(lastV.id);
+    var chipAfter = parseInt(elCache['chipKm'].textContent, 10);
+    var visAfter = S33b.DAYS.filter(function (d) { return S33b.Edit._mergedIds().indexOf(d.id) < 0; })
+        .reduce(function (a, d) { return a + d.km; }, 0);
+    ok('4259 修复：合并后 chipKm = 可见合计（不双计，绝不会 4259）',
+        chipAfter === visAfter && Math.abs(chipAfter - totBefore) <= vis4[vis4.length - 1].km + 1,
+        chipAfter + ' vs visible ' + visAfter);
+    // g) 逆行（干净 boot）：显示层反序 + altKm 镜像 + overlay.meta.dir 草稿 + 站点标注编号映射
+    var s33g = bootRoute('qinghai-gansu');
+    var G = s33g.sandbox;
+    var T33 = G.STARTS[0].totalKm;
+    var origLast = G.DAYS[G.DAYS.length - 1];
+    G.setRouteDir(-1);
+    var dispM = G.currentDisp();
+    var mirrorOk = dispM[0].orig && dispM[0].orig.id === origLast.id &&
+        Math.abs(dispM[0].altKm[1] - (T33 - origLast.altKm[0])) < 0.2 &&
+        G.Edit.overlay.meta.dir === -1;
+    var tagMir = G.dayTagOf(origLast.altKm[0] + 1);
+    var orderMir = dispM.map(function (d) { return d.orig.id; }).join(',') ===
+        G.DAYS.map(function (d) { return d.id; }).reverse().join(',');
+    G.setRouteDir(1);
+    ok('逆行：天序反排 + altKm 镜像（km\'=T-km）+ overlay.meta.dir 随草稿 + dayTagOf 显示层编号',
+        mirrorOk && tagMir === 'D1' && orderMir, 'dayTagOf(末段)=' + tagMir);
+    // g2) 点成员「改为打卡/休整」（设计稿第二节补做）：菜单接线 + API 行为 + 全链刷新
+    var s33k = bootRoute('chuanxi');
+    var K = s33k.sandbox;
+    var editSrc33 = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
+    var kIdx = K.Wp.list.length;
+    K.Wp.add('类型切换点', 30.7, 104.0, 'spot');
+    var restBefore = (K.restData || []).filter(function (r) { return /类型切换点/.test(r.t); }).length;
+    var kindOk = K.Edit.setWpKind(kIdx, 'rest') === true &&
+        K.Wp.list[kIdx].kind === 'rest' && K.Edit.isDirty() === true;
+    var restAfter = (K.restData || []).filter(function (r) { return /类型切换点/.test(r.t); }).length;
+    var backOk = K.Edit.setWpKind(kIdx, 'spot') === true && K.Wp.list[kIdx].kind === 'spot';
+    ok('点成员菜单「改为打卡/休整」：接线在位 + kind 切换 + 地图休整层即时刷新',
+        /改为打卡点/.test(editSrc33) && /改为休整点/.test(editSrc33) && /setWpKind/.test(editSrc33) &&
+        kindOk && restBefore === 0 && restAfter === 1 && backOk,
+        'restData ' + restBefore + '→' + restAfter);
+    // h) 318 单线：loop=false → 不渲染方向切换
+    var b318 = bootRoute('chengdu-lhasa-318');
+    ok('单线（318）无逆行切换（ROUTE_META.loop=false）',
+        !b318.err && b318.sandbox.ROUTE_META.loop === false && /isLoopRoute/.test(mainScript), '');
+    // i) 季节性：manifest 带 season；选线器卡元信息行「适合 5–10 月」且无「更新」
+    ok('季节性：manifest season=5–10月（卡文案「适合 5–10 月」/撤更新日期走 CDP 实测）',
+        (function () {
+            var sbm = {};
+            vm.runInNewContext(manifestSrc, sbm);
+            return (sbm.ROUTE_MANIFEST || []).every(function (r) { return r.season === '5–10月'; });
+        })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

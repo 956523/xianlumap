@@ -83,13 +83,29 @@
 
     var root = document.createElement('div');
     root.id = 'pickerRoot';
+    /* S33 季节性：元信息行「km · 建议 N 天 · 适合 5–10 月」（更新日期撤到详情页声明）；
+       当前月份在范围外 → 灰显「冬季慎行」 */
+    var _nowM = new Date().getMonth() + 1;
+    function seasonHtml(r) {
+        var s = r.season || '';
+        if (!s) return '';
+        var m = s.match(/(\d{1,2})[–-](\d{1,2})/);
+        var inSeason = true;
+        if (m) {
+            var a = +m[1], b = +m[2];
+            inSeason = (a <= b) ? (_nowM >= a && _nowM <= b) : (_nowM >= a || _nowM <= b);
+        }
+        var disp = String(s).replace(/月$/, '');
+        return inSeason
+            ? '<i>·</i><span class="pick-season">适合 ' + disp + ' 月</span>'
+            : '<i>·</i><span class="pick-season off">⚠ 冬季慎行</span>';
+    }
     var cards = ROUTE_MANIFEST.map(function (r) {
         return '<a class="pick-card" href="?route=' + encodeURIComponent(r.id) + '">' +
             heroSVG(r.id) +
             '<div class="pick-name">' + stripEmoji(r.name) + '</div>' +
             '<div class="pick-region">' + r.region + '</div>' +
-            '<div class="pick-meta">' + r.totalKm + ' km<i>·</i>建议 ' + r.days + ' 天' +
-            (r.updatedAt ? '<i>·</i>更新 ' + r.updatedAt.slice(5) : '') + '</div>' +
+            '<div class="pick-meta">' + r.totalKm + ' km<i>·</i>建议 ' + r.days + ' 天' + seasonHtml(r) + '</div>' +
             '</a>';
     }).join('');
     var mark = (typeof BRAND !== 'undefined' && BRAND && BRAND.mark) ? BRAND.mark : '';
@@ -102,4 +118,12 @@
         '<div id="pickerCards">' + cards + '</div>' +
         '<div class="pick-foot">页面数据全部内联 · 打开即全量</div>';
     document.body.appendChild(root);
+})();
+
+/* S33 季节性样式（注入） */
+(function () {
+    var css = document.createElement('style');
+    css.textContent = '.pick-season{color:#0f766e;font-style:normal}' +
+        '.pick-season.off{color:#94a3b8;background:#f1f5f9;border-radius:6px;padding:0 6px;font-style:normal}';
+    (document.head || document.documentElement).appendChild(css);
 })();

@@ -130,6 +130,15 @@
             s.forEach(function (p) { p.km += cur.offsetKm; });
             s.push({ km: curTotal(), alt: cur.head.alt, n: cur.head.n }); // 返程终点 = 出发地
         }
+        /* S33 逆行：序列镜像（km' = T - km，逆序）——与链显示同口径；overlay 仍是原口径 */
+        try {
+            if (typeof routeDir !== 'undefined' && routeDir < 0 && typeof STARTS !== 'undefined' && STARTS.length &&
+                typeof start !== 'undefined' && start === STARTS[0].id) {
+                var T = STARTS[0].totalKm;
+                s = s.map(function (p) { return { km: +(T - p.km).toFixed(1), alt: p.alt, n: p.n, pass: p.pass, lowest: p.lowest }; })
+                    .sort(function (a, b) { return a.km - b.km; });
+            }
+        } catch (e) {}
         return s;
     }
 
@@ -192,8 +201,8 @@
         var out = [];
         if (typeof Edit === 'undefined' || typeof Edit._mergedIds !== 'function') return out;   // S28：默认态可用，不再要求 Edit.on
         if (typeof STARTS !== 'undefined' && STARTS.length > 1 && typeof start !== 'undefined' && start !== STARTS[0].id) return out;
-        var merged = Edit._mergedIds();
-        var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
+        var vis = (typeof currentDisp === 'function') ? currentDisp() :
+            DAYS.filter(function (d) { return Edit._mergedIds().indexOf(d.id) < 0; });   // S33：显示层（逆行=镜像）
         /* 边界容差 ±0.5km：数据里相邻天的端点可能差零点零几（如 D1 终点 211.58 vs
            D2 起点 211.6），宽容差纳入；松手 setSeg 会把两天切成同一 km，缝隙随拖动愈合 */
         var lo = series[0].km - 0.5, hi = series[series.length - 1].km + 0.5;
@@ -255,8 +264,16 @@
         if (d.km === d.km0) return;   // 没动：不触发重切
         var h = lastSegHandles.filter(function (x) { return x.bi === d.bi; })[0];
         if (!h || typeof Edit === 'undefined' || !Edit.setSeg) return;
-        Edit.setSeg(h.dayA.id, h.dayA.altKm[0], d.km);
-        Edit.setSeg(h.dayB.id, d.km, h.dayB.altKm[1]);
+        if (h.dayA.orig) {
+            /* S33 逆行：把手在镜像坐标系 → 换算回原口径（km' = T - km） */
+            var T = (typeof mainTotalKm === 'function') ? mainTotalKm() : 0;
+            var x = +(T - d.km).toFixed(1);
+            Edit.setSeg(h.dayA.orig.id, h.dayA.orig.altKm[0], x);
+            Edit.setSeg(h.dayB.orig.id, x, h.dayB.orig.altKm[1]);
+        } else {
+            Edit.setSeg(h.dayA.id, h.dayA.altKm[0], d.km);
+            Edit.setSeg(h.dayB.id, d.km, h.dayB.altKm[1]);
+        }
     }
     /* 把手事件（真实浏览器）：window 级跟手，松开结算。
        像素→km 换算一律经 scaleX（CSS 拉伸下的真实映射） */

@@ -150,6 +150,9 @@ function runRoute(routeId) {
         mf.probe === pkg.ROUTE_META.probe,
         mf ? (mf.name + ' ' + mf.totalKm + 'km/' + mf.days + '天 @' + mf.updatedAt) : 'manifest 缺登记');
 
+    /* 首屏 chips（S33：防 4259 双计——merged 天 km 不得重复累计；首屏即逐日合计口径） */
+    const chipKm0 = parseInt(elCache['chipKm'].textContent, 10);
+    ok('首屏总里程 = 包内逐日合计（S33 防 merged 双计）', Math.abs(chipKm0 - pkgDayKm) <= 2, chipKm0 + ' vs ' + pkgDayKm);
     /* 计划面板 */
     const planBox = elCache['planBox'];
     ok('计划面板已渲染', planBox && (planBox.innerHTML.includes('全程需') || planBox.innerHTML.includes('未接入')), (planBox.innerHTML.match(/全程需\S+?\s\d+/) || [''])[0]);

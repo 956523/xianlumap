@@ -312,6 +312,7 @@ function buildIA() {
 
     /* 迁移：出发地切换 → 标题条；图例 + 续航卡 → 图层弹层（原事件随节点走） */
     mobMove(document.getElementById('startSeg'), bar.querySelector ? bar.querySelector('#mobStartSlot') || bar.children[1] : bar.children[1]);
+    mobMove(document.getElementById('dirSeg'), bar.querySelector ? bar.querySelector('#mobStartSlot') || bar.children[1] : bar.children[1]);   // S33 逆行切换随 startSeg 进标题条
     var lb = document.getElementById('mobLayersBody');
     mobMove(document.getElementById('legendBox'), lb);
     mobMove(document.querySelector ? document.querySelector('.evcard') : null, lb);
