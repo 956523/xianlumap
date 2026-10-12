@@ -14,6 +14,8 @@
     function pin(fill) {
         return icon('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32"><path d="M12 1C5.9 1 1 5.9 1 12c0 8 11 19 11 19s11-11 11-19C23 5.9 18.1 1 12 1z" fill="' + fill + '" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" fill="#fff"/></svg>');
     }
+    /* S31 休整点层标记：琥珀圆 + 月亮（BRAND 同风格线性月亮的实心版，小尺寸可读） */
+    var IC_REST = icon('<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11.5" fill="#b45309" stroke="#fff" stroke-width="2.2"/><path d="M17.6 15.4A4.9 4.9 0 0 1 11.1 8.7 4.9 4.9 0 1 0 17.6 15.4z" fill="#fff"/></svg>');
     var IC = {
         city: pin('#1e3a5f'),
         citySmall: pin('#64748b'),   // S26：城镇钉减重——灰阶身（白描边在 pin() 里），60% 尺寸
@@ -260,8 +262,12 @@
     try {
         window.__spotLabels = function (on) { spotLabelOn = !!on; renderSpotLabels(); };
         window.__layerState = function (o) {
-            if (o) { layerOn.ev = o.ev !== false; layerOn.fuel = o.fuel !== false; }
-            return { ev: layerOn.ev, fuel: layerOn.fuel };
+            if (o) {
+                if (o.ev != null) layerOn.ev = !!o.ev;
+                if (o.fuel != null) layerOn.fuel = !!o.fuel;
+                if (o.rest != null) restLayerOn = !!o.rest;
+            }
+            return { ev: layerOn.ev, fuel: layerOn.fuel, rest: restLayerOn };
         };
     } catch (e) {}
     var spotKmCache = [];        // 每个景点的沿线里程（renderAll 时按环线表最近点算，供分桶）
@@ -604,6 +610,7 @@
         renderCityMarkers();
         // S28：行程卡默认态控件（住宿点入口等，就地编辑时代替原「编辑模式」注入）
         if (typeof Edit !== 'undefined' && Edit.refreshDayControls) Edit.refreshDayControls();
+        renderRestMarkers();   // S31 休整点层（住宿/午休变动后随 renderAll 重建）
     }
 
     /* --- 长盲区上图（S4 可信度透出）---
@@ -660,6 +667,44 @@
                     content: 'km' + Math.round(a) + '–' + Math.round(b) + ' ' + (w.label || '') + '（' + w.km + 'km）'
                 }]
             }));
+        });
+    }
+
+    /* ============ S31 「休整点」图层 ============
+       成员 = 每天的住宿点（位置 = 天轨迹终点，名字 = stay 文本）+ kind=rest 的手动途经点。
+       状态位重建模式（S0 教训）；归属/编号口径与行程卡三类行一致（merged 隐藏、可见序编号）。 */
+    var restMarkers = null;
+    var restData = [];
+    function renderRestMarkers() {
+        if (restMarkers) { restMarkers.setMap(null); restMarkers = null; }
+        if (!restLayerOn) return;
+        restData = [];
+        var merged = (typeof Edit !== 'undefined' && Edit._mergedIds) ? Edit._mergedIds() : [];
+        var vi = 0;
+        DAYS.forEach(function (d) {
+            if (merged.indexOf(d.id) >= 0) return;
+            vi++;
+            if (d.stay && d.path && d.path.length) {
+                var p = d.path[d.path.length - 1];   // 住宿 = 当天到达端
+                restData.push({ lat: p[0], lng: p[1], t: d.stay + '（住宿）', sub: 'D' + vi + ' · 住宿点' });
+            }
+        });
+        if (typeof Wp !== 'undefined' && Wp && Wp.list) {
+            Wp.list.forEach(function (w) {
+                if (w.kind !== 'rest') return;
+                restData.push({ lat: w.p[0], lng: w.p[1], t: w.n, sub: '☾ 休整点 · 途经点（待保存生效）' });
+            });
+        }
+        restMarkers = createMarkerLayer({
+            map: map,
+            styles: { r: ({ src: IC_REST, width: 24, height: 24, anchor: { x: 12, y: 12 } }) },
+            geometries: restData.map(function (r, i) {
+                return { id: 'r' + i, styleId: 'r', position: LL(r.lat, r.lng) };
+            })
+        });
+        restMarkers.on('click', function (e) {
+            var r = restData[parseInt(e.geometry.id.slice(1), 10)];
+            if (r) openInfo(r.lat, r.lng, [['☾ 休整点', 'c']], r.t, r.sub);
         });
     }
 
@@ -864,32 +909,87 @@
        tgFuel / tgEv 不绑到固定的 marker 变量上：它们控制的是【renderStations() 里
        动态重建的】dimEvM/dimFuelM，而每次重建都会 new 一个新的 MultiMarker →
        不能再持有旧引用。做法：开关只改一个状态位，然后触发重绘 → 重绘时按状态决定 setMap。 */
-    // 城名开关改走状态位（S18）：标签按 zoom 整层重建，开关不得持有旧图层引用（S0 教训）
-    document.getElementById('tgCity').addEventListener('change', function (e) {
-        cityLabelOn = e.target.checked;
-        cityMarkerOn = e.target.checked;   // S26：钉随开关（重建走状态位）
-        renderCityLabels();
-        renderCityMarkers();
-    });
-    // 景点开关改走状态位：胶囊标签按 zoom 整层重建，不能持有旧图层引用（同 S0 站点开关模式）
-    document.getElementById('tgSpot').addEventListener('change', function (e) {
-        spotLabelOn = e.target.checked;
-        spotMarkers.setMap(e.target.checked ? map : null);
-        renderSpotLabels();
-    });
-
     // 站点图层开关：只记状态 + 重绘（重绘里会把新图层挂上/摘掉）
-    var layerOn = { fuel: false, ev: false };   // S26：油/电站层默认关，按需勾选
+    /* S31 默认态（产品拍板）：主路线 + 城镇名 + 补给（两子开关开）+ 休整 = on；打卡 off。
+       用户勾选记 localStorage（xlm.layers.<routeKey>），启动时覆盖默认。 */
+    var layerOn = { fuel: true, ev: true };
+    var restLayerOn = true;
+    var LAYER_KEY = 'xlm.layers.' + ((typeof ROUTE_META !== 'undefined' && ROUTE_META && ROUTE_META.key) || 'default');
+    function loadLayerPrefs() {
+        try { return JSON.parse(localStorage.getItem(LAYER_KEY) || 'null') || null; } catch (e) { return null; }
+    }
+    function saveLayerPrefs() {
+        try {
+            localStorage.setItem(LAYER_KEY, JSON.stringify({
+                ev: layerOn.ev, fuel: layerOn.fuel, rest: restLayerOn,
+                spot: spotLabelOn, city: cityLabelOn, classic: !!(classicLine && document.getElementById('tgClassic') && document.getElementById('tgClassic').checked)
+            }));
+        } catch (e) {}
+    }
+    (function applyLayerPrefs() {
+        var p = loadLayerPrefs();
+        if (!p) return;
+        if (p.ev != null) layerOn.ev = !!p.ev;
+        if (p.fuel != null) layerOn.fuel = !!p.fuel;
+        if (p.rest != null) restLayerOn = !!p.rest;
+        if (p.spot != null) spotLabelOn = !!p.spot;
+        if (p.city != null) { cityLabelOn = !!p.city; cityMarkerOn = !!p.city; }
+        ['tgEv', 'tgFuel', 'tgRest', 'tgSpot', 'tgCity', 'tgClassic'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (id === 'tgEv') el.checked = layerOn.ev;
+            else if (id === 'tgFuel') el.checked = layerOn.fuel;
+            else if (id === 'tgRest') el.checked = restLayerOn;
+            else if (id === 'tgSpot') el.checked = spotLabelOn;
+            else if (id === 'tgCity') el.checked = cityLabelOn;
+            else if (id === 'tgClassic') el.checked = !!p.classic;
+        });
+    })();
     document.getElementById('tgFuel').addEventListener('change', function (e) {
         layerOn.fuel = e.target.checked;
+        saveLayerPrefs();
         renderStations();
     });
     document.getElementById('tgEv').addEventListener('change', function (e) {
         layerOn.ev = e.target.checked;
+        saveLayerPrefs();
         renderStations();
     });
+    /* S31 新「休整点」层：住宿点（天终点）+ kind=rest 途经点 */
+    document.getElementById('tgRest').addEventListener('change', function (e) {
+        restLayerOn = e.target.checked;
+        saveLayerPrefs();
+        renderRestMarkers();
+    });
     document.getElementById('tgClassic').addEventListener('change', function (e) {
+        saveLayerPrefs();
         if (classicLine) classicLine.setMap(e.target.checked ? map : null);
+    });
+    /* 更多 ▾：经典支线等低频层折叠 */
+    (function bindLgMore() {
+        var btn = document.getElementById('lgMoreBtn');
+        var box = document.getElementById('lgMore');
+        if (!btn || !box) return;
+        btn.onclick = function () {
+            var open = box.style.display === 'none';
+            box.style.display = open ? '' : 'none';
+            btn.textContent = open ? '更多 ▴' : '更多 ▾';
+        };
+    })();
+    var tgCityEl = document.getElementById('tgCity');
+    if (tgCityEl && tgCityEl.addEventListener) tgCityEl.addEventListener('change', function (e) {
+        cityLabelOn = e.target.checked;
+        cityMarkerOn = e.target.checked;
+        saveLayerPrefs();
+        renderCityLabels();
+        renderCityMarkers();
+    });
+    var tgSpotEl = document.getElementById('tgSpot');
+    if (tgSpotEl && tgSpotEl.addEventListener) tgSpotEl.addEventListener('change', function (e) {
+        spotLabelOn = e.target.checked;
+        saveLayerPrefs();
+        spotMarkers.setMap(e.target.checked ? map : null);
+        renderSpotLabels();
     });
 
     /* --- 侧栏折叠（全尺寸可用，地图软件惯例：面板自带折叠把手） --- */

@@ -211,6 +211,23 @@
     }
     .btn-fit:hover { background: #0f766e; }
     .evcard { border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; }
+    /* S31 图层弹层三类分组：补给子开关缩进 / 组标题 / 更多折叠 / 续航设置折叠 */
+    .legend .row-group { padding: 3px 0 0; }
+    .legend .row-group .name { font-weight: 600; color: #334155; }
+    .legend .row-sub { padding-left: 30px; padding-top: 2px; padding-bottom: 2px; }
+    .legend .row-sub .name.sub { color: #64748b; font-size: 11.5px; }
+    .legend .row-fixed { color: #94a3b8; }
+    .legend .lg-note { font-size: 10px; color: #cbd5e1; margin-left: 4px; }
+    .dot.rest { background: #b45309; }
+    .lg-more { text-align: center; padding: 2px 0 0; }
+    .lg-more-btn { border: none; background: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 6px 12px; font-family: inherit; }
+    .lg-more-btn:hover { color: #0f766e; }
+    .evset-t { display: block; width: 100%; border: none; background: #f1f5f9; border-radius: 8px; min-height: 38px; font-size: 12.5px; font-weight: 600; color: #475569; cursor: pointer; font-family: inherit; }
+    .evset-t:hover { background: #e2e8f0; }
+    #evsetBody { padding-top: 8px; }
+    /* S31 续航提示隐藏（显示层隐藏，计算保留）：peek 摘要行 + 桌面 planBox */
+    #planPeek { display: none !important; }
+    #planBox { display: none; }
     .evrow { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #475569; margin-bottom: 6px; }
     .evrow input[type="range"] { accent-color: #0f766e; }
     .evplan { margin-top: 4px; max-height: 170px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; padding: 7px 9px; }
@@ -467,8 +484,7 @@
         #mobFit { display: none; }
         #mobFit.show { display: block; }
         /* peek 规划概要行（planner 喂数据：建议充电 N 次 · 最长无桩间隔） */
-        #planPeek { font-size: 12.5px; font-weight: 600; color: #0f766e; padding: 4px 2px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-        #planPeek::after { content: " ▾"; color: #94a3b8; }
+        /* S31：#planPeek 已隐藏（主样式区 display:none !important），定义移除 */
         /* S26 移动端规划详情面板（摘要行点开，数据源同侧栏 planBox） */
         #mobPlanBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
         body.mob-plan #mobPlanBk { display: block; }
@@ -606,15 +622,22 @@
     </div>
     <ul class="day-list" id="dayList"></ul>
     <details class="legend" id="legendBox" open>
-        <summary>图层 · 站点开关</summary>
-        <div class="row"><span class="name"><span class="dot line"></span>主路线</span><span id="dirNote">沿线方向</span></div>
-        <div class="row"><span class="name"><span class="dot city"></span>城镇 / 补给点</span><label class="switch"><input type="checkbox" id="tgCity" checked><span class="track"></span><span class="knob"></span></label></div>
-        <div class="row"><span class="name"><span class="dot spot"></span>景点 / 垭口</span><label class="switch"><input type="checkbox" id="tgSpot"><span class="track"></span><span class="knob"></span></label></div>
-        <div class="row"><span class="name"><span class="dot fuel"></span>加油站（关键段）<span class="tierHint" id="fuelTierHint"></span></span><label class="switch"><input type="checkbox" id="tgFuel"><span class="track"></span><span class="knob"></span></label></div>
-        <div class="row"><span class="name"><span class="dot ev"></span>充电站（快充）</span><label class="switch"><input type="checkbox" id="tgEv"><span class="track"></span><span class="knob"></span></label></div>
-        <div class="row" id="classicRow"><span class="name"><span class="dot cls"></span><span id="classicLabel">支线</span></span><label class="switch"><input type="checkbox" id="tgClassic"><span class="track"></span><span class="knob"></span></label></div>
+        <summary>图层</summary>
+        <div class="row row-fixed"><span class="name"><span class="dot line"></span>主路线</span><span id="dirNote">沿线方向</span></div>
+        <div class="row"><span class="name"><span class="dot rest"></span>休整点<span class="lg-note">住宿 · 午休</span></span><label class="switch"><input type="checkbox" id="tgRest" checked><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row"><span class="name"><span class="dot spot"></span>打卡点<span class="lg-note">景点 · 垭口 · 观景台</span></span><label class="switch"><input type="checkbox" id="tgSpot"><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row row-group"><span class="name"><span class="dot ev"></span>补给点</span></div>
+        <div class="row row-sub"><span class="name sub">充电站</span><label class="switch"><input type="checkbox" id="tgEv" checked><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row row-sub"><span class="name sub">加油站<span class="tierHint" id="fuelTierHint"></span></span><label class="switch"><input type="checkbox" id="tgFuel" checked><span class="track"></span><span class="knob"></span></label></div>
+        <div class="row"><span class="name"><span class="dot city"></span>城镇名</span><label class="switch"><input type="checkbox" id="tgCity" checked><span class="track"></span><span class="knob"></span></label></div>
+        <div class="lg-more"><button id="lgMoreBtn" class="lg-more-btn">更多 ▾</button></div>
+        <div id="lgMore" style="display:none">
+            <div class="row" id="classicRow"><span class="name"><span class="dot cls"></span><span id="classicLabel">支线</span></span><label class="switch"><input type="checkbox" id="tgClassic"><span class="track"></span><span class="knob"></span></label></div>
+        </div>
     </details>
         <div class="evcard">
+        <button class="evset-t" id="evsetToggle" type="button">🔋 续航设置 ▾</button>
+        <div id="evsetBody" style="display:none">
         <div class="evrow">
             <span class="seg">
                 <button id="btnEv" class="on"><i class="ic" id="icEv"></i>电车</button>
@@ -629,7 +652,8 @@
         <div class="evrow">
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="ckAlt" checked> 高原折算 ×0.85（低温/风阻/爬升）</label>
         </div>
-        <div class="evplan" id="planBox"></div>
+        </div>
+        <div class="evplan" id="planBox" style="display:none"></div><!-- S31：显示层隐藏，规划计算保留（innerHTML 照常更新） -->
     </div>
     <button class="btn-fit" id="btnFit">回到全览</button>
     <div class="tip">点击图标看详情 · 点击某天地图飞行 + 剖面高亮 · 底部可展开海拔剖面。<span id="dataCaveat">加油站/充电站为公开资料整理，出发前请复核营业状态。</span>

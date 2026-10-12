@@ -512,6 +512,14 @@
 
     /* --- 设置卡事件 --- */
     function bindEvCard() {
+        /* S31：续航设置折叠区（滑杆/高原折算/车型说明收进图层弹层底部「续航设置 ▾」，默认收起） */
+        var evsetT = document.getElementById('evsetToggle');
+        var evsetB = document.getElementById('evsetBody');
+        if (evsetT) evsetT.onclick = function () {
+            var open = evsetB && evsetB.style.display === 'none';
+            if (evsetB) evsetB.style.display = open ? '' : 'none';
+            evsetT.textContent = open ? '🔋 续航设置 ▴' : '🔋 续航设置 ▾';
+        };
         var rng = document.getElementById('rngRange');
         var val = document.getElementById('rngVal');
         rng.oninput = function () {

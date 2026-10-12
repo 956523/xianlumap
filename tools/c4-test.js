@@ -471,10 +471,11 @@ function runRoute(routeId) {
         !/var\s+fuelMarkers\s*=/.test(mainScript) &&
         !/var\s+evMarkers\s*=/.test(mainScript),
         'FUELS/EVS 曾与 STATION_DATA 同时打点，同一个站两个位置');
-    ok('站点图层开关改走状态位（不再持有 marker 引用；S26 起默认关）',
-        /var layerOn = \{ fuel: false, ev: false \}/.test(mainScript) &&
+    ok('站点图层开关改走状态位（S31 起补给默认开 + 休整层 + 勾选持久化）',
+        /var layerOn = \{ fuel: true, ev: true \}/.test(mainScript) &&
+        /restLayerOn = true/.test(mainScript) &&
         /layerOn\.fuel = e\.target\.checked/.test(mainScript) &&
-        /layerOn\.ev = e\.target\.checked/.test(mainScript),
+        /saveLayerPrefs/.test(mainScript),
         '重建图层后旧引用会失效，必须改成状态位 + 重绘');
 
     console.log('\n【15】窄屏地图可见性（v9-C：390px 下地图全白）');

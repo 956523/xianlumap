@@ -783,13 +783,13 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     console.log('\n【20】S26：默认图层态 / 车型盲区过滤 / 规划面板');
     var s26 = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
     var S26 = s26.sandbox;
-    ok('默认图层策略：景点/油/电开关默认关（HTML 无 checked + layerState 双 false）',
+    ok('默认图层策略（S31）：补给两开 + 休整开 + 打卡关，勾选持久化到 localStorage',
         !s26.err && (function () {
-            var noChecked = ['tgSpot', 'tgFuel', 'tgEv'].every(function (id) {
-                return !new RegExp('id="' + id + '"[^>]*checked').test(html);
-            });
+            var htmlOk = !new RegExp('id="tgSpot"[^>]*checked').test(html) &&
+                ['tgRest', 'tgFuel', 'tgEv'].every(function (id) { return new RegExp('id="' + id + '"[^>]*checked').test(html); });
             var ls = S26.window.__layerState();
-            return noChecked && ls.ev === false && ls.fuel === false;
+            /* mock 监听不可触发，持久化走源码断言（saveLayerPrefs 绑定在各开关上） */
+            return htmlOk && ls.ev === true && ls.fuel === true && ls.rest === true && /saveLayerPrefs/.test(mainScript);
         })(), JSON.stringify(S26.window.__layerState()));
     ok('盲区标注按车型过滤：切油车后无加油段替换无快充段（318 双类型数据实证）',
         (function () {
@@ -1003,6 +1003,39 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         /data-spot/.test(lis29b[0].innerHTML) && /pt-m/.test(editSrc29) && /flyInfo/.test(editSrc29), '');
     ok('长按加停靠无 Edit.on 门槛（S28 退役回归锁：两处把门都在入口/上下文）',
         !/!Edit\.on/.test(editSrc29) && /panelTab !== 'wp'/.test(editSrc29), '');
+    /* ---------- S31：图层体系对齐三类点 / 续航提示隐藏 ---------- */
+    console.log('\n【24】S31：图层分组与续航模块隐藏');
+    // a) 弹层分组结构：三类语言组织 + 补给子开关 + 更多折叠收编经典支线
+    ok('图层弹层按三类点分组（休整/打卡/补给组+子开关/城镇名/更多折叠含支线）',
+        /id="tgRest"[^>]*checked/.test(html) &&
+        /休整点/.test(html) && /打卡点/.test(html) && /补给点/.test(html) &&
+        /id="tgEv"[^>]*checked/.test(html) && /id="tgFuel"[^>]*checked/.test(html) &&
+        /id="lgMore"/.test(html) && /id="classicRow"/.test(html) &&
+        (function () { return html.indexOf('id="classicRow"') > html.indexOf('id="lgMore"'); })(), '');
+    // b) 休整点层：住宿点渲染（天终点位置 + 名称），rest 途经点并入
+    var s31 = bootRoute('chuanxi');
+    var S31 = s31.sandbox;
+    var mkBefore = (s31.sandbox.restData || []).length;
+    S31.Edit.setDayField(1, 'stay', '测试住宿');
+    S31.renderAll();
+    var mkAfterStay = (s31.sandbox.restData || []).length;
+    S31.Wp.add('测试午休点', 30.7, 104.0, 'rest');
+    S31.renderAll();
+    var mkFinal = (s31.sandbox.restData || []).filter(function (r) { return /测试午休点/.test(r.t); }).length;
+    ok('休整点层渲染：住宿（天终点）+ rest 途经点',
+        !s31.err && mkAfterStay === mkBefore + 1 && /测试住宿（住宿）/.test(s31.sandbox.restData.map(function (r) { return r.t; }).join('|')) && mkFinal === 1,
+        'restData ' + mkBefore + '→' + mkAfterStay + '+' + mkFinal);
+    // c) 续航模块隐藏：planBox/peek 隐藏但计算保留，设置收进折叠区（默认收起）
+    var planHtml0 = elCache['planBox'].innerHTML;
+    elCache['rngRange'].value = '300';
+    elCache['rngRange'].oninput && elCache['rngRange'].oninput();
+    ok('续航提示隐藏（display:none）但规划计算保留（planBox innerHTML 随滑杆更新）',
+        /id="planBox" style="display:none"/.test(html) &&
+        /#planPeek\s*\{[^}]*display:\s*none/.test(html) &&
+        /id="evsetBody" style="display:none"/.test(html) &&
+        elCache['planBox'].innerHTML !== planHtml0 && /全程需/.test(elCache['planBox'].innerHTML), '');
+    ok('续航设置折叠区接线（evsetToggle 开合 + 车型切换保留）',
+        /evsetToggle/.test(mainScript) && typeof elCache['btnEv'].onclick === 'function', '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });
