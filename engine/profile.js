@@ -201,10 +201,10 @@
             dots + '</svg></span>';
     }
 
-    /* ============ S27：编辑态剖面「天边界」拖把手 ============
-       编辑模式下，剖面可见的每个「天与天相接的里程边界」画可拖把手（全程模式 = 全部
-       内边界；聚焦模式 = 该天左右两条边界——拖它就是在调这一天的长短）；拖动中用
-       elevTip 显示「D2 213km｜D3 159km」预览，松手走既有 Edit.setSeg 重切相邻两天
+    /* ============ S27/S28：剖面「天边界」拖把手（默认可用，无需任何模式） ============
+       剖面可见的每个「天与天相接的里程边界」画可拖把手（全程模式 = 全部内边界；
+       聚焦模式 = 该天左右两条边界——拖它就是在调这一天长短）；拖动中用 elevTip
+       显示「D2 213km｜D3 159km」预览，松手走既有 Edit.setSeg 重切相邻两天
        （纯 overlay 即时生效，与终点下拉同一套守卫与持久化）。
        <1km 沿用既有守卫：minKm/maxKm 钳制（等价 makeBoundarySelect 的
        Math.max(v+1, other) 口径），不会切出不足 1km 的天。
@@ -215,7 +215,7 @@
 
     function segHandlesFor(series, xF, boxRectLeft, L, R, W, totalKm) {
         var out = [];
-        if (typeof Edit === 'undefined' || !Edit.on || typeof Edit._mergedIds !== 'function') return out;
+        if (typeof Edit === 'undefined' || typeof Edit._mergedIds !== 'function') return out;   // S28：默认态可用，不再要求 Edit.on
         if (typeof STARTS !== 'undefined' && STARTS.length > 1 && typeof start !== 'undefined' && start !== STARTS[0].id) return out;
         var merged = Edit._mergedIds();
         var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
@@ -241,7 +241,7 @@
     }
     function segDragStart(bi, e) {
         var h = lastSegHandles.filter(function (x) { return x.bi === bi; })[0];
-        if (!h || typeof Edit === 'undefined' || !Edit.on) return;
+        if (!h || typeof Edit === 'undefined') return;
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         if (e && e.stopPropagation) e.stopPropagation();
         var minKm = +(h.dayA.altKm[0] + 1).toFixed(1);

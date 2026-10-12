@@ -263,7 +263,7 @@ function buildIA() {
 
     /* ⋯菜单 + 遮罩（S18：点外部关闭，对齐图层弹层） */
     var menu = mobEl('div', 'mobMenu');
-    menu.appendChild(mobEl('button', 'mobMenuEdit', null, '✏️ 编辑模式'));
+    menu.appendChild(mobEl('button', 'mobMenuEdit', null, '➕ 途经点管理'));
     menu.appendChild(mobEl('button', 'mobMenuSync', null, '☁️ 云同步'));
     menu.appendChild(mobEl('button', 'mobMenuData', null, 'ℹ️ 数据来源说明'));
     iaRoot.appendChild(menu);
@@ -331,17 +331,14 @@ function buildIA() {
     var mEdit = document.getElementById('mobMenuEdit');
     if (mEdit) mEdit.onclick = function () {
         toggleClass('mob-menu', false);
-        try { if (typeof Edit !== 'undefined' && Edit.enter) Edit.enter(); } catch (e) {}
+        /* S28：编辑模式退役——途经点 Tab 一步可达（抽屉同时全展，结构操作有地方下手） */
+        try { if (typeof Edit !== 'undefined' && Edit.showTab) Edit.showTab('wp'); } catch (e) {}
+        try { if (typeof setSheet === 'function') setSheet('full'); } catch (e) {}
     };
     var mSync = document.getElementById('mobMenuSync');
     if (mSync) mSync.onclick = function () {
         toggleClass('mob-menu', false);
-        try {
-            if (typeof Edit !== 'undefined' && Edit.enter) Edit.enter();
-            if (typeof Edit !== 'undefined' && Edit.showTab) Edit.showTab('more');   // S19：云同步迁入更多 Tab
-            var up = document.getElementById('syncUp');
-            if (up && typeof up.scrollIntoView === 'function') up.scrollIntoView({ block: 'center' });
-        } catch (e) {}
+        try { if (typeof Edit !== 'undefined' && Edit.showTab) Edit.showTab('more'); } catch (e) {}   // S28：云同步在 ⋯ 更多设置页
     };
     var mData = document.getElementById('mobMenuData');
     if (mData) mData.onclick = function () {

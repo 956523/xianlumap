@@ -1,16 +1,18 @@
 /* ============================================================================
- * engine/edit.js — 页面内编辑模式（S5，PLATFORM.md §3.3）
+ * engine/edit.js — 页面内编辑（S5 overlay 架构 + S28 编辑内联化）
  *
  * overlay 架构：编辑不改线路包本体。改动作为 overlay 存 localStorage
  * （键 xianlumap.overlay.<routeId>，按线路隔离），启动时「包 + overlay」
  * 合并生效。下次跑 build 不会被覆盖；一键恢复原始数据 = 清 overlay。
  *
- * 可改（即时，localStorage）：天标题/备注/住宿点、分段（选地名重切区间）、
- *                             地名标注显示名、副标题/纯电提示。
- * 不可改：途经点增删（改几何需重跑构建）——界面给出 build-route.js 引导。
- * 绝不写 ROUTE_BUILD（那是构建输入，只存在于包内，编辑层不碰）。
+ * S28 起「编辑模式」退役（产品拍板：行程表上的改动零门槛）：
+ * - 行程卡默认就地可编辑（点标题/备注/住宿 → 原位输入框，无需进入任何模式）
+ * - 剖面拖天边界把手默认可用（profile.js 不再看 Edit.on）
+ * - 面板双 Tab：行程 | 途经点（结构操作：加点/删点/排序/归天）；移动端选途经点即全展抽屉
+ * - ⋯ 菜单 = 更多设置页（云同步/恢复原始/导入导出/地名/文案/帮助）
+ * - Edit.enter/exit/isOn 仅为兼容桩（恒 false），旧调用点不崩
  *
- * 加载顺序：route-engine → planner → profile → edit → ui
+ * 加载顺序：route-engine → planner → profile → mobile → edit → sync → ui
  * （本文件须在 ui.js 之前：合并要在启动渲染前完成）。
  * ========================================================================== */
 
@@ -199,15 +201,21 @@
 
 
     var Edit = {
+        /* S28：「编辑模式」退役。行程卡默认就地可编辑、剖面把手默认可用、结构操作走
+           面板「途经点」Tab、设置走 ⋯ 菜单——不再有进入/退出的门槛。
+           enter/exit/isOn 保留为兼容桩（旧调用点/测试不崩），isOn 恒 false。 */
         on: false,
         overlay: editLoad(),
-        isOn: function () { return this.on; },
+        isOn: function () { return false; },
+        enter: function () {},
+        exit: function () {},
         tab: 'trip',
-        showTab: function (name) {   // S19：Tab 切换（vm 断言与 ⋯菜单云同步入口用）
-            Edit.tab = (name === 'wp' || name === 'more') ? name : 'trip';
-            try { refreshEditTabs(); } catch (e) {}
+        panelTab: 'trip',
+        showTab: function (name) {   // S28：语义改为面板 Tab（'trip'|'wp'）与 ⋯ 设置页（'more'）
+            if (name === 'more') { openMoreSheet(); return; }
+            switchPanelTab(name);
             /* S23：首次进途经点 Tab（移动断点）给一行手势引导，做过一次不再打扰 */
-            if (Edit.tab === 'wp' && typeof localStorage !== 'undefined' && localStorage) {
+            if (name === 'wp' && typeof localStorage !== 'undefined' && localStorage) {
                 var narrow = false;
                 try { narrow = window.innerWidth <= 768; } catch (e) {}
                 if (narrow && !localStorage.getItem('xlm.wp-gestures-hint')) {
@@ -287,30 +295,7 @@
         },
         refreshTabs: function () { try { refreshEditTabs(); } catch (e) {} },
 
-        /* —— 进入/退出编辑模式 —— */
-        enter: function () {
-            if (this.on) return;
-            /* 体验修复 1：不再静默切回主出发地视角（用户感知为「坏了」）。
-               文字类编辑（标题/备注/住宿/地名/副标题）在任意出发地视角都可用；
-               分段编辑受接入段拼接天的 km 基准限制，仅在主出发地视角开放——
-               其他视角下界面给明确提示、API 显式拒绝（见 refreshDayControls/setSeg）。 */
-            this.on = true;
-            this.tab = 'trip';   // S22：每次进入复位到默认任务区，不带上次的 Tab 残留
-            document.body.classList.add('editing');
-            if (editBar) editBar.style.display = '';
-            this.refreshDayControls();
-            try { drawProfile(); } catch (e) {}   // S27：进入编辑 → 剖面立即长出天边界拖把手
-            try { refreshEditTabs(); } catch (e) {}   // S19：进入编辑即渲染三个 Tab
-        },
-        exit: function () {
-            this.on = false;
-            document.body.classList.remove('editing');
-            if (editBar) editBar.style.display = 'none';
-            this.refreshDayControls();
-            try { drawProfile(); } catch (e) {}   // S27：退出编辑 → 移除剖面拖把手
-        },
-
-        /* —— 编辑操作（API 与 UI 共用；每个操作立即存 overlay） —— */
+        /* —— 编辑操作（API 与 UI 共用；每个操作立即存 overlay；S28 起无需任何模式） —— */
         setDayField: function (id, field, value) {
             if (['title', 'note', 'stay'].indexOf(field) < 0 || value == null) return;
             var f = {}; f[field] = value;
@@ -522,77 +507,23 @@
             return text;
         },
 
-        /* —— 编辑态 UI 注入（进入/重渲染后刷新；退出时移除） —— */
+        /* —— 行程卡默认态控件（S28：无编辑模式，常驻） —— */
         refreshDayControls: function () {
             var listEl = document.getElementById('dayList');
             if (!listEl) return;
-            var segLocked = STARTS.length > 1 && start !== STARTS[0].id;   // 非主出发地视角：分段只读
             var merged = this._mergedIds();
             var visible = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });   // S25：与 renderAll 同口径
             Array.prototype.forEach.call(listEl.children, function (li, i) {
                 var day = visible[i];
                 if (!day) return;
-                // 移除旧控件
-                Array.prototype.forEach.call(li.querySelectorAll('.day-stay, .day-seg, .day-seg-hint'), function (n) { n.remove(); });
-                if (!Edit.on) return;
-                // 住宿点编辑入口
-                var meta = li.querySelector('.day-meta') || li;
+                Array.prototype.forEach.call(li.querySelectorAll('.day-stay'), function (n) { n.remove(); });
+                // 住宿点就地编辑入口（标题/备注的点击捕获在 buildPanelChrome 里，常驻）
+                var col = (li.querySelector && li.querySelector('.day-col')) || li;
                 var stay = document.createElement('span');
                 stay.className = 'day-stay';
                 stay.textContent = day.stay ? '住：' + day.stay + ' ✎' : '＋住宿 ✎';
-                meta.appendChild(stay);
-                // 分段控件：休整日无区间；非主出发地视角给明确提示（不静默、不假装可改）
-                if (day.path && day.altKm) {
-                    if (segLocked) {
-                        var hint = document.createElement('span');
-                        hint.className = 'day-seg-hint';
-                        hint.textContent = Edit.segViewHint();
-                        meta.appendChild(hint);
-                    } else {
-                        var seg = document.createElement('span');
-                        seg.className = 'day-seg';
-                        seg.appendChild(Edit.makeBoundarySelect(day, 0));
-                        seg.appendChild(document.createTextNode(' → '));
-                        seg.appendChild(Edit.makeBoundarySelect(day, 1));
-                        meta.appendChild(seg);
-                    }
-                }
+                col.appendChild(stay);
             });
-        },
-        makeBoundarySelect: function (day, which) {
-            var sel = document.createElement('select');
-            sel.className = 'day-seg-sel';
-            /* S19 修复：选中项按【最近里程】定，不用 0.5km 硬容差——天端点与地名标注
-               相差 >0.5km 时（如丹巴 327.22 vs D2 终点 327.97）旧逻辑无选中项，
-               浏览器回退显示第一项（都江堰），用户看到的终点是错的。 */
-            var nearest = null, nd = 1e9;
-            EDIT_MARKS.forEach(function (mk) {
-                var dd = Math.abs(mk.km - day.altKm[which]);
-                if (dd < nd) { nd = dd; nearest = mk; }
-            });
-            EDIT_MARKS.forEach(function (mk) {
-                var o = document.createElement('option');
-                o.value = String(mk.km);
-                o.textContent = mk.n;
-                if (mk === nearest) o.selected = true;
-                sel.appendChild(o);
-            });
-            var more = document.createElement('option');
-            more.value = '__more__';
-            more.textContent = '＋新增途经点…';
-            sel.appendChild(more);
-            sel.onchange = function () {
-                if (sel.value === '__more__') {
-                    Edit.showWaypointGuide();   // 体验修复 2：三步引导（说明/复制清单/确切命令）
-                    Edit.refreshDayControls();   // 还原选择
-                    return;
-                }
-                var other = which === 0 ? day.altKm[1] : day.altKm[0];
-                var v = +sel.value;
-                if (which === 0) Edit.setSeg(day.id, v, Math.max(v + 1, other));
-                else Edit.setSeg(day.id, Math.min(other, v - 1), v);
-            };
-            return sel;
         },
         updateDayRow: function (id) {
             var merged = this._mergedIds();
@@ -603,8 +534,8 @@
             if (i < 0 || !listEl || !listEl.children[i]) return;
             var li = listEl.children[i];
             var day = visible[i];
-            var t = li.querySelector('.day-title'); if (t) t.textContent = day.title;
-            var n = li.querySelector('.day-note'); if (n) n.textContent = day.note + (day.stay ? ' · 住' + day.stay : '');
+            var t = li.querySelector('.day-title'); if (t && !t.__inline) t.textContent = day.title;
+            var n = li.querySelector('.day-note'); if (n && !n.__inline) n.textContent = day.note + (day.stay ? ' · 住' + day.stay : '');
             var st = li.querySelector('.day-stay'); if (st) st.textContent = day.stay ? '住：' + day.stay + ' ✎' : '＋住宿 ✎';
         }
     };
@@ -636,58 +567,97 @@
     /* 启动合并：包 + overlay（在 ui.js 启动渲染之前执行） */
     (function bootMerge() { applyOverlay(Edit.overlay); })();
 
-    /* ---------- 入口按钮 + 编辑面板（S19：任务分区 Tab 化） ----------
-       结构：顶部 ‹ 完成编辑 + ⋯菜单（恢复原始/导出/导入/帮助）；
-       三个 Tab：行程（默认）| 途经点 | 更多。桌面侧栏与移动全屏同构（S16 全屏化沿用）。 */
-    var editBar = null;
-    (function buildEditUI() {
-        var btn = document.createElement('button');
-        btn.className = 'btn-fit edit-toggle';
-        btn.id = 'btnEdit';
-        btn.textContent = '✏️ 编辑模式';
-        var btnFit = document.getElementById('btnFit');
-        if (btnFit && btnFit.parentNode && btnFit.parentNode.insertBefore) {
-            btnFit.parentNode.insertBefore(btn, btnFit.nextSibling);
-        } else {
-            var panel = document.getElementById('panel');
-            if (panel && panel.appendChild) panel.appendChild(btn);
+    /* ---------- S28：面板双 Tab（行程 / 途经点）+ 常驻出发日期 + ⋯ 更多设置 ----------
+       「编辑模式」退役后的信息架构（产品拍板：行程表上的改动零门槛）：
+       - 行程 Tab = 原有侧栏全部内容；行程卡默认就地可编辑（点标题/备注/住宿变输入框）
+       - 途经点 Tab = 结构操作（加点/删点/排序/归天），移动端选中即全展抽屉
+       - ⋯ 菜单 = 更多设置页（云同步/恢复原始/导入导出/地名/文案/帮助）
+       trip 区节点打 .trip-only，切 Tab 走 body.pt-wp 类切换显隐（不搬动节点——
+       mobile.js 的迁移/归位登记按原父节点工作，搬节点会踩跨断点恢复的坑）。 */
+    function switchPanelTab(name) {
+        Edit.panelTab = (name === 'wp') ? 'wp' : 'trip';
+        Edit.tab = Edit.panelTab;
+        if (document.body && document.body.classList) document.body.classList.toggle('pt-wp', Edit.panelTab === 'wp');
+        Array.prototype.forEach.call(document.querySelectorAll ? document.querySelectorAll('.pt-tab') : [], function (b) {
+            if (b && b.classList && b.getAttribute) b.classList.toggle('on', b.getAttribute('data-pt') === Edit.panelTab);
+        });
+        if (Edit.panelTab === 'wp') {
+            try { if (window.innerWidth <= 768 && typeof setSheet === 'function') setSheet('full'); } catch (e) {}
+            try { if (typeof Wp !== 'undefined' && Wp.renderList) Wp.renderList(); } catch (e) {}
         }
-        editBar = document.createElement('div');
-        editBar.className = 'edit-bar';
-        editBar.id = 'editBar';            // sync.js 按 id 挂「云同步」区（S19 迁入更多 Tab）
-        editBar.style.display = 'none';
-        editBar.innerHTML =
-            /* 顶栏 */
-            '<div class="et-top">' +
-            '<button id="etDone" class="et-done">‹ 完成编辑</button>' +
-            '<span class="et-title">编辑模式</span>' +
-            '<button id="etMoreBtn" class="et-more">⋯</button>' +
-            '<div id="etMenu">' +
-            '<button id="etReset">↩️ 恢复原始数据</button>' +
-            '<button id="etExport">📤 导出编辑层</button>' +
-            '<button id="etImportBtn">📥 导入编辑层</button>' +
-            '<button id="etHelpBtn">❓ 帮助</button>' +
-            '</div>' +
-            '<div id="etMenuBk"></div>' +
-            '</div>' +
-            /* Tab 头 */
-            '<div class="et-tabs">' +
-            '<button data-et="trip" class="et-tab on">行程</button>' +
-            '<button data-et="wp" class="et-tab">途经点</button>' +
-            '<button data-et="more" class="et-tab">更多</button>' +
-            '</div>' +
-            /* 行程：出发日期 + 天卡（标题/日期/途经 chips/分段下拉） */
-            '<div class="et-pane" id="etPaneTrip">' +
-            '<div class="et-dep">' +
-            '<span class="et-lbl">📅 出发日期</span>' +
-            '<input type="date" id="depDate">' +
-            '<button id="depClear" class="edit-mini">清除</button>' +
-            '</div>' +
-            '<div class="et-note">改标题/备注/住宿点点文字即可；终点下拉改分段（新途经点走「＋新增途经点…」）。带「待保存生效」标记的途经点来自「途经点」页——改动轨迹要重新生成线路后才会画进地图。</div>' +
-            '<div id="editDayList"></div>' +
-            '</div>' +
-            /* 途经点：列表/搜索/点选/生成（S12 能力原样收编；wpList 等 id 保持不变，原接线照用） */
-            '<div class="et-pane" id="etPaneWp" style="display:none">' +
+    }
+    function openMoreSheet() { if (document.body && document.body.classList) document.body.classList.add('more-open'); }
+    function closeMoreSheet() { if (document.body && document.body.classList) document.body.classList.remove('more-open'); }
+
+    /* 就地编辑：点行程卡上的标题/备注/住宿 → 原位变输入框（Enter/失手保存，Esc 取消）。
+       mock DOM 无 parentNode/insertBefore，直接跳过（vm 断言走 Edit.setDayField 同一提交路径）。 */
+    function visibleDayAt(idx) {
+        if (idx < 0) return null;
+        var merged = Edit._mergedIds();
+        var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
+        return vis[idx] || null;
+    }
+    function openInlineField(li, day, field) {
+        var span = li.querySelector ? li.querySelector('.day-' + field) : null;
+        if (!span || span.__inline) return false;
+        if (!span.parentNode || typeof span.parentNode.insertBefore !== 'function') return false;
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'day-inline';
+        input.maxLength = field === 'title' ? 60 : (field === 'note' ? 80 : 20);
+        input.value = field === 'stay' ? (day.stay || '') : (day[field] || '');
+        span.__inline = true;
+        span.style.display = 'none';
+        span.parentNode.insertBefore(input, span.nextSibling);
+        var done = false;
+        function finish(save) {
+            if (done) return; done = true;
+            var v = input.value;
+            if (input.remove) input.remove();
+            span.__inline = false;
+            span.style.display = '';
+            if (save) Edit.setDayField(day.id, field, v);
+            else Edit.updateDayRow(day.id);
+        }
+        if (input.addEventListener) {
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') finish(true);
+                else if (e.key === 'Escape') finish(false);
+            });
+            input.addEventListener('blur', function () { finish(true); });
+        }
+        try { if (input.focus) input.focus(); if (input.select) input.select(); } catch (e) {}
+        return true;
+    }
+
+    (function buildPanelChrome() {
+        var panel = document.getElementById('panel');
+        if (!panel) return;
+        /* 1) Tab 条 + 常驻出发日期（插在副标题之后） */
+        var anchor = null;
+        try {
+            var sub = panel.querySelector ? panel.querySelector('.sub') : null;
+            anchor = sub ? sub.nextSibling : null;
+        } catch (e) {}
+        var tabs = document.createElement('div');
+        tabs.className = 'pt-tabs';
+        tabs.innerHTML =
+            '<button data-pt="trip" class="pt-tab on">行程</button>' +
+            '<button data-pt="wp" class="pt-tab">途经点<span id="wpTabBadge"></span></button>' +
+            '<button id="panelMore" class="pt-more" title="更多设置">⋯</button>';
+        var dep = document.createElement('div');
+        dep.className = 'pt-dep';
+        dep.innerHTML = '<span>📅 出发日期</span><input type="date" id="depDate"><button id="depClear" class="edit-mini">清除</button>';
+        if (anchor && panel.insertBefore) { panel.insertBefore(tabs, anchor); panel.insertBefore(dep, anchor); }
+        else if (panel.appendChild) { panel.appendChild(tabs); panel.appendChild(dep); }
+        Array.prototype.forEach.call(tabs.querySelectorAll ? tabs.querySelectorAll('.pt-tab') : [], function (b) {
+            if (!b.addEventListener || !b.getAttribute) return;
+            b.addEventListener('click', function () { switchPanelTab(b.getAttribute('data-pt')); });
+        });
+        /* 2) 途经点 Pane（结构操作；行程区节点打 trip-only 由 body.pt-wp 统一切换） */
+        var wpPane = document.createElement('div');
+        wpPane.id = 'paneWp';   // 初始显隐由 CSS（#paneWp/body.pt-wp）驱动，不写内联——内联会盖过类切换
+        wpPane.innerHTML =
             '<div class="wp-head">➕ 途经点<span class="wp-badge" id="wpBadge">待保存生效</span></div>' +
             '<div class="wp-note">搜索、地图点选，或<b>长按地图任意位置</b>添加停靠点。每行 [Dn] 是它属于的第几天（随分段联动）；' +
             '改动只保存在这台设备上，暂时<b>不会画进地图</b>——点下方「保存我的版本」重新生成线路后生效。</div>' +
@@ -695,116 +665,71 @@
             '<input class="wp-search" id="wpSearch" placeholder="搜索地名（高德输入提示）…" autocomplete="off">' +
             '<div class="wp-row">' +
             '<button class="edit-mini" id="wpPick">📍 地图点选</button>' +
+            '<button class="edit-mini" id="wpGuideBtn">维护指南</button>' +
             '</div>' +
-            '<button id="wpGen" class="et-gen">💾 保存我的版本（导出 + 重新生成线路）</button>' +
-            '</div>' +
-            /* 更多：地名/文案/云同步(sync.js 挂载点)/帮助 */
-            '<div class="et-pane" id="etPaneMore" style="display:none">' +
-            '<div class="et-sec_t">📛 地名显示名</div>' +
-            '<div id="etMarks"></div>' +
-            '<div class="et-sec_t">📝 线路文案</div>' +
-            '<div class="wp-row">' +
-            '<button class="edit-mini" id="etSub">改线路副标题</button>' +
-            '<button class="edit-mini" id="etNotice">改纯电提示</button>' +
-            '</div>' +
-            '<div class="et-sec_t">☁️ 云同步（S15）</div>' +
-            '<div id="editPaneMore"></div>' +
-            '<div class="et-sec_t">❓ 帮助</div>' +
-            '<div class="et-help">改动只保存在这台设备的浏览器里，原始线路数据不受影响。' +
-            '改分段/标题/备注立即重排预览；加过途经点后，需要点「保存我的版本」重新生成线路才会真正生效。' +
-            '换设备用云同步备份恢复。</div>' +
-            '</div>' +
-            /* 归天天数选择弹层 + toast（S20） */
-            '<div id="etDayPickBk"></div>' +
-            '<div id="etDayPick"><div class="et-dp_t">把该途经点归到哪一天？</div><div id="etDayPickList"></div></div>' +
-            '<div id="etToast"></div>';
-        if (btn.parentNode && btn.parentNode.insertBefore) {
-            btn.parentNode.insertBefore(editBar, btn.nextSibling);
-        } else if (panel && panel.appendChild) {
-            panel.appendChild(editBar);
-        }
-        /* Tab 样式（一处注入，桌面/移动同构） */
-        var css = document.createElement('style');
-        css.textContent =
-            '.et-top{display:flex;align-items:center;gap:8px;padding:2px 0 8px;border-bottom:1px solid #e2e8f0;margin-bottom:8px;position:relative;}' +
-            '.et-done{border:none;background:#f0fdfa;color:#0f766e;font-size:14px;font-weight:600;padding:10px 12px;border-radius:8px;cursor:pointer;font-family:inherit;}' +
-            '.et-title{flex:1;text-align:center;font-size:14px;font-weight:600;color:#0f172a;}' +
-            '.et-more{width:44px;height:40px;border:none;background:#f1f5f9;border-radius:8px;font-size:18px;color:#475569;cursor:pointer;font-family:inherit;}' +
-            '#etMenu{position:absolute;top:46px;right:0;z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.16);padding:5px;display:none;min-width:180px;}' +
-            'body.et-menu #etMenu{display:block;}' +
-            '#etMenu button{display:block;width:100%;text-align:left;border:none;background:none;min-height:40px;padding:0 10px;font-size:13px;color:#1f2937;border-radius:6px;cursor:pointer;font-family:inherit;}' +
-            '#etMenuBk{position:fixed;inset:0;z-index:15;display:none;}' +
-            'body.et-menu #etMenuBk{display:block;}' +
-            '.et-tabs{display:flex;gap:4px;background:#f1f5f9;border-radius:9px;padding:3px;margin-bottom:10px;}' +
-            '.et-tab{flex:1;border:none;background:none;min-height:40px;border-radius:7px;font-size:13.5px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;}' +
-            '.et-tab.on{background:#fff;color:#0f766e;box-shadow:0 1px 3px rgba(15,23,42,.12);}' +
-            '.et-pane{padding:2px 0;}' +
-            '.et-dep{display:flex;align-items:center;gap:8px;margin-bottom:8px;}' +
-            '.et-lbl{font-size:12.5px;font-weight:600;color:#92400e;flex:none;}' +
-            '.et-dep input[type=date]{flex:1;min-height:40px;font-size:13px;border:1px solid #e2e8f0;border-radius:8px;padding:0 8px;font-family:inherit;}' +
-            '.et-note{font-size:11px;color:#94a3b8;line-height:1.6;margin-bottom:8px;}' +
-            '.et-day{border:1px solid #f1f5f9;border-radius:10px;padding:8px 10px;margin-bottom:8px;}' +
-            '.et-day-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;}' +
-            '.et-tag{flex:none;font-size:11px;font-weight:700;color:#0f766e;background:#f0fdfa;border-radius:6px;padding:2px 6px;}' +
-            '.et-txt{flex:1;border:none;background:none;font-size:14px;font-weight:600;color:#0f172a;text-align:left;padding:8px 4px;cursor:pointer;font-family:inherit;min-height:40px;}' +
-            '.et-sub{font-size:11.5px;color:#64748b;padding:0 2px;}' +
-            '.et-chips{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;}' +
-            '.et-chip{font-size:10.5px;color:#6d28d9;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:1px 6px;}' +
-            '.et-chip.more{color:#94a3b8;background:#f8fafc;border-color:#e2e8f0;}' +
-            '.et-chips .et-none{font-size:10.5px;color:#cbd5e1;}' +
-            '.et-seg{display:flex;align-items:center;gap:6px;margin-top:4px;}' +
-            '.et-seg select{flex:1;min-height:40px;font-size:12.5px;border:1px solid #e2e8f0;border-radius:7px;padding:0 6px;font-family:inherit;background:#fff;}' +
-            '.et-seg-hint{font-size:11px;color:#b45309;}' +
-            '.et-wp{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:13px;}' +
-            '.et-wp .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 0;}' +
-            '.et-wp .grip{border:none;background:none;color:#94a3b8;font-size:15px;cursor:grab;padding:10px 6px;font-family:inherit;}' +
-            '.et-dayno{flex:none;font-size:10.5px;font-weight:700;color:#0f766e;background:#f0fdfa;border:none;border-radius:6px;padding:3px 7px;font-family:inherit;cursor:pointer;}' +
-            '.et-wp button.mv{width:44px;height:44px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;padding:0;font-family:inherit;}' +
-            '.et-wp button.del{width:44px;height:44px;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font-size:14px;padding:0;font-family:inherit;}' +
-            '.et-gen{display:block;width:100%;margin-top:10px;min-height:52px;border:none;background:#0f766e;color:#fff;font-size:15px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(15,118,110,.3);}' +
-            '.et-sec_t{font-size:12.5px;font-weight:600;color:#92400e;margin:10px 0 4px;}' +
-            '.et-mark{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:2px 0;color:#334155;}' +
-            '.et-mark .mn{flex:1;padding:8px 0;}' +
-            '.et-mark button{min-height:40px;padding:0 10px;border:1px solid #e2e8f0;background:#fff;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;}' +
-            '.et-help{font-size:11.5px;color:#64748b;line-height:1.7;}' +
-            '#editPaneMore .sync-sec{border-top:none;margin-top:0;padding-top:0;}' +
-            /* S20 归天天数选择弹层 + toast */
-            '#etDayPickBk{position:fixed;inset:0;z-index:30;background:rgba(15,23,42,.4);display:none;}' +
-            'body.et-daypick #etDayPickBk{display:block;}' +
-            '#etDayPick{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:31;width:min(320px,calc(100vw - 48px));background:#fff;border-radius:14px;box-shadow:0 16px 48px rgba(15,23,42,.25);padding:12px;display:none;}' +
-            'body.et-daypick #etDayPick{display:block;}' +
-            '.et-dp_t{font-size:13.5px;font-weight:600;color:#0f172a;margin-bottom:8px;text-align:center;}' +
-            '#etDayPickList button{display:block;width:100%;min-height:46px;border:none;background:none;font-size:14px;color:#1f2937;border-radius:8px;cursor:pointer;font-family:inherit;text-align:left;padding:0 12px;}' +
-            '#etDayPickList button:active{background:#f0fdfa;}' +
-            '#etDayPickList button.cur{color:#94a3b8;cursor:default;}' +
-            '#etToast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);z-index:40;background:#0f172a;color:#fff;font-size:13px;padding:10px 18px;border-radius:22px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;}' +
-            '#etToast.show{opacity:1;transform:translateX(-50%) translateY(0);}';
-        (document.head || document.documentElement).appendChild(css);
-
-        /* —— 顶栏与菜单 —— */
-        var doneBtn = document.getElementById('etDone');
-        if (doneBtn) doneBtn.onclick = function () { Edit.exit(); };
-        var moreBtn = document.getElementById('etMoreBtn');
-        if (moreBtn) moreBtn.onclick = function () { document.body.classList.toggle('et-menu'); };
-        var menuBk = document.getElementById('etMenuBk');
-        if (menuBk) menuBk.onclick = function () { document.body.classList.remove('et-menu'); };
-        function closeMenu() { document.body.classList.remove('et-menu'); }
-        var etReset = document.getElementById('etReset');
-        if (etReset) etReset.onclick = function () {
-            closeMenu();
-            if (editAsk('清空本机全部改动，恢复线路原始数据？', '确定') !== null) Edit.reset();
+            '<button id="wpGen" class="et-gen">💾 保存我的版本（导出 + 重新生成线路）</button>';
+        if (panel.appendChild) panel.appendChild(wpPane);
+        /* 行程区节点标记（mobile.js 迁出的图层/续航卡在 mobRoot 里，不在 #panel 下，天然不受影响） */
+        ['dayList', 'legendBox', 'btnFit', 'planPeek'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && el.classList) el.classList.add('trip-only');
+        });
+        try {
+            Array.prototype.forEach.call(panel.querySelectorAll ? panel.querySelectorAll('.chips, .evcard, .tip') : [], function (el) {
+                if (el && el.classList) el.classList.add('trip-only');
+            });
+        } catch (e) {}
+        /* 3) ⋯ 更多设置页（云同步由 sync.js 挂载 #moreSync） */
+        var msBk = document.createElement('div');
+        msBk.id = 'moreBk';
+        var ms = document.createElement('div');
+        ms.id = 'moreSheet';
+        ms.innerHTML =
+            '<div class="ms-head"><span>更多设置</span><button id="msClose" class="pt-more">✕</button></div>' +
+            '<div class="ms-sec">☁️ 云同步</div><div id="moreSync"></div>' +
+            '<div class="ms-sec">数据</div>' +
+            '<div class="ms-row">' +
+            '<button class="edit-mini ms-btn" id="msReset">↩️ 恢复原始数据</button>' +
+            '<button class="edit-mini ms-btn" id="msExport">📤 导出编辑层</button>' +
+            '<button class="edit-mini ms-btn" id="msImport">📥 导入编辑层</button></div>' +
+            '<div class="ms-sec">📛 地名显示名</div><div id="etMarks"></div>' +
+            '<div class="ms-sec">📝 线路文案</div>' +
+            '<div class="ms-row">' +
+            '<button class="edit-mini ms-btn" id="msSub">改线路副标题</button>' +
+            '<button class="edit-mini ms-btn" id="msNotice">改纯电提示</button></div>' +
+            '<div class="ms-sec">❓ 帮助</div>' +
+            '<div class="ms-help">改动只保存在这台设备的浏览器里，原始线路数据不受影响。' +
+            '行程卡上的标题/备注/住宿直接点文字就能改；加过途经点后，点「保存我的版本」重新生成线路才会真正生效。' +
+            '换设备用云同步备份恢复。</div>';
+        if (document.body && document.body.appendChild) { document.body.appendChild(msBk); document.body.appendChild(ms); }
+        var pm = document.getElementById('panelMore');
+        if (pm) pm.onclick = openMoreSheet;
+        var mc = document.getElementById('msClose');
+        if (mc) mc.onclick = closeMoreSheet;
+        if (msBk) msBk.onclick = closeMoreSheet;
+        var msReset = document.getElementById('msReset');
+        if (msReset) msReset.onclick = function () {
+            if (editAsk('清空本机全部改动，恢复线路原始数据？', '确定') !== null) { closeMoreSheet(); Edit.reset(); }
         };
-        var etExport = document.getElementById('etExport');
-        if (etExport) etExport.onclick = function () { closeMenu(); Edit.exportOverlay(); };
-        var etHelp = document.getElementById('etHelpBtn');
-        if (etHelp) etHelp.onclick = function () { closeMenu(); Edit.showTab('more'); };
-        // 导入编辑层（S8）：file input 读文件 → 剥注释 → JSON → Edit.importOverlay 校验并应用
-        var imp = document.getElementById('etImportBtn');
+        var msExport = document.getElementById('msExport');
+        if (msExport) msExport.onclick = function () { closeMoreSheet(); Edit.exportOverlay(); };
+        var msSub = document.getElementById('msSub');
+        if (msSub) msSub.onclick = function () {
+            var v = editAsk('线路副标题', ROUTE_META.sub);
+            if (v !== null) Edit.setMeta('sub', v);
+        };
+        var msNotice = document.getElementById('msNotice');
+        if (msNotice) msNotice.onclick = function () {
+            var v = editAsk('纯电提示（纯文本，页面会自动加标题与图标）', ROUTE_META.evNotice);
+            if (v !== null) Edit.setMeta('evNotice', v);
+        };
+        /* 导入编辑层（file input 读文件 → 剥注释 → JSON → Edit.importOverlay 校验并应用） */
         var fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.json,application/json';
         fileInput.style.display = 'none';
-        if (imp) imp.onclick = function () { closeMenu(); fileInput.click(); };
+        var msImport = document.getElementById('msImport');
+        if (msImport) msImport.onclick = function () { closeMoreSheet(); fileInput.click(); };
         fileInput.onchange = function () {
             var f = fileInput.files && fileInput.files[0];
             if (!f) return;
@@ -822,15 +747,12 @@
             };
             reader.readAsText(f);
         };
-        if (editBar && editBar.appendChild) editBar.appendChild(fileInput);
+        if (document.body && document.body.appendChild) document.body.appendChild(fileInput);
 
-        btn.onclick = function () { Edit.on ? Edit.exit() : Edit.enter(); };
-
-        /* 天列表点击（捕获阶段拦截，避免触发 focusDay）——桌面侧栏的等价入口保留 */
+        /* 行程卡点击（捕获阶段拦截，避免触发 focusDay）：文字 → 就地输入框，其余区域仍是聚焦飞行 */
         var listEl = document.getElementById('dayList');
         if (listEl && listEl.addEventListener) {
             listEl.addEventListener('click', function (e) {
-                if (!Edit.on) return;
                 var t = e.target;
                 if (!t || !t.className) return;
                 var li = t;
@@ -838,41 +760,18 @@
                 if (!li) return;
                 var idx = -1;
                 Array.prototype.forEach.call(listEl.children, function (c, j) { if (c === li) idx = j; });
-                var day = DAYS[idx];
+                var day = visibleDayAt(idx);
                 if (!day) return;
-                if (t.className === 'day-title') {
-                    e.stopPropagation();
-                    var v = editAsk('第 ' + day.id + ' 天标题', day.title);
-                    if (v !== null) Edit.setDayField(day.id, 'title', v);
-                } else if (t.className === 'day-note') {
-                    e.stopPropagation();
-                    var v2 = editAsk('第 ' + day.id + ' 天备注', day.note);
-                    if (v2 !== null) Edit.setDayField(day.id, 'note', v2);
-                } else if (t.className === 'day-stay') {
-                    e.stopPropagation();
-                    var v3 = editAsk('第 ' + day.id + ' 天住宿点（留空清除）', day.stay || '');
-                    if (v3 !== null) Edit.setDayField(day.id, 'stay', v3);
-                }
+                if (t.className === 'day-title') { e.stopPropagation(); openInlineField(li, day, 'title'); }
+                else if (t.className === 'day-note') { e.stopPropagation(); openInlineField(li, day, 'note'); }
+                else if (t.className === 'day-stay') { e.stopPropagation(); openInlineField(li, day, 'stay'); }
             }, true);
         }
-
-        /* 副标题 / 纯电通知条 */
-        var etSub = document.getElementById('etSub');
-        if (etSub) etSub.onclick = function () {
-            var v = editAsk('线路副标题', ROUTE_META.sub);
-            if (v !== null) Edit.setMeta('sub', v);
-        };
-        var etNotice = document.getElementById('etNotice');
-        if (etNotice) etNotice.onclick = function () {
-            var v = editAsk('纯电提示（纯文本，页面会自动加标题与图标）', ROUTE_META.evNotice);
-            if (v !== null) Edit.setMeta('evNotice', v);
-        };
 
         /* 剖面地名（点标注改显示名；聚焦模式可见全部，全程模式只见垭口） */
         var chart = document.getElementById('chartBox');
         if (chart && chart.addEventListener) {
             chart.addEventListener('click', function (e) {
-                if (!Edit.on) return;
                 var txt = e.target && e.target.textContent;
                 if (!txt) return;
                 var hit = ALT_MARKS.filter(function (m) {
@@ -885,88 +784,27 @@
         }
     })();
 
-    /* ---------- S19：三 Tab 渲染与联动刷新 ---------- */
-    function dayDateTag(d, i) {
-        var tag = 'D' + d.id;
-        if (typeof ROUTE_META !== 'undefined' && ROUTE_META.departureDate) {
-            try {
-                var dep = new Date(ROUTE_META.departureDate + 'T00:00:00');
-                dep.setDate(dep.getDate() + i);
-                tag += ' · ' + (dep.getMonth() + 1) + '月' + dep.getDate() + '日 周' +
-                    '日一二三四五六'.charAt(dep.getDay());
-            } catch (e) {}
-        }
-        return tag;
-    }
-    function wpChips(day) {
+    /* ---------- S19 联动渲染（S28 重构：编辑面板退役，刷新面 = 行程卡控件 + chips + 途经点列表 + 地名列表） ---------- */
+    function wpChips(day, quiet) {
         if (typeof Wp === 'undefined' || !Wp || !Wp.list || !Wp.list.length || !day.altKm) return '';
         var names = [];
         Wp.list.forEach(function (w) {
             if (wpDayIdx(w) >= 0 && DAYS[wpDayIdx(w)] === day) names.push(w.n);
         });
-        if (!names.length) return '<span class="et-none">途经点：无</span>';
+        if (!names.length) return quiet ? '' : '<span class="et-none">途经点：无</span>';
         var shown = names.slice(0, 5);
         var html = shown.map(function (n) { return '<span class="et-chip">' + escapeHtml(n) + '</span>'; }).join('');
         if (names.length > 5) html += '<span class="et-chip more">+' + (names.length - 5) + '</span>';
         return html;
     }
-    function renderEditDays() {
-        var box = document.getElementById('editDayList');
-        if (!box) return;
-        box.innerHTML = '';
-        var segLocked = (typeof STARTS !== 'undefined' && STARTS.length > 1 && typeof start !== 'undefined' && start !== STARTS[0].id);
+    function refreshChips() {
+        var listEl = document.getElementById('dayList');
+        if (!listEl || !listEl.children) return;
         var merged = Edit._mergedIds();
-        var vi = 0;
-        DAYS.forEach(function (d, i) {
-            if (merged.indexOf(d.id) >= 0) return;   // S25：已并入前一天，显示层隐藏
-            vi++;
-            var card = document.createElement('div');
-            card.className = 'et-day';
-            var rest = !d.altKm || (d.altKm[1] - d.altKm[0]) < 1;   // S25 休整占位
-            var top = document.createElement('div');
-            top.className = 'et-day-top';
-            top.innerHTML = '<span class="et-tag">' + dayDateTag(d, vi - 1) + (rest ? ' · 休整' : '') + '</span>';
-            var txt = document.createElement('button');
-            txt.className = 'et-txt';
-            txt.textContent = d.title;
-            txt.onclick = function () {
-                var v = editAsk('第 ' + d.id + ' 天标题', d.title);
-                if (v !== null) Edit.setDayField(d.id, 'title', v);
-            };
-            top.appendChild(txt);
-            card.appendChild(top);
-            var sub = document.createElement('div');
-            sub.className = 'et-sub';
-            sub.textContent = (rest ? '休整占位 · 往里归点可复活，或并入前一天' : d.note + (d.stay ? ' · 住' + d.stay : '') + (d.km ? ' · ' + d.km + 'km' : ''));
-            card.appendChild(sub);
-            var chips = document.createElement('div');
-            chips.className = 'et-chips';
-            chips.innerHTML = wpChips(d);
-            card.appendChild(chips);
-            if (rest) {
-                var mg = document.createElement('button');
-                mg.className = 'edit-mini et-merge';
-                mg.textContent = '并入前一天';
-                mg.onclick = function () {
-                    if (Edit.mergeDay(d.id)) etToast('已并入前一天，编号已重排');
-                };
-                card.appendChild(mg);
-            } else if (d.path && d.altKm) {
-                if (segLocked) {
-                    var hint = document.createElement('div');
-                    hint.className = 'et-seg-hint';
-                    hint.textContent = Edit.segViewHint();
-                    card.appendChild(hint);
-                } else {
-                    var seg = document.createElement('div');
-                    seg.className = 'et-seg';
-                    seg.appendChild(Edit.makeBoundarySelect(d, 0));
-                    seg.appendChild(document.createTextNode(' → '));
-                    seg.appendChild(Edit.makeBoundarySelect(d, 1));
-                    card.appendChild(seg);
-                }
-            }
-            box.appendChild(card);
+        var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
+        Array.prototype.forEach.call(listEl.children, function (li, i) {
+            var box = li.querySelector ? li.querySelector('.et-chips') : null;
+            if (box && vis[i]) box.innerHTML = wpChips(vis[i], true);
         });
     }
     function renderEtMarks() {
@@ -978,7 +816,7 @@
             row.className = 'et-mark';
             row.innerHTML = '<span class="mn">' + escapeHtml(m.n) + '</span>';
             var b = document.createElement('button');
-            b.className = 'et-mk';
+            b.className = 'ms-btn';
             b.textContent = '改名';
             b.onclick = function () {
                 var v = editAsk('地名显示名（原始名：' + m.n + '）', m.n);
@@ -988,36 +826,13 @@
             box.appendChild(row);
         });
     }
-    /* 联动刷新总入口：任何编辑操作后重绘三个 Tab（函数提升，可在上文各处安全调用） */
+    /* 联动刷新总入口：任何编辑操作后重绘（函数提升，可在上文各处安全调用） */
     function refreshEditTabs() {
-        var bar = editBar;
-        if (!bar) return;
-        var map = { trip: 'etPaneTrip', wp: 'etPaneWp', more: 'etPaneMore' };
-        Object.keys(map).forEach(function (k) {
-            var pane = document.getElementById(map[k]);
-            if (pane && pane.style) pane.style.display = (Edit.tab === k) ? '' : 'none';
-        });
-        Array.prototype.forEach.call(document.querySelectorAll ? document.querySelectorAll('.et-tab') : [], function (t) {
-            if (t && t.classList) t.classList.toggle('on', !!(t.getAttribute && t.getAttribute('data-et') === Edit.tab));
-        });
-        renderEditDays();
-        if (typeof Wp !== 'undefined' && Wp && Wp.renderList) Wp.renderList();
-        renderEtMarks();
+        try { Edit.refreshDayControls(); } catch (e) {}
+        try { refreshChips(); } catch (e) {}
+        if (typeof Wp !== 'undefined' && Wp.renderList) Wp.renderList();
+        try { renderEtMarks(); } catch (e) {}
     }
-    /* Tab 头点击（bind 一次；mock 下 querySelectorAll 为空则逐个兜底） */
-    (function bindEditTabs() {
-        function bindOne(btn, name) {
-            if (!btn || typeof btn.onclick === 'undefined') return;
-            btn.onclick = function () { Edit.showTab(name); };
-        }
-        var tabs = document.querySelectorAll ? document.querySelectorAll('.et-tab') : [];
-        var names = ['trip', 'wp', 'more'];
-        Array.prototype.forEach.call(tabs, function (t, i) {
-            if (t && t.getAttribute) bindOne(t, t.getAttribute('data-et') || names[i]);
-        });
-        bindOne(document.getElementById('etTabTrip'), 'trip');
-    })();
-
     /* ============================================================================
      * 途经点增删向导（S13：自定义线路第一块，用户已拍板）
      * overlay 语义：改动写 localStorage（xianlumap.waypoints.<routeId>），不动
@@ -1171,14 +986,12 @@
     /* ---------- 面板 UI ---------- */
     function refreshWpBadge() {
         var b = document.getElementById('btnEdit');
-        if (b) {
-            var n = Wp.dirty() ? Wp.list.length : 0;
-            b.textContent = n ? '✏️ 编辑模式 · ' + n + ' 个途经点待保存生效' : '✏️ 编辑模式';
-        }
+        var n = Wp.dirty() ? Wp.list.length : 0;
+        var tb = document.getElementById('wpTabBadge');   // S28：Tab 上的待保存计数（编辑按钮已退役）
+        if (tb) { tb.style.display = n ? '' : 'none'; tb.textContent = String(n); }
         try { refreshEditTabs(); } catch (e) {}   // S19：途经点增删 → 行程 chips / [Dn] 徽标联动
     }
     (function buildWaypointPanel() {
-        if (!editBar) return;
         var css = document.createElement('style');
         css.textContent =
             '.wp-sec{margin-top:8px;border-top:1px dashed #fcd34d;padding-top:8px;}' +
@@ -1203,6 +1016,18 @@
             '#wpModal input[type=text],#wpModal input[type=password]{font-size:11px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;width:120px;font-family:inherit;}' +
             '#wpModal .ghlog{font-size:10.5px;color:#64748b;margin-top:6px;line-height:1.6;white-space:pre-wrap;}';
         css.textContent +=
+            /* S28 途经点行底座（原编辑面板样式随 S28 迁移）：名字保底宽度——任何情况下
+               不允许被操作钮挤成单字（hover title 看全名）；桌面操作钮瘦身 36px */
+            '.et-wp{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:13px;}' +
+            '.et-wp .t{flex:1;min-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 0;}' +
+            '.et-wp .grip{border:none;background:none;color:#94a3b8;font-size:15px;cursor:grab;padding:10px 6px;font-family:inherit;flex:none;}' +
+            '.et-dayno{flex:none;font-size:10.5px;font-weight:700;color:#0f766e;background:#f0fdfa;border:none;border-radius:6px;padding:3px 7px;font-family:inherit;cursor:pointer;}' +
+            '.et-wp button.mv{width:36px;height:36px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;padding:0;font-family:inherit;flex:none;}' +
+            '.et-wp button.del{width:36px;height:36px;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font-size:13px;padding:0;font-family:inherit;flex:none;}' +
+            '.et-gen{display:block;width:100%;margin-top:10px;min-height:52px;border:none;background:#0f766e;color:#fff;font-size:15px;font-weight:600;border-radius:12px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(15,118,110,.3);}' +
+            '.et-chip{font-size:10.5px;color:#6d28d9;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:1px 6px;}' +
+            '.et-chip.more{color:#94a3b8;background:#f8fafc;border-color:#e2e8f0;}' +
+            '.et-chips .et-none{font-size:10.5px;color:#cbd5e1;}' +
             /* S23 途经点行：移动手势（左滑删除 / 长按拖动），桌面列隐藏 */
             '.et-wp{position:relative;overflow:hidden;}' +
             '.et-wp-delunder{position:absolute;right:0;top:2px;bottom:2px;width:72px;border:none;border-radius:8px;background:#dc2626;' +   /* 内缩 2px：行有纵向 padding，防底部露红边 */
@@ -1229,8 +1054,8 @@
             '.et-wp-body{padding:2px 0;}' +
             '}';
         (document.head || document.documentElement).appendChild(css);
-        /* S19：途经点/出发日期的 DOM 已并入编辑面板 Tab 模板（etPaneWp / etPaneTrip），
-           这里只保留接线：renderList / 搜索 / 地图点选 / 生成弹层。 */
+        /* S28：途经点 Pane 的 DOM 在 buildPanelChrome 里（#paneWp），这里只保留接线：
+           renderList / 搜索 / 地图点选 / 生成弹层。 */
 
         // 出发日期行（排期 S13）：现在位于行程 Tab，接线不变
         refreshWpBadge();
@@ -1347,7 +1172,7 @@
                 row.innerHTML = '<button class="et-wp-delunder">删除</button>' +
                     '<div class="et-wp-body">' +
                     '<span class="grip" title="拖动排序（桌面 HTML5 拖，触屏长按 ☰ 拖动）">☰</span>' +
-                    '<span class="t">' + escapeHtml(w.n) + '</span>' +
+                    '<span class="t" title="' + escapeHtml(w.n) + '（悬停看全名）">' + escapeHtml(w.n) + '</span>' +
                     '<button class="et-dayno" title="点我改归属天">' + wpDayBadge(w) + '</button>' +
                     '<button class="mv" title="上移">↑</button><button class="mv" title="下移">↓</button>' +
                     '<button class="del" title="删除">✕</button></div>';
@@ -1388,7 +1213,7 @@
             });
             var badge = document.getElementById('wpBadge');
             if (badge) badge.style.display = Wp.dirty() ? '' : 'none';
-            try { if (typeof renderEditDays === 'function') renderEditDays(); } catch (e) {}   // S19：途经点变化 → 行程 chips 联动
+            try { refreshChips(); } catch (e) {}   // S28：途经点变化 → 行程卡 chips 联动
         }
         renderList();
         Wp.renderList = renderList;
@@ -1554,6 +1379,8 @@
         /* 保存我的版本：弹层 = 代码段 + 下载 + 两档重新生成触发 */
         var genBtn = document.getElementById('wpGen');
         if (genBtn) genBtn.onclick = openWpModal;
+        var guideBtn = document.getElementById('wpGuideBtn');
+        if (guideBtn) guideBtn.onclick = function () { Edit.showWaypointGuide(); };
 
         function openWpModal() {
             var old = document.getElementById('wpModal');
@@ -1561,33 +1388,50 @@
             var json = Wp.exportJson();
             var m = document.createElement('div');
             m.id = 'wpModal';
+            /* S28 去代码化：默认视图只有「自动 / 手动」两条路，按钮即全部；
+               代码块与 waypoints.json 收进「高级：查看代码」折叠区（默认收起）。 */
             m.innerHTML =
                 '<h3>保存我的版本 · ' + ROUTE_META.name + '</h3>' +
-                '<div class="wp-note">① 复制下方代码段，粘贴回线路数据文件（route-defs/' + ROUTE_META.key + '.js）里同名的两段' +
-                '（行程分段是自动初分，标题/备注建议人工润色），或下载 JSON 备份；② 触发重新生成；③ 生成完成后刷新页面即见新版。</div>' +
-                '<textarea id="wpJs" readonly></textarea>' +
-                '<div class="mrow">' +
-                '<button class="edit-mini" id="wpCopy">复制代码段</button>' +
-                '<button class="edit-mini" id="wpDl">下载 waypoints.json</button>' +
-                '<button class="edit-mini" id="wpClose">关闭</button>' +
-                '</div>' +
+                '<div class="wp-note" style="color:#64748b;">把这条线的个人改动（途经点、分段、标题等）生成进线路数据。' +
+                '两条路选一：<b>自动</b>最省事（填一次以后都是一键），<b>手动</b>交给维护者代跑。</div>' +
                 '<div class="mrow" style="margin-top:10px;border-top:1px solid #f1f5f9;padding-top:8px;">' +
-                '<b style="font-size:11.5px;color:#0f766e;">重新生成线路（二选一）</b></div>' +
+                '<b style="font-size:11.5px;color:#0f766e;">自动（推荐）</b></div>' +
                 '<div class="mrow">' +
-                '<span style="font-size:10.5px;color:#64748b;">自动：</span>' +
                 '<input type="text" id="ghOwner" placeholder="GitHub 账号名">' +
                 '<input type="text" id="ghRepo" placeholder="仓库名">' +
                 '<input type="password" id="ghToken" placeholder="访问令牌 PAT">' +
                 '<button class="edit-mini" id="ghGo">开始生成</button>' +
                 '</div>' +
-                '<div class="mrow"><span style="font-size:10.5px;color:#94a3b8;line-height:1.5;">PAT 是 GitHub 的「访问令牌」，相当于你授权这个网页替你按一次重新生成按钮——只存在这台设备上，只发给 GitHub 官方。</span></div>' +
-                '<div class="mrow"><span style="font-size:10.5px;color:#64748b;">手动：</span>' +
-                '<span style="font-size:10.5px;color:#475569;">下载文件 + 复制上面代码段，交给维护者代跑</span>' +
+                '<div class="mrow"><span style="font-size:10.5px;color:#94a3b8;line-height:1.5;">PAT 是 GitHub 的「访问令牌」，相当于授权这个网页替你按一次重新生成按钮——只存在这台设备上，只发给 GitHub 官方。三个框填过一次后会记住。</span></div>' +
+                '<div class="mrow"><b style="font-size:11.5px;color:#0f766e;">手动</b></div>' +
+                '<div class="mrow"><span style="font-size:10.5px;color:#475569;">下载文件发给维护者，对方生成完成后你刷新页面即见新版。</span>' +
                 '<button class="edit-mini" id="ghOpen">打开 GitHub Actions 页</button></div>' +
-                '<div class="ghlog" id="ghLog"></div>';
+                '<div class="ghlog" id="ghLog"></div>' +
+                '<div class="mrow" style="border-top:1px dashed #e2e8f0;padding-top:8px;">' +
+                '<button class="edit-mini" id="wpAdvBtn" style="background:#f1f5f9;color:#475569;">高级：查看代码 ▾</button>' +
+                '</div>' +
+                '<div id="wpAdv" style="display:none;">' +
+                '<div class="wp-note">给技术用户：复制下方代码段，粘贴回线路数据文件（route-defs/' + ROUTE_META.key + '.js）里同名的两段' +
+                '（行程分段是自动初分，标题/备注建议人工润色），或下载 JSON 备份。</div>' +
+                '<textarea id="wpJs" readonly></textarea>' +
+                '<div class="mrow">' +
+                '<button class="edit-mini" id="wpCopy">复制代码段</button>' +
+                '<button class="edit-mini" id="wpDl">下载 waypoints.json</button>' +
+                '</div>' +
+                '</div>' +
+                '<div class="mrow">' +
+                '<button class="edit-mini" id="wpClose">关闭</button>' +
+                '</div>';
             document.body.appendChild(m);
             document.getElementById('wpJs').value = Wp.exportJs();
             document.getElementById('wpClose').onclick = function () { m.remove(); };
+            var advOpen = false;
+            document.getElementById('wpAdvBtn').onclick = function () {
+                advOpen = !advOpen;
+                var adv = document.getElementById('wpAdv');
+                if (adv) adv.style.display = advOpen ? '' : 'none';
+                document.getElementById('wpAdvBtn').textContent = advOpen ? '高级：收起代码 ▴' : '高级：查看代码 ▾';
+            };
             document.getElementById('wpCopy').onclick = function () {
                 copyText(Wp.exportJs());
                 editNotice('代码段已复制，粘贴回 route-defs/' + ROUTE_META.key + '.js 对应位置。');
@@ -1599,7 +1443,7 @@
                 a.download = 'route-' + ROUTE_META.key + '.waypoints.json';
                 document.body.appendChild(a); a.click(); a.remove();
             };
-            /* GitHub 配置本机持久化（token 只进 localStorage，不上任何服务器除 GitHub API） */
+                        /* GitHub 配置本机持久化（token 只进 localStorage，不上任何服务器除 GitHub API） */
             var GH_CFG_KEY = 'xlm-gh-config';
             var ghCfg = {};
             try { ghCfg = JSON.parse(localStorage.getItem(GH_CFG_KEY) || '{}') || {}; } catch (e) {}

@@ -81,7 +81,7 @@
     .chip b { display: block; font-size: 14px; color: #0f172a; font-weight: 600; }   /* S24：数字退回正文 */
     .day-list { list-style: none; margin: 0; padding: 0; }
     .day-list li {
-        display: flex; align-items: center; gap: 8px;
+        display: flex; align-items: flex-start; gap: 8px;
         padding: 7px 8px; border-radius: 9px; cursor: pointer;
         border-left: 3px solid transparent;   /* S24：选中竖线占位，激活不跳动 */
         font-size: 12.5px; transition: background .15s;
@@ -91,18 +91,62 @@
     .day-list li.rest { cursor: default; opacity: .75; }
     .day-list li.rest .day-title { color: #94a3b8; }
     .day-tag {
-        flex: none; width: 38px; text-align: center; font-weight: 700; font-size: 11px;
-        color: #475569; background: #f1f5f9; border-radius: 6px; padding: 3px 0;
+        flex: none; min-width: 38px; text-align: center; font-weight: 700; font-size: 11px;
+        color: #475569; background: #f1f5f9; border-radius: 6px; padding: 3px 6px;
     }
     li.active .day-tag { background: #f0fdfa; color: #0f766e; font-weight: 700; }
-    /* day-meta 必须显式 flex column：title/note 是两个 inline span，
-       不设 column 就会横向并排 —— 窄视口一挤压就变成"标题里插了备注" */
-    .day-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-    /* 标题行 + 备注行在窄面板里会互相挤 → 标题只能显示 "西宁 → 青..."。
-       行高固定、允许省略号，但优先保证标题拿到宽度（备注行右边有 km，标题行没有）。 */
-    .day-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .day-note { color: #94a3b8; font-size: 12px; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* S28 行程卡新层级：第一行 = 起点 → 终点（主角）；日期/里程是小字次行；chips 再次。
+       标题全名不截断（允许换行）——用户必须先认出「这是哪一天」，其次才是细节。 */
+    .day-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .day-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .day-title {
+        font-size: 14.5px; font-weight: 600; color: #0f172a; line-height: 1.35;
+        white-space: normal; overflow: visible;   /* 全名不截断（S28：名称优先于排版） */
+        cursor: text; border-bottom: 1px dashed transparent;
+    }
+    .day-list li:hover .day-title { border-bottom-color: #99f6e4; }   /* 就地可编辑的弱提示（S28：无编辑模式） */
+    .day-note {
+        color: #94a3b8; font-size: 12px; letter-spacing: .04em;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        cursor: text; border-bottom: 1px dashed transparent;
+    }
+    .day-list li:hover .day-note { border-bottom-color: #e2e8f0; }
+    .day-list .et-chips { margin: 2px 0 0; }
+    .day-stay {
+        align-self: flex-start; font-size: 10.5px; color: #b45309;
+        background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 5px; padding: 0 5px;
+        cursor: text;
+    }
+    .day-inline {   /* S28 就地编辑输入框（点就地把标题/备注/住宿变成输入框） */
+        flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: #0f172a;
+        border: 1px solid #0f766e; border-radius: 6px; padding: 2px 6px;
+        font-family: inherit; outline: none; background: #f0fdfa;
+    }
     .day-km { flex: none; color: #94a3b8; font-size: 12px; letter-spacing: .04em; }
+    /* S28：面板双 Tab（行程 / 途经点）+ 常驻出发日期 + ⋯ 更多设置 */
+    .pt-tabs { display: flex; align-items: center; gap: 4px; margin: 6px 0 8px; background: #f1f5f9; border-radius: 9px; padding: 3px; }
+    .pt-tab { flex: 1; border: none; background: none; min-height: 36px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; font-family: inherit; position: relative; }
+    .pt-tab.on { background: #fff; color: #0f766e; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+    #wpTabBadge { display: none; font-size: 10px; font-weight: 700; color: #c2410c; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; padding: 0 5px; margin-left: 4px; vertical-align: 1px; }
+    .pt-more { width: 36px; min-height: 36px; border: none; background: none; border-radius: 7px; font-size: 16px; color: #64748b; cursor: pointer; font-family: inherit; }
+    .pt-dep { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; color: #92400e; }
+    .pt-dep input[type=date] { flex: 1; min-width: 0; min-height: 34px; font-size: 12.5px; border: 1px solid #e2e8f0; border-radius: 7px; padding: 0 8px; font-family: inherit; background: #fff; color: #334155; }
+    .pt-dep .edit-mini { min-height: 34px; }
+    #paneWp { display: none; }
+    body.pt-wp #panel .trip-only { display: none !important; }   /* S28：行程区整体让位（mobRoot 里的迁移节点不在 #panel 下，不受影响） */
+    body.pt-wp #panel #paneWp { display: block; }
+    #moreBk { position: fixed; inset: 0; z-index: var(--z-guide,1400); background: rgba(15,23,42,.4); display: none; }   /* 与 moreSheet 同层，DOM 序在后=压在上面 */
+    body.more-open #moreBk { display: block; }
+    #moreSheet { position: fixed; right: 12px; top: 12px; bottom: 12px; width: min(360px, calc(100vw - 24px)); z-index: var(--z-guide,1400); background: #fff; border-radius: 14px; box-shadow: 0 16px 48px rgba(15,23,42,.25); padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; font-family: inherit; }
+    body.more-open #moreSheet { display: block; }
+    #moreSheet .ms-head { display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; color: #0f172a; margin-bottom: 6px; }
+    #moreSheet .ms-sec { font-size: 12.5px; font-weight: 600; color: #92400e; margin: 12px 0 4px; }
+    #moreSheet .ms-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    #moreSheet .ms-row .edit-mini { flex: 1; margin-right: 0; }
+    #moreSheet .ms-help { font-size: 11.5px; color: #64748b; line-height: 1.7; }
+    #moreSheet .et-mark { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 2px 0; color: #334155; }
+    #moreSheet .et-mark .mn { flex: 1; padding: 6px 0; }
+    #moreSheet .et-mark button { min-height: 34px; padding: 0 10px; border: 1px solid #e2e8f0; background: #fff; border-radius: 7px; font-size: 12px; cursor: pointer; font-family: inherit; }
     /* sparkline 是最低信息密度的一块：面板宽度不足时先把它收窄，
        而不是让标题先被截断（标题被截断用户根本不知道点的是哪一天）。 */
     .day-spark {
@@ -417,38 +461,13 @@
         /* 行程卡缩略图：抽屉全宽后恢复 sparkline 并加大（860 块的隐藏只作用于 769–860 平板窄条） */
         .day-spark { display: block; width: 84px; height: 40px; }
         .day-list li { min-height: 56px; }
-        /* 编辑入口改到 ⋯菜单；编辑面板移动端全屏化 */
-        #btnEdit { display: none; }
-        body.editing #panel { transform: none; z-index: var(--z-guide); }   /* 祖先带 transform 时 fixed 会改参照系；面板抬层压住标题条（子级 z 逃不出面板 stacking context） */
-        body.editing #editBar {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: var(--z-guide);
-            background: #fff; overflow-y: auto; -webkit-overflow-scrolling: touch;
-            padding: 12px 14px calc(24px + env(safe-area-inset-bottom));
-        }
-        #editClose { display: none; }
-        body.editing #editClose { display: block; position: sticky; top: 0; margin: -12px -14px 10px; padding: 14px; background: #fff; border: none; border-bottom: 1px solid #e2e8f0; font-size: 14.5px; font-weight: 600; color: #0f766e; text-align: left; z-index: 2; font-family: inherit; }
+        /* S28：编辑模式退役——行程卡默认就地可编辑，移动端无需编辑面板全屏化 */
     }
     @media (min-width: 769px) {
         .sheet-grip { display: none; }
     }
 
-    /* ============ 编辑模式（S5）：默认零痕迹；body.editing 才出现可点改提示 ============ */
-    body.editing .day-title, body.editing .day-note, body.editing .day-stay,
-    body.editing #routeSub, body.editing #evNotice {
-        cursor: pointer;
-        border-bottom: 1px dashed #f59e0b;
-    }
-    /* 出发日期（S13）：有日期时 day-tag 变宽容纳「D1 · 10月3日 周五」 */
-    body.has-dep .day-tag { width: auto; padding: 3px 7px; white-space: nowrap; }
-    body.editing .day-stay {
-        display: inline-block; margin-top: 2px; font-size: 10.5px; color: #b45309;
-        background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 5px; padding: 0 5px;
-    }
-    .edit-toggle { background: #475569; margin-top: 6px; }
-    .edit-toggle:hover { background: #334155; }
-    body.editing .edit-toggle { background: #b45309; }
-    .edit-bar { margin-top: 8px; padding: 8px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 9px; font-size: 11px; color: #92400e; line-height: 1.6; }
-    .edit-hint { display: block; margin-bottom: 6px; }
+    /* ============ 就地编辑（S28）：无编辑模式，行程卡默认可点改 ============ */
     .edit-mini { border: none; background: #0f766e; color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 11px; cursor: pointer; margin-right: 6px; font-family: inherit; }
     .edit-mini:hover { background: #0f766e; }
     .day-seg { display: block; margin-top: 2px; }

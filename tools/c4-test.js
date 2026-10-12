@@ -192,7 +192,7 @@ function runRoute(routeId) {
         const lzGeoms = lzMarkers.reduce((a, l) => a + geomCount(l), 0);
         ok('第二出发地站点更多（含接入段）', lzGeoms >= totalMarkerGeoms, lzGeoms + ' vs ' + totalMarkerGeoms);
     } else {
-        const startBtns = created.filter(el => el.id === 'dyn:button' && el.onclick && el.className !== 'edit-mini' && el.className !== 'btn-fit edit-toggle' && String(el.className).indexOf('et-') !== 0);   // S19：编辑面板按钮（et-*）不计入出发地切换按钮统计
+        const startBtns = created.filter(el => el.id === 'dyn:button' && el.onclick && el.className !== 'edit-mini' && el.className !== 'btn-fit edit-toggle' && !/^(et-|pt-|ms-)/.test(String(el.className)));   // S19/S28：编辑面板/面板Tab/更多设置按钮不计入出发地切换按钮统计
         ok('单出发地：不渲染切换按钮', startBtns.length === 0, startBtns.length + ' 个按钮');
         sandbox.setStart(sandbox.STARTS[0].id);   // 重选当前出发地 → 幂等
         ok('单出发地：setStart 幂等（天数/里程不变）', sandbox.DAYS.length === totalDays && Math.abs(parseInt(elCache['chipKm'].textContent, 10) - sumDayKm()) <= 2, sandbox.DAYS.length + ' 天');
@@ -345,8 +345,8 @@ function runRoute(routeId) {
         /typeof map\.resize === 'function'/.test(mainScript) && /getBoundingClientRect\(\)/.test(vbSrc), '');
 
     console.log('\n【10】侧栏窄视口布局（v9-B）');
-    ok('day-meta 显式 flex column',
-        /\.day-meta\s*\{[^}]*flex-direction:\s*column/.test(cssOnly), '标题与备注纵向排列');
+    ok('day-col 显式 flex column（S28 行程卡新层级）',
+        /\.day-col\s*\{[^}]*flex-direction:\s*column/.test(cssOnly), '标题/备注/ chips 纵向排列');
     ok('窄视口隐藏 sparkline 让位',
         /max-width:\s*860px[\s\S]{0,120}\.day-spark\s*\{\s*display:\s*none/.test(cssOnly), '');
     ok('窄视口侧栏变底部抽屉 + S16 信息架构（标题条/图层弹层/浮动钮/编辑全屏）',
@@ -355,9 +355,10 @@ function runRoute(routeId) {
         /#mobBar\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
         /#mobLayers\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
         /#mobBtns\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
-        /body\.editing\s+#editBar\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
+        /#paneWp\s*\{[^}]*display:\s*none/.test(cssOnly) &&
+        /body\.pt-wp\s+#panel\s+\.trip-only\s*\{[^}]*display:\s*none/.test(cssOnly) &&
         /#planPeek\s*\{/.test(cssOnly),
-        '抽屉贴底全宽 + 常驻标题条 + 右下浮动组（全览条件钮）+ 编辑全屏化');
+        '抽屉贴底全宽 + 常驻标题条 + 右下浮动组（全览条件钮）+ 面板双 Tab（S28 编辑内联化，无编辑全屏）');
     ok('中等视口侧栏收窄',
         /min-width:\s*721px[\s\S]{0,80}max-width:\s*1000px[\s\S]{0,80}width:\s*252px/.test(cssOnly), '');
     ok('面板自绘滚动条',

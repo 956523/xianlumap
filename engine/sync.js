@@ -8,7 +8,7 @@
  * 本地有未同步改动且云端不是上次同步的版本 → confirm 二选一，绝不静默合并。
  * 所有人话提示集中在 errMsg()；不抛原始错误。vm mock 安全：localStorage/fetch/
  * confirm/window 全部 typeof 守卫。
- * 依赖：edit.js（Edit/Wp/editBar#id）先加载；ui.js 后加载。
+ * 依赖：edit.js（Edit/Wp）先加载（挂载点 #moreSync 由 edit.js 的 #moreSheet 提供）；ui.js 后加载。
  * ========================================================================== */
 
 var Sync = (function () {
@@ -162,7 +162,7 @@ var Sync = (function () {
                 if (!r.ok) return failLog(r.status === 401 ? 'auth' : r.status === 403 ? 'forbidden' : 'http', r.status);
                 var gid = g.id || (r.data && r.data.id) || null;
                 saveCheckpoint({ gistId: gid, cloudUpdatedAt: payload.updatedAt, snapshot: stateJSON(), localUpdatedAt: payload.updatedAt });
-                log('已上传 ✅ ' + fmtTime(payload.updatedAt) + '。换设备/清浏览器后：编辑模式 → 云同步 → 从云端恢复。');
+                log('已上传 ✅ ' + fmtTime(payload.updatedAt) + '。换设备/清浏览器后：⋯菜单 → 云同步 → 从云端恢复。');
                 return { ok: true };
             });
         });
@@ -173,7 +173,7 @@ var Sync = (function () {
         if (!hasToken()) return Promise.resolve(noTokenMsg());
         return findGist().then(function (g) {
             if (!g.ok) return failLog(g.code, g.status);
-            if (!g.id) { log('云端还没有任何备份。先在有方案的机器上：编辑模式 → 云同步 → 上传到云端。'); return { ok: false, error: 'nofile' }; }
+            if (!g.id) { log('云端还没有任何备份。先在有方案的机器上：⋯菜单 → 云同步 → 上传到云端。'); return { ok: false, error: 'nofile' }; }
             var f = g.files[fileName()];
             if (!f || !f.content) { log('云端的同步 Gist 里没有「' + fileName() + '」——这条线还没备份过。'); return { ok: false, error: 'nofile' }; }
             var data;
@@ -200,7 +200,7 @@ var Sync = (function () {
 
     /* —— 编辑模式「云同步」区（S19：迁入编辑面板「更多」Tab 的挂载点） —— */
     (function buildSyncUI() {
-        var bar = document.getElementById('editPaneMore') || document.getElementById('editBar');
+        var bar = document.getElementById('moreSync');   // S28：云同步迁入 ⋯ 更多设置页（#moreSheet 内）
         if (!bar || !bar.appendChild || !document.createElement) return;
         var sec = document.createElement('div');
         sec.className = 'wp-sec sync-sec';

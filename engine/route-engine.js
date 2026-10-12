@@ -450,11 +450,18 @@
                     '日一二三四五六'.charAt(dep.getDay());
             }
             if (rest) tag += ' · 休整';
-            li.innerHTML = '<span class="day-tag">' + tag + '</span>' +
-                '<span class="day-meta"><span class="day-title">' + d.title + '</span>' +
-                '<span class="day-note">' + (rest ? '休整占位 · 可往里归点，或编辑模式并入前一天' : d.note + (d.stay ? ' · 住' + d.stay : '')) + '</span></span>' +
-                (rest ? '' : sparkSVG(d)) +
-                '<span class="day-km">' + (rest ? '—' : (d.km ? d.km + 'km' : '—')) + '</span>';
+            /* S28 新层级：第一行 = 起点 → 终点（最大字号、全名不截断）；日期+里程是小号次行；
+               备注再次行；途经 chips 保持。点击卡片其余区域仍是聚焦飞行，点文字就地编辑（edit.js 捕获）。 */
+            var noteTxt = rest ? '休整占位 · 在「途经点」里归点可复活，或并入前一天'
+                : d.note + (d.stay ? ' · 住' + d.stay : '');
+            li.innerHTML = '<span class="day-col">' +
+                '<span class="day-top"><span class="day-tag">' + tag + '</span>' +
+                '<span class="day-km">' + (rest ? '—' : (d.km ? d.km + 'km' : '—')) + '</span></span>' +
+                '<span class="day-title">' + d.title + '</span>' +
+                '<span class="day-note">' + noteTxt + '</span>' +
+                '<span class="et-chips">' + ((typeof wpChips === 'function') ? wpChips(d, true) : '') + '</span>' +
+                '</span>' +
+                (rest ? '' : sparkSVG(d));
             li.onclick = rest ? null : (function (dayId) {   // 按 ID 在点击时解析：setStart 重建 DAYS 后旧卡闭包仍正确
                 return function () {
                     var idx = -1;
@@ -483,6 +490,8 @@
         renderSpotLabels();
         renderCityLabels();
         renderCityMarkers();
+        // S28：行程卡默认态控件（住宿点入口等，就地编辑时代替原「编辑模式」注入）
+        if (typeof Edit !== 'undefined' && Edit.refreshDayControls) Edit.refreshDayControls();
     }
 
     /* --- 长盲区上图（S4 可信度透出）---
@@ -734,8 +743,8 @@
         var subEl = document.querySelector('#panel .sub');
         if (subEl && cur.sub) subEl.textContent = cur.sub;
         renderAll();
-        // 编辑模式开着时切换出发地：分段控件的可用性随视角变化，需要重建（编辑层注入）
-        if (typeof Edit !== 'undefined' && Edit.isOn && Edit.isOn()) Edit.refreshDayControls();
+        // S28：行程卡默认带就地编辑控件——任何出发地视角下都保持刷新（分段只在主视角可改，由 setSeg 守卫）
+        if (typeof Edit !== 'undefined' && Edit.refreshDayControls) Edit.refreshDayControls();
     }
     renderStartButtons();
 

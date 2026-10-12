@@ -169,10 +169,9 @@ ok('聚焦 D1 不崩（zoom/center/剖面）', !focusErr, focusErr ? focusErr.me
 ok('聚焦后能耗提示为川西文案', elCache['curEnergy'].innerHTML.includes('四姑娘山'), elCache['curEnergy'].innerHTML.slice(0, 60));
 
 /* ---------- 编辑模式（S5：overlay 改 → 存 → 刷新仍在 → 恢复） ---------- */
-console.log('\n【3】编辑模式（overlay 架构）');
+console.log('\n【3】编辑 overlay 架构（S28：无编辑模式，就地编辑）');
 const ed = bootRoute('chuanxi');
-ok('编辑模式默认关闭（非编辑用户无编辑态）', !ed.err && ed.sandbox.Edit && ed.sandbox.Edit.isOn() === false, ed.err ? ed.err.message.slice(0, 80) : '');
-ed.sandbox.Edit.enter();
+ok('无编辑模式门槛：isOn 恒 false（兼容桩），行程卡默认可改', !ed.err && ed.sandbox.Edit && ed.sandbox.Edit.isOn() === false, ed.err ? ed.err.message.slice(0, 80) : '');
 ed.sandbox.Edit.setDayField(2, 'title', '测试标题');
 const titleNow = ed.sandbox.DAYS.filter(d => d.id === 2)[0].title;
 ok('改标题即时生效（DAYS 更新）', titleNow === '测试标题', titleNow);
@@ -259,11 +258,10 @@ ok('线路页 picker 安全 no-op（不抢渲染）', created.filter(el => el.id
 console.log('\n【5】编辑模式 × 双出发地（反馈 1）与途经点引导（反馈 2）');
 const qh2 = bootRoute('qinghai-gansu');
 const S = qh2.sandbox;
-S.Edit.enter();
 const lzB2 = created.filter(el => el.id === 'dyn:button' && el.onclick && el.textContent === S.STARTS[1].name)[0];
 lzB2.onclick();
-ok('非主出发地视角可进入编辑模式（不再被静默跳回）',
-    S.Edit.isOn() === true && S.start === S.STARTS[1].id,
+ok('非主出发地视角无模式门槛（文字编辑直接可用，视角不被切回）',
+    S.Edit.isOn() === false && S.start === S.STARTS[1].id,
     '当前视角=' + S.start);
 S.Edit.setDayField(5, 'title', '兰州视角改的标题');
 ok('非主出发地视角改标题生效', S.DAYS.filter(d => d.id === 5)[0].title === '兰州视角改的标题', '');
@@ -378,7 +376,7 @@ ok('导入编辑层恢复 departureDate', DS.Edit.importOverlay(depJson) === tru
 DS.Edit.setDeparture(null);
 const depLis2 = created.filter(el => el.id === 'dyn:li').slice(-5);
 ok('清除回纯序号态（无日期无星期）', !DS.ROUTE_META.departureDate &&
-    depLis2.every(el => /^<span class="day-tag">D\d+<\/span>/.test(el.innerHTML)),
+    depLis2.every(el => /<span class="day-tag">D\d+<\/span>/.test(el.innerHTML) && !/周[一二三四五六日]/.test(el.innerHTML)),
     depLis2[0] ? depLis2[0].innerHTML.slice(0, 30) : '无');
 
 /* ---------- 移动端底部抽屉（S14）：窄屏激活 + 三态档位 ---------- */
@@ -610,15 +608,15 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         typeof elCache['mobMenuBk'].onclick === 'function' &&
         typeof elCache['mobMenuBtn'].onclick === 'function', '');
 
-    /* ---------- S19 编辑模式重组：Tab / 徽标推导 / chips 联动 / 生成入口 ---------- */
-    console.log('\n【14】S19：编辑模式重组（任务分区 Tab）');
+    /* ---------- S19 联动 + S28 面板双 Tab：Tab / 徽标推导 / chips 联动 / 生成入口 ---------- */
+    console.log('\n【14】S19/S28：面板双 Tab 与联动');
     var r19 = bootRoute('chuanxi');
     var R = r19.sandbox;
-    R.Edit.enter();
-    ok('Tab 结构：默认行程 Tab，showTab 切换可见性',
-        !r19.err && R.Edit.tab === 'trip' &&
-        elCache['etPaneTrip'].style.display === '' && elCache['etPaneWp'].style.display === 'none' &&
-        (R.Edit.showTab('wp'), elCache['etPaneWp'].style.display === '' && elCache['etPaneTrip'].style.display === 'none'), '');
+    ok('面板双 Tab：默认行程，showTab 切换 body.pt-wp（途经点 Pane 显隐）',
+        !r19.err && R.Edit.panelTab === 'trip' &&
+        document.body.classList.contains('pt-wp') === false &&
+        (R.Edit.showTab('wp'), document.body.classList.contains('pt-wp') === true && R.Edit.panelTab === 'wp') &&
+        (R.Edit.showTab('trip'), document.body.classList.contains('pt-wp') === false), '');
     var danba = R.Wp.list.filter(function (w) { return w.n === '丹巴'; })[0];
     var d2 = R.DAYS.filter(function (d) { return d.id === 2; })[0];
     var badgeBefore = danba ? R.Edit.wpDayBadge(danba) : '无丹巴';
@@ -634,10 +632,11 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         })(), '');
     var genOk = false;
     try { elCache['wpGen'].onclick(); genOk = !!elCache['wpJs'] && elCache['wpJs'].value.length > 10; } catch (e) {}
-    ok('生成新版线路入口可达（点击出弹层 + ROUTE_BUILD 段就绪）', genOk, '');
-    ok('出发日期在云同步各就各位（depDate 行程 Tab / editPaneMore 更多 Tab）',
-        !!elCache['depDate'] && !!elCache['editPaneMore'] &&
-        typeof elCache['etDone'].onclick === 'function', '');
+    ok('「保存我的版本」入口可达（点击出弹层 + 代码段就绪）', genOk, '');
+    ok('出发日期常驻侧栏头部 + 云同步/设置在 ⋯ 更多设置页',
+        !!elCache['depDate'] && typeof elCache['depDate'].onchange === 'function' &&
+        !!elCache['moreSync'] && !!elCache['msReset'] && !!elCache['msSub'] &&
+        (R.Edit.showTab('more'), document.body.classList.contains('more-open') === true), '');
 
     /* ---------- S20 真机反馈：白屏护栏 + 途经点归天直改 ---------- */
     console.log('\n【15】S20：白屏护栏 + 归天重算');
@@ -645,7 +644,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     // ① 归天：丹巴（km≈328）从 D2 直归 D3 → 自动重算分段（D3 起点收过该点、D2 让出）
     var r20 = bootRoute('chuanxi');
     var R2 = r20.sandbox;
-    R2.Edit.enter(); R2.Edit.showTab('wp');
+    R2.Edit.showTab('wp');   // S28：无编辑模式，结构操作直达途经点 Tab
     var danbaIdx = R2.Wp.list.map(function (w) { return w.n; }).indexOf('丹巴');
     var badge0 = R2.Edit.wpDayBadge(R2.Wp.list[danbaIdx]);
     var assignOk = R2.Edit.assignWpDay(danbaIdx, 2);
@@ -678,13 +677,16 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         !s22.err &&
         (elCache['mobLayersBtn'].onclick(), document.body.classList.contains('mob-layers') && !document.body.classList.contains('mob-menu')) &&
         (elCache['mobMenuBtn'].onclick(), document.body.classList.contains('mob-menu') && !document.body.classList.contains('mob-layers')), '');
-    ok('编辑模式：showTab(more) → 退出 → 再进复位到行程 Tab（无状态残留）',
+    ok('面板 Tab / 设置页状态机：wp→trip 切换干净，more 开合显式（无残留）',
         (function () {
-            S22.Edit.enter();
+            S22.Edit.showTab('wp');
+            var wpOn = document.body.classList.contains('pt-wp');
+            S22.Edit.showTab('trip');
+            var tripBack = !document.body.classList.contains('pt-wp');
             S22.Edit.showTab('more');
-            S22.Edit.exit();
-            S22.Edit.enter();
-            return S22.Edit.tab === 'trip';
+            var moreOn = document.body.classList.contains('more-open');
+            elCache['msClose'].onclick();   // ✕ 关闭设置页
+            return wpOn && tripBack && moreOn && !document.body.classList.contains('more-open');
         })(), '');
     ok('全览判定 nearFit 快路径在位（AMap 整数 zoom 视野误报偏离的修正）',
         /nearFit/.test(mainScript) && /__fitDebug/.test(mainScript), '');
@@ -830,19 +832,15 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var plannerSrc = fs.readFileSync(path.join(ROOT, 'engine', 'planner.js'), 'utf8');
     ok('三类站点信息窗（充电/加油/必充·必加）全部接导航链接',
         (plannerSrc.match(/navLinkHTML\(/g) || []).length >= 4, '');
-    // ② 剖面拖把手：编辑态画把手 → 拖动改边界 → 松手 setSeg 重切相邻两天
+    // ② 剖面拖把手（S28 起无模式门槛）：默认态画把手 → 拖动改边界 → 松手 setSeg 重切相邻两天
     delete lsStore['xianlumap.overlay.chuanxi'];
     var s27b = bootRoute('chuanxi');
     var S27b = s27b.sandbox;
-    S27b.Edit.enter();   // enter 内即 drawProfile → 把手生成
     var lastSvg = created.filter(function (el) { return el.id === 'svg'; }).slice(-1)[0];
     var PSEG = S27b.window.__profileSeg;
-    ok('编辑态剖面渲染天边界拖把手（SVG 含 seg-handle，数量=相邻天边界数）',
-        !s27b.err && lastSvg && lastSvg.innerHTML.indexOf('seg-handle') >= 0 &&
+    ok('默认态剖面渲染天边界拖把手（S28 无编辑模式，SVG 含 seg-handle，数量=相邻天边界数）',
+        !s27b.err && S27b.Edit.isOn() === false && lastSvg && lastSvg.innerHTML.indexOf('seg-handle') >= 0 &&
         PSEG.handles().length === S27b.DAYS.length - 1, PSEG.handles().length + ' 个把手');
-    ok('非编辑态不画把手（普通用户无侵入）',
-        (S27b.Edit.exit(), S27b.drawProfile(), created.filter(function (el) { return el.id === 'svg'; }).slice(-1)[0].innerHTML.indexOf('seg-handle') < 0), '');
-    S27b.Edit.enter();
     var h0 = PSEG.handles()[0];
     var newKm = +(h0.km - 15).toFixed(1);
     PSEG.start(0);
@@ -888,6 +886,15 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     Object.keys(elCache).forEach(function (id) { collectEl(elCache[id]); });
     var leaks = banned.filter(function (t) { return visText.join('\n').indexOf(t) >= 0; });
     ok('编辑界面旧术语清零（云端构建/待构建/geometry/overlay/ROUTE_BUILD）', leaks.length === 0, leaks.join(',') || '零泄漏');
+    ok('弹层去代码化（S28）：默认视图只有自动/手动两条路，代码块在收起的高级区',
+        (function () {
+            elCache['wpGen'].onclick();
+            var modal = created.filter(function (el) { return el.id === 'wpModal'; }).slice(-1)[0];
+            document.body && 1;
+            return modal && modal.innerHTML.indexOf('高级：查看代码') >= 0 &&
+                modal.innerHTML.indexOf('id="wpAdv" style="display:none;"') >= 0 &&
+                modal.innerHTML.indexOf('ghGo') >= 0;
+        })(), '');
     ok('新话术在位：保存我的版本 / 待保存生效 / PAT 人话说明',
         (function () {
             var barHtml = created.filter(function (el) { return el.innerHTML && el.innerHTML.indexOf('wpGen') >= 0; })
@@ -899,7 +906,44 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             elCache['wpGen'].onclick();   // 打开弹层 → PAT 人话说明渲染
             var modal = created.filter(function (el) { return el.id === 'wpModal'; }).slice(-1)[0];
             return elCache['wpJs'].value.indexOf('ROUTE_BUILD.waypoints =') >= 0 &&   // 导出格式不变（代码命名不动）
-                modal && modal.innerHTML.indexOf('访问令牌') >= 0 && modal.innerHTML.indexOf('重新生成线路（二选一）') >= 0;
+                modal && modal.innerHTML.indexOf('访问令牌') >= 0 && modal.innerHTML.indexOf('自动（推荐）') >= 0 && modal.innerHTML.indexOf('手动') >= 0;
+        })(), '');
+    /* ---------- S28：行程卡新层级 / 就地编辑 / 无模式把手 / 途经点行全名 / 更多设置页 ---------- */
+    console.log('\n【22】S28：编辑内联化');
+    var s28 = bootRoute('chuanxi');
+    var S28 = s28.sandbox;
+    var editSrc = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
+    // a) 行程卡 DOM 层级：第一行 = 起点 → 终点（主元素），日期+里程是小号次行
+    var lis28 = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-5);
+    ok('行程卡新层级：from→to 是主元素（day-col 内 day-title 全名，day-top 次行）',
+        !s28.err && lis28.length === 5 &&
+        lis28.every(function (el) {
+            return /<span class="day-col"><span class="day-top"><span class="day-tag">D\d/.test(el.innerHTML) &&
+                /<span class="day-title">[^<]+ → [^<]+<\/span>/.test(el.innerHTML);
+        }), lis28[0] ? lis28[0].innerHTML.slice(0, 80) : '无');
+    // b) 就地编辑：点文字 → 原位输入框（捕获监听 + 输入框样式 + 提交走 setDayField）
+    ok('就地编辑接线在位（捕获监听 + day-inline 输入框 + setDayField 提交路径）',
+        /listEl\.addEventListener\('click'/.test(editSrc) &&
+        /function openInlineField/.test(editSrc) &&
+        /\.day-inline\s*\{/.test(html), '');
+    // c) 无模式拖把手：未调用任何编辑进入 API，默认态即在
+    ok('剖面拖把手无模式门槛（S28：isOn 恒 false，把手默认在）',
+        S28.Edit.isOn() === false && S28.window.__profileSeg.handles().length === S28.DAYS.length - 1,
+        S28.window.__profileSeg.handles().length + ' 个');
+    // d) 途经点行：名字保底宽度 + 悬停全名（任何情况下不允许挤成单字）
+    ok('途经点行名字不被挤成单字（min-width 保底 + hover title 全名）',
+        /\.et-wp \.t\{flex:1;min-width:96px/.test(editSrc) &&
+        /title="' \+ escapeHtml\(w\.n\)/.test(editSrc), '');
+    // e) ⋯ 更多设置页：云同步/恢复原始/帮助都在（原编辑面板「更多」Tab 的迁入地）
+    ok('⋯ 更多设置页：云同步/恢复原始/帮助都在',
+        (S28.Edit.showTab('more'), document.body.classList.contains('more-open')) &&
+        /id="moreSync"/.test(editSrc) && /id="msReset"/.test(editSrc) && /ms-help/.test(editSrc), '');
+    // f) Tab 徽标：加途经点后「途经点」Tab 显示待保存计数（编辑按钮退役后的替代指示）
+    ok('途经点 Tab 待保存计数徽标',
+        (function () {
+            S28.Wp.add('徽标点', 30.6, 104.0);
+            var tb = elCache['wpTabBadge'];
+            return tb && tb.style && tb.textContent === String(S28.Wp.list.length) && tb.style.display !== 'none';
         })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
