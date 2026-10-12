@@ -299,6 +299,7 @@
             document.body.classList.add('editing');
             if (editBar) editBar.style.display = '';
             this.refreshDayControls();
+            try { drawProfile(); } catch (e) {}   // S27：进入编辑 → 剖面立即长出天边界拖把手
             try { refreshEditTabs(); } catch (e) {}   // S19：进入编辑即渲染三个 Tab
         },
         exit: function () {
@@ -306,6 +307,7 @@
             document.body.classList.remove('editing');
             if (editBar) editBar.style.display = 'none';
             this.refreshDayControls();
+            try { drawProfile(); } catch (e) {}   // S27：退出编辑 → 移除剖面拖把手
         },
 
         /* —— 编辑操作（API 与 UI 共用；每个操作立即存 overlay） —— */
@@ -353,12 +355,12 @@
         },
         waypointGuideText: function () {
             var key = ROUTE_META.key;
-            return '途经点清单在 route-defs/' + key + '.js 的 ROUTE_BUILD.waypoints 里（名字/坐标/海拔/简介）。\n' +
+            return '途经点清单在线路数据文件 route-defs/' + key + '.js 里（文件中标注「途经点清单」的那段：名字/坐标/海拔/简介）。\n' +
                 '改动流程：\n' +
-                '1) 点下方「复制当前途经点清单」，粘到包里的 waypoints（增删点、或改 legs 的 from/to/via）\n' +
-                '2) 运行：node tools/build-route.js ' + key + '   （轨迹/高程重抓）\n' +
+                '1) 点下方「复制当前途经点清单」，粘贴到该文件里对应位置（增删点、或改行程分段的起点/途经/终点）\n' +
+                '2) 运行：node tools/build-route.js ' + key + '   （重新抓取轨迹/高程）\n' +
                 '3) 若途经点变了，站点也要重抓：node tools/build-stations.js ' + key + ' && node tools/validate.js ' + key + ' --fix\n' +
-                '（改几何必须重新构建是产品铁律：页面里的轨迹是构建产物，不是实时算的）';
+                '（改轨迹必须重新生成是产品铁律：页面里的路线是生成产物，不是实时算的）';
         },
         showWaypointGuide: function () {
             var old = document.getElementById('wpGuide');
@@ -367,7 +369,7 @@
             box.id = 'wpGuide';
             var title = document.createElement('b');
             title.className = 'wp-title';
-            title.textContent = '新增/删除途经点需要重新构建';
+            title.textContent = '新增/删除途经点需要重新生成线路';
             var body = document.createElement('pre');
             body.className = 'wp-body';
             body.textContent = Edit.waypointGuideText();
@@ -394,7 +396,7 @@
                         ta.remove();
                     } catch (e) {}
                 }
-                editNotice(okFlag ? '途经点清单已复制，粘进 ROUTE_BUILD.waypoints 后改。' : '复制失败：请手动打开包内 ROUTE_BUILD 复制 waypoints。');
+                editNotice(okFlag ? '途经点清单已复制，粘贴回线路数据文件里的途经点清单后修改。' : '复制失败：请手动打开线路数据文件（route-defs/' + ROUTE_META.key + '.js）复制其中的途经点清单。');
             };
             var close = document.createElement('button');
             close.className = 'edit-mini';
@@ -681,20 +683,20 @@
             '<input type="date" id="depDate">' +
             '<button id="depClear" class="edit-mini">清除</button>' +
             '</div>' +
-            '<div class="et-note">改标题/备注/住宿点点文字即可；终点下拉改分段（新途经点走「＋新增途经点…」）。带 ⚠待构建 的途经点来自途经点 Tab，改动 geometry 需云端构建后生效。</div>' +
+            '<div class="et-note">改标题/备注/住宿点点文字即可；终点下拉改分段（新途经点走「＋新增途经点…」）。带「待保存生效」标记的途经点来自「途经点」页——改动轨迹要重新生成线路后才会画进地图。</div>' +
             '<div id="editDayList"></div>' +
             '</div>' +
             /* 途经点：列表/搜索/点选/生成（S12 能力原样收编；wpList 等 id 保持不变，原接线照用） */
             '<div class="et-pane" id="etPaneWp" style="display:none">' +
-            '<div class="wp-head">➕ 途经点<span class="wp-badge" id="wpBadge">待构建</span></div>' +
-            '<div class="wp-note">搜索或地图点选添加。每行 [Dn] 是它属于的第几天（随分段联动）；' +
-            '改动只存本机（overlay），<b>不参与当前渲染</b>——生成新版线路后云端构建生效。</div>' +
+            '<div class="wp-head">➕ 途经点<span class="wp-badge" id="wpBadge">待保存生效</span></div>' +
+            '<div class="wp-note">搜索、地图点选，或<b>长按地图任意位置</b>添加停靠点。每行 [Dn] 是它属于的第几天（随分段联动）；' +
+            '改动只保存在这台设备上，暂时<b>不会画进地图</b>——点下方「保存我的版本」重新生成线路后生效。</div>' +
             '<div id="wpList"></div>' +
             '<input class="wp-search" id="wpSearch" placeholder="搜索地名（高德输入提示）…" autocomplete="off">' +
             '<div class="wp-row">' +
             '<button class="edit-mini" id="wpPick">📍 地图点选</button>' +
             '</div>' +
-            '<button id="wpGen" class="et-gen">⚙️ 生成新版线路（导出 + 云端构建）</button>' +
+            '<button id="wpGen" class="et-gen">💾 保存我的版本（导出 + 重新生成线路）</button>' +
             '</div>' +
             /* 更多：地名/文案/云同步(sync.js 挂载点)/帮助 */
             '<div class="et-pane" id="etPaneMore" style="display:none">' +
@@ -708,8 +710,8 @@
             '<div class="et-sec_t">☁️ 云同步（S15）</div>' +
             '<div id="editPaneMore"></div>' +
             '<div class="et-sec_t">❓ 帮助</div>' +
-            '<div class="et-help">改动只存本机浏览器（localStorage overlay），原始线路包不受影响。' +
-            '改分段/标题/备注立即重排预览；改途经点后 geometry 仍需「生成新版线路」云端构建。' +
+            '<div class="et-help">改动只保存在这台设备的浏览器里，原始线路数据不受影响。' +
+            '改分段/标题/备注立即重排预览；加过途经点后，需要点「保存我的版本」重新生成线路才会真正生效。' +
             '换设备用云同步备份恢复。</div>' +
             '</div>' +
             /* 归天天数选择弹层 + toast（S20） */
@@ -1171,7 +1173,7 @@
         var b = document.getElementById('btnEdit');
         if (b) {
             var n = Wp.dirty() ? Wp.list.length : 0;
-            b.textContent = n ? '✏️ 编辑模式 · ' + n + ' 途经点待构建' : '✏️ 编辑模式';
+            b.textContent = n ? '✏️ 编辑模式 · ' + n + ' 个途经点待保存生效' : '✏️ 编辑模式';
         }
         try { refreshEditTabs(); } catch (e) {}   // S19：途经点增删 → 行程 chips / [Dn] 徽标联动
     }
@@ -1212,6 +1214,15 @@
             '.et-wp-body{transition:transform .22s ease;}' +
             '.et-wp.swiping .et-wp-body{transition:none;}' +
             '.et-dayno::after{content:" ▾";font-size:8.5px;color:#94a3b8;}' +   /* S23：徽标可点发现性 */
+            /* S27「在此添加停靠」确认弹窗 */
+            '#wpStop{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:var(--z-guide,1400);' +
+            'width:min(320px,calc(100vw - 48px));background:#fff;border:1px solid #e2e8f0;border-radius:14px;' +
+            'box-shadow:0 16px 48px rgba(15,23,42,.25);padding:14px 16px;font-family:inherit;}' +
+            '#wpStop .wps-t{font-size:14px;font-weight:600;color:#0f172a;margin-bottom:2px;}' +
+            '#wpStop .wps-sub{font-size:10.5px;color:#94a3b8;margin-bottom:8px;}' +
+            '#wpStop input{width:100%;box-sizing:border-box;min-height:42px;font-size:13.5px;border:1px solid #e2e8f0;border-radius:9px;padding:0 10px;margin-bottom:8px;font-family:inherit;}' +
+            '#wpStop .wps-row{display:flex;gap:6px;}' +
+            '#wpStop .wps-row .edit-mini{flex:1;min-height:42px;margin-right:0;}' +
             '@media (max-width:768px){' +
             '.et-wp-delunder{display:block;}' +
             '.et-wp .mv,.et-wp .del{display:none;}' +   /* 行上只剩 ☰ 名 [Dn] */
@@ -1440,7 +1451,107 @@
             };
         }
 
-        /* 生成新版线路：弹层 = ROUTE_BUILD 段 + 下载 + 两档云端构建触发 */
+        /* S27「在此添加停靠」：编辑模式长按地图任意位置（≥550ms 未移动）→ 逆地理取名 →
+           轻量确认弹窗（名称可改）→ Wp.add。仍是 overlay + 待生效语义（不画进当前地图）。
+           与「地图点选」互补不冲突：点选模式开着时长按不触发（单击已是点选入口）。
+           长按取按压点坐标，不强制吸附路线——长按精度有限，硬吸附反而引入假数据。 */
+        var lpTimer = null, lpStart = null, lpMarker = null;
+        function lpCancel() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } lpStart = null; }
+        function lpLngLatOf(clientX, clientY) {
+            var el = document.getElementById('map');
+            if (!el || typeof el.getBoundingClientRect !== 'function') return null;
+            if (typeof AMap === 'undefined' || !AMap.Pixel || !map || typeof map.containerToLngLat !== 'function') return null;
+            try {
+                var r = el.getBoundingClientRect();
+                return map.containerToLngLat(new AMap.Pixel(clientX - r.left, clientY - r.top));
+            } catch (e) { return null; }
+        }
+        function lpDown(e) {
+            if (!Edit.on || picking) return;
+            var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+            if (!t || t.clientX == null) return;
+            lpStart = { x: t.clientX, y: t.clientY };
+            lpTimer = setTimeout(function () {
+                lpTimer = null;
+                var s = lpStart; lpStart = null;
+                if (!s || !Edit.on) return;
+                var ll = lpLngLatOf(s.x, s.y);
+                if (!ll) return;
+                openStopConfirm(ll.getLng ? ll.getLng() : ll.lng, ll.getLat ? ll.getLat() : ll.lat);
+            }, 550);
+        }
+        function lpMaybeCancel(e) {
+            if (!lpStart) return;
+            var t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+            if (!t || t.clientX == null) return;
+            if (Math.abs(t.clientX - lpStart.x) > 10 || Math.abs(t.clientY - lpStart.y) > 10) lpCancel();
+        }
+        var lpMapEl = document.getElementById('map');
+        if (lpMapEl && typeof lpMapEl.addEventListener === 'function') {
+            lpMapEl.addEventListener('mousedown', lpDown);
+            lpMapEl.addEventListener('mousemove', lpMaybeCancel);
+            lpMapEl.addEventListener('mouseup', lpCancel);
+            lpMapEl.addEventListener('touchstart', lpDown, { passive: true });
+            lpMapEl.addEventListener('touchmove', lpMaybeCancel, { passive: true });
+            lpMapEl.addEventListener('touchend', lpCancel);
+            lpMapEl.addEventListener('touchcancel', lpCancel);
+        }
+        function closeStopConfirm() {
+            var w = document.getElementById('wpStop');
+            if (w && w.remove) w.remove();
+            if (lpMarker && lpMarker.setMap) { try { lpMarker.setMap(null); } catch (e) {} }
+            lpMarker = null;
+        }
+        function openStopConfirm(lng, lat) {   // 高德口径 lnglat；Wp.add 收 [lat,lng]
+            closeStopConfirm();
+            var wrap = document.createElement('div');
+            wrap.id = 'wpStop';
+            wrap.innerHTML =
+                '<div class="wps-t">在此添加停靠</div>' +
+                '<div class="wps-sub">经度 ' + lng.toFixed(4) + ' · 纬度 ' + lat.toFixed(4) + '</div>' +
+                '<input type="text" id="wpStopName" maxlength="20" placeholder="停靠点名称">' +
+                '<div class="wps-row">' +
+                '<button class="edit-mini" id="wpStopOk">加入途经点</button>' +
+                '<button class="edit-mini" id="wpStopNo">取消</button></div>';
+            if (document.body && typeof document.body.appendChild === 'function') document.body.appendChild(wrap);
+            var input = document.getElementById('wpStopName');
+            var defName = '停靠点(' + lat.toFixed(3) + ',' + lng.toFixed(3) + ')';
+            if (input) input.value = defName;
+            /* 逆地理取名（高德 Geocoder；失败留默认名，可手改） */
+            try {
+                if (typeof AMap !== 'undefined' && AMap.plugin) {
+                    AMap.plugin('AMap.Geocoder', function () {
+                        new AMap.Geocoder().getAddress([lng, lat], function (st, res) {
+                            if (st === 'complete' && res.regeocode) {
+                                var cd = res.regeocode.addressComponent;
+                                var nm = (cd.township || cd.district || cd.street || '').toString();
+                                if (nm && input) input.value = nm.slice(0, 20);
+                            }
+                        });
+                    });
+                }
+            } catch (err) {}
+            /* 按压位置的小记号（确认/取消时移除） */
+            try {
+                if (typeof AMap !== 'undefined' && AMap.Marker && AMap.LngLat) {
+                    lpMarker = new AMap.Marker({ position: new AMap.LngLat(lng, lat), content: '<div style="width:12px;height:12px;border-radius:50%;background:#0f766e;border:2px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,.4)"></div>' });
+                    if (lpMarker.setMap) lpMarker.setMap(map);
+                }
+            } catch (e) {}
+            var okB = document.getElementById('wpStopOk');
+            if (okB) okB.onclick = function () {
+                var nm = (input && input.value && String(input.value).trim()) ? String(input.value).trim() : defName;
+                Wp.add(nm, lat, lng);
+                if (Wp.renderList) Wp.renderList();
+                closeStopConfirm();
+                etToast('已加入途经点（待保存生效）');
+            };
+            var noB = document.getElementById('wpStopNo');
+            if (noB) noB.onclick = closeStopConfirm;
+        }
+        try { window.__wpStop = { open: openStopConfirm, close: closeStopConfirm }; } catch (e) {}
+
+        /* 保存我的版本：弹层 = 代码段 + 下载 + 两档重新生成触发 */
         var genBtn = document.getElementById('wpGen');
         if (genBtn) genBtn.onclick = openWpModal;
 
@@ -1451,34 +1562,35 @@
             var m = document.createElement('div');
             m.id = 'wpModal';
             m.innerHTML =
-                '<h3>生成新版线路 · ' + ROUTE_META.name + '</h3>' +
-                '<div class="wp-note">① 复制下方 ROUTE_BUILD 段（替换包内同名两段；legs 为自动初分，' +
-                '标题/备注建议人工润色）或下载 JSON 备份；② 触发云端构建；③ 构建完成后刷新即见。</div>' +
+                '<h3>保存我的版本 · ' + ROUTE_META.name + '</h3>' +
+                '<div class="wp-note">① 复制下方代码段，粘贴回线路数据文件（route-defs/' + ROUTE_META.key + '.js）里同名的两段' +
+                '（行程分段是自动初分，标题/备注建议人工润色），或下载 JSON 备份；② 触发重新生成；③ 生成完成后刷新页面即见新版。</div>' +
                 '<textarea id="wpJs" readonly></textarea>' +
                 '<div class="mrow">' +
-                '<button class="edit-mini" id="wpCopy">复制 ROUTE_BUILD 段</button>' +
+                '<button class="edit-mini" id="wpCopy">复制代码段</button>' +
                 '<button class="edit-mini" id="wpDl">下载 waypoints.json</button>' +
                 '<button class="edit-mini" id="wpClose">关闭</button>' +
                 '</div>' +
                 '<div class="mrow" style="margin-top:10px;border-top:1px solid #f1f5f9;padding-top:8px;">' +
-                '<b style="font-size:11.5px;color:#0f766e;">云端构建（二选一）</b></div>' +
+                '<b style="font-size:11.5px;color:#0f766e;">重新生成线路（二选一）</b></div>' +
                 '<div class="mrow">' +
-                '<span style="font-size:10.5px;color:#64748b;">档一（自动）：</span>' +
-                '<input type="text" id="ghOwner" placeholder="owner">' +
-                '<input type="text" id="ghRepo" placeholder="repo">' +
-                '<input type="password" id="ghToken" placeholder="GitHub PAT（仅存本机）">' +
-                '<button class="edit-mini" id="ghGo">触发 workflow</button>' +
+                '<span style="font-size:10.5px;color:#64748b;">自动：</span>' +
+                '<input type="text" id="ghOwner" placeholder="GitHub 账号名">' +
+                '<input type="text" id="ghRepo" placeholder="仓库名">' +
+                '<input type="password" id="ghToken" placeholder="访问令牌 PAT">' +
+                '<button class="edit-mini" id="ghGo">开始生成</button>' +
                 '</div>' +
-                '<div class="mrow"><span style="font-size:10.5px;color:#64748b;">档二（兜底）：</span>' +
+                '<div class="mrow"><span style="font-size:10.5px;color:#94a3b8;line-height:1.5;">PAT 是 GitHub 的「访问令牌」，相当于你授权这个网页替你按一次重新生成按钮——只存在这台设备上，只发给 GitHub 官方。</span></div>' +
+                '<div class="mrow"><span style="font-size:10.5px;color:#64748b;">手动：</span>' +
                 '<span style="font-size:10.5px;color:#475569;">下载文件 + 复制上面代码段，交给维护者代跑</span>' +
-                '<button class="edit-mini" id="ghOpen">打开 Actions 页</button></div>' +
+                '<button class="edit-mini" id="ghOpen">打开 GitHub Actions 页</button></div>' +
                 '<div class="ghlog" id="ghLog"></div>';
             document.body.appendChild(m);
             document.getElementById('wpJs').value = Wp.exportJs();
             document.getElementById('wpClose').onclick = function () { m.remove(); };
             document.getElementById('wpCopy').onclick = function () {
                 copyText(Wp.exportJs());
-                editNotice('ROUTE_BUILD 段已复制，粘贴回 route-defs/' + ROUTE_META.key + '.js 对应位置。');
+                editNotice('代码段已复制，粘贴回 route-defs/' + ROUTE_META.key + '.js 对应位置。');
             };
             document.getElementById('wpDl').onclick = function () {
                 var blob = new Blob([JSON.stringify(json, null, 1)], { type: 'application/json' });
@@ -1518,11 +1630,11 @@
                 var repo = document.getElementById('ghRepo').value.trim();
                 var token = document.getElementById('ghToken').value.trim();
                 if (!owner || !repo || !token) {
-                    log.textContent = '档一需要填 owner / repo / PAT（仅存本机）。不想填就走档二。';
+                    log.textContent = '自动方式需要填 GitHub 账号名 / 仓库名 / 访问令牌（只存这台设备）。不想填就走手动方式。';
                     return;
                 }
                 var base = 'https://api.github.com/repos/' + owner + '/' + repo;
-                log.textContent = '触发 workflow_dispatch…';
+                log.textContent = '开始触发重新生成…';
                 fetch(base + '/actions/workflows/build.yml/dispatches', {
                     method: 'POST',
                     headers: {
@@ -1533,7 +1645,7 @@
                     body: JSON.stringify({ ref: 'main', inputs: { routeId: ROUTE_META.key } })
                 }).then(function (r) {
                     if (r.status === 204) {
-                        log.textContent = '已触发 ✅ 轮询构建状态…';
+                        log.textContent = '已触发 ✅ 等待生成结果…';
                         var since = Date.now();
                         var tries = 0;
                         var timer = setInterval(function () {
@@ -1545,20 +1657,20 @@
                                     return new Date(x.created_at).getTime() >= since - 30000;
                                 })[0];
                                 if (!run) {
-                                    log.textContent = '等待 run 出现…（' + tries + '）';
+                                    log.textContent = '等待任务出现…（' + tries + '）';
                                 } else {
-                                    log.textContent = 'run #' + run.run_number + '：' + run.status +
+                                    log.textContent = '任务 #' + run.run_number + '：' + run.status +
                                         (run.conclusion ? ' / ' + run.conclusion : '') +
                                         '\n' + (run.html_url || '');
                                     if (run.status === 'completed') {
                                         clearInterval(timer);
                                         log.textContent += run.conclusion === 'success'
-                                            ? '\n✅ 构建成功，刷新页面即见新版。'
-                                            : '\n❌ 构建失败：' + run.conclusion + '，详情见上方链接。';
+                                            ? '\n✅ 生成成功，刷新页面即见新版。'
+                                            : '\n❌ 生成失败：' + run.conclusion + '，详情见上方链接。';
                                     }
                                 }
-                            }).catch(function (e) { log.textContent = '轮询出错：' + e.message; });
-                            if (tries > 40) { clearInterval(timer); log.textContent += '\n轮询超时，请打开 Actions 页查看。'; }
+                            }).catch(function (e) { log.textContent = '查询出错：' + e.message; });
+                            if (tries > 40) { clearInterval(timer); log.textContent += '\n等待超时，请打开 GitHub Actions 页查看。'; }
                         }, 5000);
                     } else {
                         r.text().then(function (t) { log.textContent = '触发失败 HTTP ' + r.status + '：' + t.slice(0, 200); });

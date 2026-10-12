@@ -1635,3 +1635,80 @@ mobile.js 全览按钮的 nearFit 偏离判定因此一直拿不到基准（靠�
    （经度线性、公式独立且正确），纵向从不反解——bug 只在窄屏分支显形。
 2. headless 下 AMap 整数 zoom 取整会让 solve 与 render 有亚像素差，真机分数
    zoom 天然精确（§18 口径不变）。
+
+## 36. S27：一键导航（P0）+ 编辑降门槛二期（P1，2026-10-12）
+
+产品负责人拍板两项一轮交付。
+
+### P0：站点一键导航链接
+
+- `engine/planner.js` 新增 `amapNavHref()/navLinkHTML()`：页面与 STATION_DATA 坐标
+  本来就是 GCJ-02（高德系），**零转换**直接拼 `https://uri.amap.com/marker?position=经度,纬度
+  &name=站名&callnative=1&src=xianlumap`；`callnative=1` 有 App 唤起 App、无 App 落
+  uri.amap.com 网页版标记页（网页版即兜底口径，注释已写明）。
+- 落点：充电/加油/必充·必加三类站点信息窗（各加一行「导航去这里 ↗」胶囊链接）+
+  桌面 planBox 每条补能建议（短链「导航 ↗」）；移动端 mobPlanBody 镜像 planBox，
+  链接随行，零额外工作。
+- 通用实现：只依赖 STATION_DATA 的 lat/lng/t，不写死任何线路。
+
+### P1-1：剖面拖天边界改分段
+
+- `engine/profile.js`：编辑态剖面在可见的每个「天与天相接里程边界」画可拖把手
+  （16px 命中区的虚线 + 圆点）。全程模式 = 全部内边界；**聚焦模式 = 该天左右两条边界**
+  （拖它就是在调这一天长短——初版只在全程模式画把手，CDP 实测发现 S17 起全览时抽屉
+  整体收起（body.elev-hide），把手够不到，改为两种模式都画）。
+- 拖动中 elevTip 显示「D1 217km｜D2 116km」预览；松手走既有 `Edit.setSeg` 重切相邻
+  两天（overlay 即时生效、落盘、徽标/chips 联动全复用）。<1km 沿用既有守卫
+  （min/max 钳制，与终点下拉同一口径）。
+- 两个 CDP 才暴露的真问题（mock/vm 测不出）：① `.elev-chart svg{width:100%}` 把 svg
+  CSS 拉伸，用户单位→屏幕 px 有缩放——挂载后按 `getBoundingClientRect` 回填
+  `rectLeft/scaleX`，命中与换算都走真实矩形；② 数据里相邻天端点可能差零点零几
+  （D1 终点 211.58 vs D2 起点 211.6），边界纳入放宽到 ±0.5km，拖动后 setSeg 把两天
+  切成同一 km，缝隙随拖动愈合。
+- 测试接缝 `window.__profileSeg`（handles/start/dragTo/release/preview），vm 断言
+  「把手数/拖动重算/落盘/<1km 钳制」。
+
+### P1-2：「在此添加停靠」
+
+- `engine/edit.js`：编辑模式**长按地图任意位置**（≥550ms 未移动，touch+mouse 双通道）
+  → `map.containerToLngLat` 取坐标 → 高德 Geocoder 逆地理取名（失败留「停靠点
+  (lat,lng)」可手改）→ 轻量确认弹窗（名称可编辑 + 按压点小记号 Marker）→ `Wp.add`
+  （仍是 overlay + 待生效语义，不画进当前地图）。
+- 长按取**按压点坐标**，不强制吸附路线——长按精度有限，硬吸附反而引入假数据（注释写明）。
+- 与「地图点选」互补不冲突：点选模式开着时长按不触发。
+
+### P1-3：话术去技术化（代码命名不动）
+
+用户可见文案全量过一遍：「云端构建」→「保存我的版本 / 重新生成线路」；
+「⚠待构建 / 待构建」→「待保存生效」；ROUTE_BUILD / overlay / geometry 清零
+（导出代码段里的 `ROUTE_BUILD.waypoints =` 是粘回数据包的技术产物，豁免）；
+「生成新版线路」弹层的 PAT 输入加人话说明（「访问令牌，相当于授权这个网页替你按
+一次重新生成按钮——只存在这台设备上，只发给 GitHub 官方」）；owner/repo 输入框
+改「GitHub 账号名 / 仓库名」。probe【21】扫描全部用户可见 DOM 字符串断言零泄漏。
+
+### 验证
+
+- c4-test 285/285（3 包 × 95）；probe-check 113/113（新增【21】11 项：导航 href 逐字节
+  格式 + 坐标、planBox 实渲染、三类信息窗接线、把手数/非编辑态零把手、拖边界重算落盘、
+  预览文案、<1km 钳制、长按停靠加点的可改名路径、旧术语零泄漏、新话术与导出格式不变）。
+- 桌面 vm 逐字节对比：git HEAD 引擎 vs 工作区引擎，快照（chips/日卡/planBox 剔除导航
+  链接/剖面 SVG 剔除把手/标签/能耗）全一致（对比脚本跑完即删）。
+- CDP iPhone 390×844 @2x + 桌面 1440×900 @2x 全绿零 JS 错误，8 张截图：
+  /tmp/s27-1-nav-iw-mobile.png（信息窗「导航去这里」胶囊）、s27-2-plan-mobile.png
+  （移动规划面板每条建议带「导航 ↗」）、s27-3-copy-mobile.png（途经点 Tab 新话术）、
+  s27-4-modal-mobile.png（保存我的版本弹层 + PAT 人话）、s27-5-longpress-desktop.png
+  （长按确认框，逆地理取名「孔玉乡」实填）、s27-6-drag-preview-desktop.png（拖动中
+  「D1 217km｜D2 116km」预览）、s27-7-drag-released-desktop.png（松手重切后）、
+  s27-8-plan-desktop.png（桌面 planBox 导航链接）。
+- URI 格式：vm 逐字节断言 + 真实浏览器读回 href 双重验证（GCJ 原值、callnative、src）。
+
+### 诚实清单
+
+1. **移动端编辑全屏面板（S16 架构）盖住地图**：长按加停靠与「地图点选」在移动端
+   编辑态都不可达（地图被 #editBar 全屏遮住）——本轮与既有「地图点选」同状态，
+   移动端先靠搜索添加。根治要编辑面板半屏化或「地图取点」浮层模式，留 S28 决策。
+2. 长按 550ms / 滑动手感未经真机调校（headless 只验通链路）。
+3. 导航链接是「站点位置」级精度：站点坐标来自 POI 快照，少数站可能已搬迁——
+   页面已有「出发前复核营业状态」的口径注记，不重复聒噪。
+4. 拖把手期间地图 hover 提示让位给边界预览（by design）；预览文案单位取整到 km
+   （setSeg 本体按 0.1km 精度落盘）。

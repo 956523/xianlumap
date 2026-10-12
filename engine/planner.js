@@ -296,6 +296,22 @@
         return '<br><span style="color:#94a3b8;font-size:10.5px">' + short + ' · ' + STATION_DATA.builtAt + '</span>';
     }
 
+    /* ============ 站点一键导航（S27） ============
+       生成高德 URI 导航链接。页面与 STATION_DATA 的坐标本来就是 GCJ-02（高德系），
+       零转换。口径：uri.amap.com/marker?position=经度,纬度&name=站名&callnative=1&src=xianlumap
+       ——callnative=1 有高德 App 时唤起 App，没有时落到 uri.amap.com 网页版标记页
+       （网页版即兜底，不需要额外分支）；src 是高德要求的来源标识。 */
+    function amapNavHref(lat, lng, name) {
+        return 'https://uri.amap.com/marker?position=' + lng + ',' + lat +
+            '&name=' + encodeURIComponent(name || '') +
+            '&callnative=1&src=xianlumap';
+    }
+    /* 信息窗/规划行共用的导航链接片段（text 可短可长，样式走 .nav-go） */
+    function navLinkHTML(lat, lng, name, text) {
+        return '<a class="nav-go" href="' + amapNavHref(lat, lng, name) + '" target="_blank" rel="noopener">' +
+            (text || '导航去这里') + '</a>';
+    }
+
     /* 当前地图 zoom（腾讯 GL JS 的 getZoom 在动画中是瞬时值，够用） */
     function getMapZoom() {
         try { if (typeof map.getZoom === 'function') return map.getZoom(); } catch (e) {}
@@ -349,7 +365,8 @@
         });
         dimEvM.on('click', function (e) {
             var s = dimDataEv[parseInt(e.geometry.id.slice(1), 10)];
-            if (s) openInfo(s.lat, s.lng, [['⚡ 充电站', 'e']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : '') + stationSourceNote());
+            if (s) openInfo(s.lat, s.lng, [['⚡ 充电站', 'e']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : '') +
+                '<br>' + navLinkHTML(s.lat, s.lng, s.t) + stationSourceNote());
         });
         dimFuelM = createMarkerLayer({
             map: (tier.fuel && onFuel) ? map : null,
@@ -360,7 +377,8 @@
         });
         dimFuelM.on('click', function (e) {
             var s = dimDataFuel[parseInt(e.geometry.id.slice(1), 10)];
-            if (s) openInfo(s.lat, s.lng, [['⛽ 加油站', 'f']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : '') + stationSourceNote());
+            if (s) openInfo(s.lat, s.lng, [['⛽ 加油站', 'f']], s.t, s.a + (s.tel ? '<br>☎ ' + s.tel : '') +
+                '<br>' + navLinkHTML(s.lat, s.lng, s.t) + stationSourceNote());
         });
 
         // 计划层（必充/必加站）
@@ -384,7 +402,8 @@
             var i = parseInt(e.geometry.id.slice(1), 10);
             var p = planData[i];
             openInfo(p.st.lat, p.st.lng, [[isFuel ? '⛽ 必加站' : '⚡ 必充站', isFuel ? 'f' : 'e']], p.st.t,
-                p.st.a + (p.st.tel ? '<br>☎ ' + p.st.tel : '') + stationSourceNote() +
+                p.st.a + (p.st.tel ? '<br>☎ ' + p.st.tel : '') +
+                '<br>' + navLinkHTML(p.st.lat, p.st.lng, p.st.t) + stationSourceNote() +
                 '<br><b style="color:#ea580c">D' + dayOf(p.st.km) + ' · 到达剩 ' + Math.round(p.arrive * 100) + '% · ' + (isFuel ? '建议加满' : '建议充至 ' + Math.round(p.target * 100) + '%') + '</b>');
         });
         planLb = createLabelLayer({
@@ -482,7 +501,9 @@
             '全程需' + lb + ' <b>' + n + '</b> 次 · 最长无' + lb + '间隔 ' + Math.round(maxGap) + ' km</div>';
         html += plan.map(function (p) {
             if (p.warn) return '<div class="warn">⚠️ ' + p.warn + '</div>';
-            return '<div class="prow"><b>D' + dayOf(p.st.km) + '</b>' + p.st.t +
+            /* S27：每条补能建议给一键导航（移动端 mobPlanBody 镜像本面板，链接随之带走） */
+            return '<div class="prow"><b>D' + dayOf(p.st.km) + '</b>' + p.st.t + ' ' +
+                navLinkHTML(p.st.lat, p.st.lng, p.st.t, '导航') +
                 '<span>到达剩 ' + Math.round(p.arrive * 100) + '% → ' + (isFuel ? '加满' : '充至 ' + Math.round(p.target * 100) + '%') + '</span></div>';
         }).join('');
         if (!plan.length) html += '<div class="prow">满电即可跑完全程，中途无需' + lb + '。</div>';

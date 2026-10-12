@@ -281,9 +281,11 @@ ok('切回主视角后分段编辑恢复可用', (function () {
 let wpOk = false;
 try { wpOk = Object.keys(JSON.parse(S.Edit.waypointsExportText())).length >= 20; } catch (e) {}
 ok('途经点清单可复制导出（JSON 可解析、含全部途经点）', wpOk, '');
-ok('引导含按当前线路生成的确切构建命令',
+ok('引导含按当前线路生成的确切命令且人话化（无技术术语）',
     S.Edit.waypointGuideText().indexOf('node tools/build-route.js ' + S.ROUTE_META.key) >= 0 &&
-    S.Edit.waypointGuideText().indexOf('ROUTE_BUILD.waypoints') >= 0,
+    S.Edit.waypointGuideText().indexOf('route-defs/' + S.ROUTE_META.key + '.js') >= 0 &&
+    S.Edit.waypointGuideText().indexOf('ROUTE_BUILD') < 0 &&
+    S.Edit.waypointGuideText().indexOf('geometry') < 0,
     S.ROUTE_META.key);
 
 /* ---------- 坐标策略（S10）：库内 WGS-84 基准的往返精度 + 库一致性 ---------- */
@@ -811,6 +813,93 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             document.body.classList.remove('mob-plan');
             if (!(open && bodyHtml.length > 60)) return 'open=' + open + ' len=' + bodyHtml.length;
             return /全程需(充电|加油)/.test(bodyHtml) && /最长无(充电|加油)间隔/.test(bodyHtml);
+        })(), '');
+    /* ---------- S27：一键导航链接 + 剖面拖边界 + 长按加停靠 + 话术去技术化 ---------- */
+    console.log('\n【21】S27：导航链接 / 剖面拖把手 / 长按加停靠 / 新话术');
+    var s27 = bootRoute('qinghai-gansu');
+    var S27 = s27.sandbox;
+    // ① 导航链接：vm 断言 href 格式 + 坐标正确（页面坐标即 GCJ-02，零转换）
+    var st0 = (S27.STATION_DATA.ev || [])[0] || (S27.STATION_DATA.fuel || [])[0];
+    var navHref = S27.amapNavHref(st0.lat, st0.lng, st0.t);
+    ok('导航链接格式：uri.amap.com marker + position=经度,纬度（GCJ-02 原值）+ callnative + src',
+        !s27.err && navHref === 'https://uri.amap.com/marker?position=' + st0.lng + ',' + st0.lat +
+            '&name=' + encodeURIComponent(st0.t) + '&callnative=1&src=xianlumap', navHref.slice(0, 90));
+    ok('规划详情面板每条补能建议带导航链接（planBox HTML 实渲染）',
+        elCache['planBox'].innerHTML.indexOf('uri.amap.com/marker?position=') >= 0 &&
+        elCache['planBox'].innerHTML.indexOf('>导航</a>') >= 0, '');
+    var plannerSrc = fs.readFileSync(path.join(ROOT, 'engine', 'planner.js'), 'utf8');
+    ok('三类站点信息窗（充电/加油/必充·必加）全部接导航链接',
+        (plannerSrc.match(/navLinkHTML\(/g) || []).length >= 4, '');
+    // ② 剖面拖把手：编辑态画把手 → 拖动改边界 → 松手 setSeg 重切相邻两天
+    delete lsStore['xianlumap.overlay.chuanxi'];
+    var s27b = bootRoute('chuanxi');
+    var S27b = s27b.sandbox;
+    S27b.Edit.enter();   // enter 内即 drawProfile → 把手生成
+    var lastSvg = created.filter(function (el) { return el.id === 'svg'; }).slice(-1)[0];
+    var PSEG = S27b.window.__profileSeg;
+    ok('编辑态剖面渲染天边界拖把手（SVG 含 seg-handle，数量=相邻天边界数）',
+        !s27b.err && lastSvg && lastSvg.innerHTML.indexOf('seg-handle') >= 0 &&
+        PSEG.handles().length === S27b.DAYS.length - 1, PSEG.handles().length + ' 个把手');
+    ok('非编辑态不画把手（普通用户无侵入）',
+        (S27b.Edit.exit(), S27b.drawProfile(), created.filter(function (el) { return el.id === 'svg'; }).slice(-1)[0].innerHTML.indexOf('seg-handle') < 0), '');
+    S27b.Edit.enter();
+    var h0 = PSEG.handles()[0];
+    var newKm = +(h0.km - 15).toFixed(1);
+    PSEG.start(0);
+    PSEG.dragTo(newKm);
+    var prevTxt = PSEG.preview();
+    PSEG.release();
+    var dA = S27b.DAYS.filter(function (d) { return d.id === h0.dayA.id; })[0];
+    var dB = S27b.DAYS.filter(function (d) { return d.id === h0.dayB.id; })[0];
+    ok('拖边界重算：松手走 setSeg 重切相邻两天（overlay 即时生效并落盘）',
+        dA.altKm[1] === newKm && dB.altKm[0] === newKm &&
+        (lsStore['xianlumap.overlay.chuanxi'] || '').indexOf(String(newKm)) >= 0,
+        'D' + dA.id + ' [' + dA.altKm + '] / D' + dB.id + ' [' + dB.altKm + ']');
+    ok('拖动中预览「Dn | nkm」文案', /D\d+ \d+km｜D\d+ \d+km/.test(prevTxt), prevTxt);
+    // ③ <1km 守卫：拖过头被钳到最短 1km（与终点下拉同一口径）
+    var h0b = PSEG.handles()[0];
+    PSEG.start(0);
+    var clamped = PSEG.dragTo(h0b.dayA.altKm[0] + 0.2);   // 想要 0.2km → 拒绝并钳到 1km
+    PSEG.release();
+    var dA2 = S27b.DAYS.filter(function (d) { return d.id === h0b.dayA.id; })[0];
+    ok('<1km 守卫：拖出不足 1km 的天被钳到 1km（既有守卫口径）',
+        clamped === +(h0b.dayA.altKm[0] + 1).toFixed(1) && (dA2.altKm[1] - dA2.altKm[0]) >= 1, 'clamped=' + clamped);
+    // ④ 长按加停靠：确认弹窗（名称可改）→ Wp.add（overlay + 待生效语义）
+    var s27c = bootRoute('chuanxi');
+    var S27c = s27c.sandbox;
+    var wpN0 = S27c.Wp.list.length;
+    S27c.window.__wpStop.open(104.066, 30.657);
+    elCache['wpStopName'].value = '测试停靠点';
+    elCache['wpStopOk'].onclick();
+    ok('长按加停靠：确认弹窗名称可改 → 加入途经点（存本机、暂不画进地图）',
+        !s27c.err && S27c.Wp.list.length === wpN0 + 1 &&
+        S27c.Wp.list[S27c.Wp.list.length - 1].n === '测试停靠点' &&
+        /测试停靠点/.test(lsStore['xianlumap.waypoints.chuanxi'] || ''), '');
+    // ⑤ 话术去技术化：用户可见文案零旧术语
+    var banned = ['云端构建', '待构建', 'geometry', 'overlay', 'ROUTE_BUILD'];
+    var visText = [];
+    var collectEl = function (el) {
+        if (!el || el.id === 'wpJs') return;   // 导出代码段是技术产物（粘回包用），豁免
+        ['innerHTML', 'textContent', 'value'].forEach(function (k) {
+            if (el[k]) visText.push(String(el[k]));
+        });
+    };
+    created.forEach(collectEl);
+    Object.keys(elCache).forEach(function (id) { collectEl(elCache[id]); });
+    var leaks = banned.filter(function (t) { return visText.join('\n').indexOf(t) >= 0; });
+    ok('编辑界面旧术语清零（云端构建/待构建/geometry/overlay/ROUTE_BUILD）', leaks.length === 0, leaks.join(',') || '零泄漏');
+    ok('新话术在位：保存我的版本 / 待保存生效 / PAT 人话说明',
+        (function () {
+            var barHtml = created.filter(function (el) { return el.innerHTML && el.innerHTML.indexOf('wpGen') >= 0; })
+                .map(function (el) { return el.innerHTML; }).join('\n');
+            return barHtml.indexOf('保存我的版本') >= 0 && barHtml.indexOf('待保存生效') >= 0 &&
+                barHtml.indexOf('云端构建') < 0 && barHtml.indexOf('待构建') < 0;
+        })() &&
+        (function () {
+            elCache['wpGen'].onclick();   // 打开弹层 → PAT 人话说明渲染
+            var modal = created.filter(function (el) { return el.id === 'wpModal'; }).slice(-1)[0];
+            return elCache['wpJs'].value.indexOf('ROUTE_BUILD.waypoints =') >= 0 &&   // 导出格式不变（代码命名不动）
+                modal && modal.innerHTML.indexOf('访问令牌') >= 0 && modal.innerHTML.indexOf('重新生成线路（二选一）') >= 0;
         })(), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);

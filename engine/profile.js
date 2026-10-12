@@ -201,6 +201,123 @@
             dots + '</svg></span>';
     }
 
+    /* ============ S27：编辑态剖面「天边界」拖把手 ============
+       编辑模式下，剖面可见的每个「天与天相接的里程边界」画可拖把手（全程模式 = 全部
+       内边界；聚焦模式 = 该天左右两条边界——拖它就是在调这一天的长短）；拖动中用
+       elevTip 显示「D2 213km｜D3 159km」预览，松手走既有 Edit.setSeg 重切相邻两天
+       （纯 overlay 即时生效，与终点下拉同一套守卫与持久化）。
+       <1km 沿用既有守卫：minKm/maxKm 钳制（等价 makeBoundarySelect 的
+       Math.max(v+1, other) 口径），不会切出不足 1km 的天。
+       非主出发地视角分段只读（setSeg 同款守卫），不画把手、不给拖。 */
+    var segDrag = null;        // {bi, km0, km, minKm, maxKm, el, clientX}
+    var segPrevText = '';      // 拖动中的预览文案（测试接缝可读）
+    var lastSegHandles = [];   // 最近一次 drawProfile 的把手表（测试接缝）
+
+    function segHandlesFor(series, xF, boxRectLeft, L, R, W, totalKm) {
+        var out = [];
+        if (typeof Edit === 'undefined' || !Edit.on || typeof Edit._mergedIds !== 'function') return out;
+        if (typeof STARTS !== 'undefined' && STARTS.length > 1 && typeof start !== 'undefined' && start !== STARTS[0].id) return out;
+        var merged = Edit._mergedIds();
+        var vis = DAYS.filter(function (d) { return merged.indexOf(d.id) < 0; });
+        /* 边界容差 ±0.5km：数据里相邻天的端点可能差零点零几（如 D1 终点 211.58 vs
+           D2 起点 211.6），宽容差纳入；松手 setSeg 会把两天切成同一 km，缝隙随拖动愈合 */
+        var lo = series[0].km - 0.5, hi = series[series.length - 1].km + 0.5;
+        for (var i = 0; i < vis.length - 1; i++) {
+            var a = vis[i], b = vis[i + 1];
+            if (!a.altKm || !b.altKm) continue;
+            var km = a.altKm[1];
+            if (km < lo || km > hi) continue;
+            out.push({
+                bi: out.length, km: km,
+                x: Math.min(Math.max(xF(km), L + 2), W - R - 2),   // 显示位置钳在图内
+                dayA: a, dayB: b,
+                kmSeries0: series[0].km,
+                pxPerKm: (W - L - R) / totalKm,
+                rectLeft: boxRectLeft, L: L, W: W,
+                scaleX: 1   // 挂载后按真实渲染尺寸回填（CSS 可能拉伸 svg，见 drawProfile）
+            });
+        }
+        return out;
+    }
+    function segDragStart(bi, e) {
+        var h = lastSegHandles.filter(function (x) { return x.bi === bi; })[0];
+        if (!h || typeof Edit === 'undefined' || !Edit.on) return;
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
+        var minKm = +(h.dayA.altKm[0] + 1).toFixed(1);
+        var maxKm = +(h.dayB.altKm[1] - 1).toFixed(1);
+        if (minKm > maxKm) return;   // 两天总共不足 2km：无拖动空间（守卫拒绝）
+        segDrag = { bi: bi, km0: h.km, km: h.km, minKm: minKm, maxKm: maxKm, el: e && e.currentTarget };
+        segDragPaint();
+    }
+    function segDragMove(km) {
+        if (!segDrag || !(km > -1e8)) return;
+        segDrag.km = Math.min(segDrag.maxKm, Math.max(segDrag.minKm, +km.toFixed(1)));
+        segDragPaint();
+    }
+    function segDragPaint() {
+        var h = lastSegHandles.filter(function (x) { return x.bi === segDrag.bi; })[0];
+        if (!h) return;
+        var dx = (segDrag.km - segDrag.km0) * h.pxPerKm;
+        if (segDrag.el && segDrag.el.setAttribute) segDrag.el.setAttribute('transform', 'translate(' + dx + ',0)');
+        var ka = +(segDrag.km - h.dayA.altKm[0]).toFixed(1);
+        var kb = +(h.dayB.altKm[1] - segDrag.km).toFixed(1);
+        segPrevText = 'D' + h.dayA.id + ' ' + Math.round(ka) + 'km｜D' + h.dayB.id + ' ' + Math.round(kb) + 'km';
+        try {
+            tipEl.style.display = 'block';
+            tipEl.innerHTML = segPrevText + '<br><span style="color:#94a3b8;font-size:10px">松手重切这两天</span>';
+            var scaleX = h.scaleX || 1;
+            var px = h.rectLeft + (h.L + (segDrag.km - h.kmSeries0) * h.pxPerKm) * scaleX;
+            tipEl.style.left = Math.min(Math.max(px - 46, 8), h.rectLeft + h.W * scaleX - 140) + 'px';
+            tipEl.style.top = '20px';
+        } catch (e) {}
+    }
+    function segDragRelease() {
+        if (!segDrag) return;
+        var d = segDrag; segDrag = null;
+        segPrevText = '';
+        try { tipEl.style.display = 'none'; } catch (e) {}
+        if (d.km === d.km0) return;   // 没动：不触发重切
+        var h = lastSegHandles.filter(function (x) { return x.bi === d.bi; })[0];
+        if (!h || typeof Edit === 'undefined' || !Edit.setSeg) return;
+        Edit.setSeg(h.dayA.id, h.dayA.altKm[0], d.km);
+        Edit.setSeg(h.dayB.id, d.km, h.dayB.altKm[1]);
+    }
+    /* 把手事件（真实浏览器）：window 级跟手，松开结算。
+       像素→km 换算一律经 scaleX（CSS 拉伸下的真实映射） */
+    function segKmFromClientX(h, clientX) {
+        var scaleX = h.scaleX || 1;
+        return ((clientX - h.rectLeft) / scaleX - h.L) / h.pxPerKm + h.kmSeries0;
+    }
+    window.addEventListener('mousemove', function (e) {
+        if (!segDrag || e.clientX == null) return;
+        var h = lastSegHandles.filter(function (x) { return x.bi === segDrag.bi; })[0];
+        if (!h) return;
+        segDragMove(segKmFromClientX(h, e.clientX));
+    });
+    window.addEventListener('touchmove', function (e) {
+        if (!segDrag) return;
+        if (e.cancelable && typeof e.preventDefault === 'function') e.preventDefault();
+        var t = e.touches && e.touches[0];
+        if (!t) return;
+        var h = lastSegHandles.filter(function (x) { return x.bi === segDrag.bi; })[0];
+        if (!h) return;
+        segDragMove(segKmFromClientX(h, t.clientX));
+    }, { passive: false });
+    window.addEventListener('mouseup', segDragRelease);
+    window.addEventListener('touchend', segDragRelease);
+    window.addEventListener('touchcancel', segDragRelease);
+    /* 测试接缝：vm 中断言「把手渲染 + 拖边界重算 + <1km 守卫」 */
+    try {
+        window.__profileSeg = {
+            handles: function () { return lastSegHandles.slice(); },
+            start: function (bi) { segDragStart(bi, null); return !!segDrag; },
+            dragTo: function (km) { segDragMove(km); return segDrag ? segDrag.km : null; },
+            release: function () { segDragRelease(); },
+            preview: function () { return segPrevText; }
+        };
+    } catch (e) {}
+
     function drawProfile() {
         var box = document.getElementById('chartBox');
         var W = Math.max(box.clientWidth || 0, 420);
@@ -296,6 +413,19 @@
         ends += focus
             ? '<text x="' + (W - R) + '" y="14" font-size="10" fill="#94a3b8" text-anchor="end">D' + d.id + ' 全天 ' + d.km + ' km</text>'
             : '<text x="' + (W - R) + '" y="14" font-size="10" fill="#94a3b8" text-anchor="end">全程约 ' + totalKm + ' km</text>';
+        /* S27：编辑态天边界拖把手（两种模式都画：全程=全部内边界，聚焦=该天左右边界；
+           命中区 16px 宽，线 + 顶部圆点示意可拖） */
+        var boxRectLeft = 0;
+        try { boxRectLeft = (box.getBoundingClientRect().left) || 0; } catch (e) {}
+        var segHandles = segHandlesFor(series, xF, boxRectLeft, L, R, W, totalKm);
+        lastSegHandles = segHandles;
+        var segH = segHandles.map(function (h) {
+            return '<g class="seg-handle" data-bi="' + h.bi + '">' +
+                '<rect x="' + (h.x - 8) + '" y="' + T + '" width="16" height="' + (H - B - T) + '" fill="transparent" style="cursor:ew-resize"/>' +
+                '<line x1="' + h.x + '" y1="' + (T + 4) + '" x2="' + h.x + '" y2="' + (H - B) + '" stroke="#0f766e" stroke-width="2" stroke-dasharray="3 3" opacity=".45"/>' +
+                '<circle cx="' + h.x + '" cy="' + (T + 10) + '" r="5.5" fill="#0f766e" stroke="#fff" stroke-width="1.6" style="cursor:ew-resize"/>' +
+                '</g>';
+        }).join('');
         box.querySelector('svg') && box.querySelector('svg').remove();
         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', W); svg.setAttribute('height', H);
@@ -306,12 +436,30 @@
             grid +
             '<path d="' + area + '" fill="url(#eg)"/>' +
             '<path d="' + curveD + '" fill="none" stroke="' + LINE_C + '" stroke-width="' + (focus ? 3 : 2.5) + '" stroke-linejoin="round"/>' +
-            dots + labels + ends +
+            dots + labels + ends + segH +
             (focus ? '<text x="' + L + '" y="14" font-size="11.5" font-weight="600" fill="#c2410c">' + focusTitle + '</text>' : '');
         box.appendChild(svg);
+        /* 真实渲染尺寸回填：CSS 会把 svg 拉伸到容器宽（.elev-chart svg{width:100%}），
+           用户单位 → 屏幕 px 有缩放，命中与换算都必须按真实矩形来（mock 下 getBounding
+           ClientRect 恒返回 1200 宽，scaleX 回填仅影响 tooltip 像素位置，断言走 dragTo 无碍） */
+        try {
+            var sr = svg.getBoundingClientRect && svg.getBoundingClientRect();
+            if (sr && sr.width > 0 && W > 0) segHandles.forEach(function (h) {
+                h.rectLeft = sr.left || 0;
+                h.scaleX = sr.width / W || 1;
+            });
+        } catch (e) {}
+        /* 把手拖拽事件（真实 DOM；mock 下 querySelectorAll 为空，自动跳过） */
+        Array.prototype.forEach.call(svg.querySelectorAll ? svg.querySelectorAll('.seg-handle') : [], function (gEl) {
+            if (!gEl.addEventListener) return;
+            var bi = gEl.getAttribute ? +(gEl.getAttribute('data-bi') || 0) : 0;
+            gEl.addEventListener('mousedown', function (e) { segDragStart(bi, e); });
+            gEl.addEventListener('touchstart', function (e) { segDragStart(bi, e); }, { passive: false });
+        });
 
-        // hover（聚焦模式下显示"距当天起点"）
+        // hover（聚焦模式下显示"距当天起点"；S27：拖把手期间让位给边界预览）
         svg.onmousemove = function (ev) {
+            if (segDrag) return;
             var rect = svg.getBoundingClientRect();
             var mx = ev.clientX - rect.left;
             var best = null, bd = 1e9;

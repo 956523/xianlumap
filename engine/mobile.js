@@ -370,7 +370,7 @@ function buildIA() {
         if (body && src) {
             body.innerHTML = src.innerHTML +
                 '<div class="note">口径与侧栏一致：按当前车型/续航/高原折算实时计算；' +
-                'geometry 与站点分级以云端构建数据为准，出行前请复核营业状态。</div>';
+                '路线轨迹与站点分级以已保存版本的数据为准，出行前请复核营业状态。</div>';
         }
         toggleClass('mob-plan', true);
     }
