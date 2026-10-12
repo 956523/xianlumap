@@ -27,10 +27,28 @@
         if (!s) return {};
         try { return JSON.parse(s.getItem(EDIT_KEY) || '{}') || {}; } catch (e) { return {}; }
     }
-    function editSave() {
+    /* ---------- S32 草稿-保存语义 ----------
+       所有编辑先落内存草稿（Edit.overlay / Wp.list 即草稿），editSave() 只标脏不写盘；
+       「保存修改」（Edit.commit）才把草稿 → localStorage（即原 overlay 存储）。
+       「保存我的版本」（重新生成线路）与「保存修改」（存浏览器）是两个动作，文案分离。
+       applyOverlay/import/云同步 从「已保存态」读写：importOverlay 直接落盘置 saved；
+       Sync.stateJSON 读 Edit.saved（不是草稿），草稿脏状态不污染同步。 */
+    var _draftDirty = false;
+    function updateSaveBtn() {
+        var b = document.getElementById('btnDraftSave');
+        if (b) b.style.display = _draftDirty ? '' : 'none';
+    }
+    function editSave() {   // 名称沿用工整：全部编辑操作仍调 editSave()，语义 = 标脏
+        _draftDirty = true;
+        updateSaveBtn();
+    }
+    function flushStorage() {   // 草稿 → localStorage（commit / import 用）
         var s = editStore();
         if (s) s.setItem(EDIT_KEY, JSON.stringify(Edit.overlay));
-        try { if (typeof Sync !== 'undefined' && Sync.bumpLocal) Sync.bumpLocal(); } catch (e) {}
+        Edit.saved = JSON.parse(JSON.stringify(Edit.overlay));
+        wpFlush();
+        _draftDirty = false;
+        updateSaveBtn();
     }
     function editClearStore() {
         var s = editStore();
@@ -201,11 +219,16 @@
 
 
     var Edit = {
-        /* S28：「编辑模式」退役。行程卡默认就地可编辑、剖面把手默认可用、结构操作走
-           面板「途经点」Tab、设置走 ⋯ 菜单——不再有进入/退出的门槛。
-           enter/exit/isOn 保留为兼容桩（旧调用点/测试不崩），isOn 恒 false。 */
+        /* S28：「编辑模式」退役。行程卡默认就地可编辑、剖面把手默认可用、结构操作融入
+           统一行程视图（S32）、设置走 ⋯ 菜单——不再有进入/退出的门槛。
+           enter/exit/isOn 保留为兼容桩（旧调用点/测试不崩），isOn 恒 false。
+           S32：overlay 即内存草稿；saved = 已保存态快照（boot/import 时更新）。 */
         on: false,
         overlay: editLoad(),
+        saved: null,
+        isDirty: function () { return _draftDirty; },
+        /* 保存修改：草稿 → localStorage（与「保存我的版本=重新生成线路」是两个动作） */
+        commit: function () { flushStorage(); return true; },
         isOn: function () { return false; },
         enter: function () {},
         exit: function () {},
@@ -420,7 +443,10 @@
             }
         },
         reset: function () {
-            // 恢复原始数据：pristine 字段写回基础对象，清 overlay
+            /* S32 语义变更：恢复原始数据 = 放弃未保存的草稿修改，恢复到【已保存态】
+               （不是线路包出厂态——已保存的改动保留；localStorage 不动，确认弹窗写清楚） */
+            if (editAsk('放弃未保存的修改，恢复到上次保存的状态？\n（上次保存之后的改动会丢失；线路出厂数据不再是此按钮的职责）', '确定') === null) return false;
+            var savedOv = JSON.parse(JSON.stringify(this.saved || {}));
             EDIT_PRISTINE.core.concat([EDIT_PRISTINE.tail]).forEach(function (pd) {
                 var day = editDayById(pd.id);
                 if (!day) return;
@@ -434,12 +460,20 @@
             ROUTE_META.sub = EDIT_PRISTINE.meta.sub;
             ROUTE_META.evNotice = EDIT_PRISTINE.meta.evNotice;
             delete ROUTE_META.departureDate;
-            this.overlay = {};
-            editClearStore();
+            this.overlay = savedOv;
+            applyOverlay(savedOv);
+            _draftDirty = false;
+            updateSaveBtn();
+            /* 途经点同样回到已保存态 */
+            var savedWp = wpLoad();
+            Wp.list = (savedWp && savedWp.list && savedWp.list.length) ? savedWp.list : wpBaseList();
+            if (Wp.renderList) Wp.renderList();
             renderAll();
             this.refreshDayControls();
             drawProfile();
-            try { refreshEditTabs(); } catch (e) {}   // S19：恢复后三 Tab 复位
+            applyMetaDom();
+            try { refreshEditTabs(); } catch (e) {}
+            return true;
         },
 
         /* —— 出发日期（S13 排期）：overlay.meta.departureDate，存本机、随恢复清空 —— */
@@ -474,7 +508,7 @@
             ['days', 'seg', 'marks', 'meta'].forEach(function (k) { if (obj[k]) ov[k] = obj[k]; });
             Edit.overlay = ov;
             applyOverlay(ov);
-            editSave();
+            flushStorage();   // S32：导入/云同步恢复 = 已保存态读写，直接落盘、不弄脏
             renderAll();
             Edit.refreshDayControls();
             drawProfile();
@@ -564,28 +598,26 @@
         var dd = document.getElementById('depDate');
         if (dd) dd.value = ROUTE_META.departureDate || '';
     }
-    /* 启动合并：包 + overlay（在 ui.js 启动渲染之前执行） */
-    (function bootMerge() { applyOverlay(Edit.overlay); })();
+    /* 启动合并：包 + overlay（在 ui.js 启动渲染之前执行）；saved = 已保存态快照 */
+    (function bootMerge() { applyOverlay(Edit.overlay); Edit.saved = JSON.parse(JSON.stringify(Edit.overlay)); })();
 
-    /* ---------- S28：面板双 Tab（行程 / 途经点）+ 常驻出发日期 + ⋯ 更多设置 ----------
-       「编辑模式」退役后的信息架构（产品拍板：行程表上的改动零门槛）：
-       - 行程 Tab = 原有侧栏全部内容；行程卡默认就地可编辑（点标题/备注/住宿变输入框）
-       - 途经点 Tab = 结构操作（加点/删点/排序/归天），移动端选中即全展抽屉
-       - ⋯ 菜单 = 更多设置页（云同步/恢复原始/导入导出/地名/文案/帮助）
-       trip 区节点打 .trip-only，切 Tab 走 body.pt-wp 类切换显隐（不搬动节点——
-       mobile.js 的迁移/归位登记按原父节点工作，搬节点会踩跨断点恢复的坑）。 */
+    /* ---------- S32：统一行程视图（S28 双 Tab 合并）+ 常驻出发日期 + ⋯ 更多设置 ----------
+       产品拍板：抽屉不再分「行程/途经点」——一个统一视图：
+       - 头部条 = 行程标题 + 「保存修改」（草稿脏时出现，S32 草稿语义）+ ⋯ 设置
+       - 途经点管理区（wpSec）收进列表顶部（搜索/点选/长按添加 + 行内滑删/长按拖/归天）
+       - 天卡保持 S28/S29 成果；点成员长按弹菜单（改名/飞到地图）
+       showTab('wp') 语义 = 聚焦途经点区（滚动+移动半屏），不再有 Tab 显隐切换。 */
     function switchPanelTab(name) {
         Edit.panelTab = (name === 'wp') ? 'wp' : 'trip';
         Edit.tab = Edit.panelTab;
-        if (document.body && document.body.classList) document.body.classList.toggle('pt-wp', Edit.panelTab === 'wp');
-        Array.prototype.forEach.call(document.querySelectorAll ? document.querySelectorAll('.pt-tab') : [], function (b) {
-            if (b && b.classList && b.getAttribute) b.classList.toggle('on', b.getAttribute('data-pt') === Edit.panelTab);
-        });
-        if (Edit.panelTab === 'wp') {
-            /* S29-C：移动端途经点改半屏——下半屏面板、上半屏地图可见可取点（长按加停靠就此解锁） */
-            try { if (window.innerWidth <= 768 && typeof setSheet === 'function') setSheet('half'); } catch (e) {}
-            try { if (typeof Wp !== 'undefined' && Wp.renderList) Wp.renderList(); } catch (e) {}
-        }
+        if (Edit.panelTab === 'wp') focusWpSec();
+    }
+    function focusWpSec() {
+        var sec = document.getElementById('wpSec');
+        try { if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
+        /* 移动端落半屏：上半屏地图可见可取点（S29-C 能力沿续到统一视图） */
+        try { if (window.innerWidth <= 768 && typeof setSheet === 'function') setSheet('half'); } catch (e) {}
+        try { var s = document.getElementById('wpSearch'); if (s && s.focus) setTimeout(function () { s.focus(); }, 350); } catch (e) {}
     }
     function openMoreSheet() { if (document.body && document.body.classList) document.body.classList.add('more-open'); }
     function closeMoreSheet() { if (document.body && document.body.classList) document.body.classList.remove('more-open'); }
@@ -634,34 +666,33 @@
     (function buildPanelChrome() {
         var panel = document.getElementById('panel');
         if (!panel) return;
-        /* 1) Tab 条 + 常驻出发日期（插在副标题之后） */
+        /* 1) 常驻出发日期（插在副标题之后；头部条 pt-bar 为静态 HTML，含「保存修改」按钮） */
         var anchor = null;
         try {
             var sub = panel.querySelector ? panel.querySelector('.sub') : null;
             anchor = sub ? sub.nextSibling : null;
         } catch (e) {}
-        var tabs = document.createElement('div');
-        tabs.className = 'pt-tabs';
-        tabs.innerHTML =
-            '<button data-pt="trip" class="pt-tab on">行程</button>' +
-            '<button data-pt="wp" class="pt-tab">途经点<span id="wpTabBadge"></span></button>' +
-            '<button id="panelMore" class="pt-more" title="更多设置">⋯</button>';
         var dep = document.createElement('div');
         dep.className = 'pt-dep';
         dep.innerHTML = '<span>📅 出发日期</span><input type="date" id="depDate"><button id="depClear" class="edit-mini">清除</button>';
-        if (anchor && panel.insertBefore) { panel.insertBefore(tabs, anchor); panel.insertBefore(dep, anchor); }
-        else if (panel.appendChild) { panel.appendChild(tabs); panel.appendChild(dep); }
-        Array.prototype.forEach.call(tabs.querySelectorAll ? tabs.querySelectorAll('.pt-tab') : [], function (b) {
-            if (!b.addEventListener || !b.getAttribute) return;
-            b.addEventListener('click', function () { switchPanelTab(b.getAttribute('data-pt')); });
-        });
-        /* 2) 途经点 Pane（结构操作；行程区节点打 trip-only 由 body.pt-wp 统一切换） */
-        var wpPane = document.createElement('div');
-        wpPane.id = 'paneWp';   // 初始显隐由 CSS（#paneWp/body.pt-wp）驱动，不写内联——内联会盖过类切换
-        wpPane.innerHTML =
+        if (anchor && panel.insertBefore) panel.insertBefore(dep, anchor);
+        else if (panel.appendChild) panel.appendChild(dep);
+        /* 「保存修改」：草稿脏时出现，点击 → 草稿落 localStorage（与「保存我的版本」是两个动作） */
+        var saveBtn = document.getElementById('btnDraftSave');
+        if (saveBtn) saveBtn.onclick = function () {
+            Edit.commit();
+            try { etToast('已保存到这台设备的浏览器'); } catch (e) {}
+        };
+        var pm0 = document.getElementById('panelMore');
+        if (pm0) pm0.onclick = openMoreSheet;
+        /* 2) 途经点管理区（S32 统一行程视图：收进列表顶部，dayList 之前） */
+        var wpSec = document.createElement('div');
+        wpSec.id = 'wpSec';
+        wpSec.className = 'wp-sec-box';
+        wpSec.innerHTML =
             '<div class="wp-head">➕ 途经点<span class="wp-badge" id="wpBadge">待保存生效</span></div>' +
-            '<div class="wp-note">搜索、地图点选，或<b>长按地图任意位置</b>添加停靠点。每行 [Dn] 是它属于的第几天（随分段联动）；' +
-            '改动只保存在这台设备上，暂时<b>不会画进地图</b>——点下方「保存我的版本」重新生成线路后生效。</div>' +
+            '<div class="wp-note">搜索、地图点选，或<b>长按地图任意位置</b>添加停靠点（类型：打卡/休整）。每行 [Dn] 是它属于的第几天——' +
+            '<b>拖动天卡里的点芯片到另一天卡也能归天</b>；改动进草稿，点上方「保存修改」存本机，「保存我的版本」重新生成线路后才画进地图。</div>' +
             '<div class="wp-kindseg" id="wpKindSeg">' +
             '<span class="wp-kindseg-lb">加点类型</span>' +
             '<button class="on" data-wk="spot">⚑ 打卡</button>' +
@@ -674,7 +705,10 @@
             '<button class="edit-mini" id="wpGuideBtn">维护指南</button>' +
             '</div>' +
             '<button id="wpGen" class="et-gen">💾 保存我的版本（导出 + 重新生成线路）</button>';
-        if (panel.appendChild) panel.appendChild(wpPane);
+        var dayListEl = document.getElementById('dayList');
+        if (dayListEl && dayListEl.parentNode && typeof dayListEl.parentNode.insertBefore === 'function') {
+            dayListEl.parentNode.insertBefore(wpSec, dayListEl);
+        } else if (panel.appendChild) panel.appendChild(wpSec);
         /* S29 加点类型状态（默认打卡；搜索/点选/长按都读它） */
         var kindSeg = document.getElementById('wpKindSeg');
         if (kindSeg && kindSeg.addEventListener) {
@@ -682,20 +716,9 @@
                 if (!b.getAttribute) return;
                 b.addEventListener('click', function () { setAddKind(b.getAttribute('data-wk')); });
             });
-            bindOneKindSeg(kindSeg);
         }
-        function bindOneKindSeg(seg) { /* mock DOM 无 querySelectorAll 结果时的接线兜底 */ }
-        /* 行程区节点标记（mobile.js 迁出的图层/续航卡在 mobRoot 里，不在 #panel 下，天然不受影响） */
-        ['dayList', 'legendBox', 'btnFit', 'planPeek'].forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el && el.classList) el.classList.add('trip-only');
-        });
-        try {
-            Array.prototype.forEach.call(panel.querySelectorAll ? panel.querySelectorAll('.chips, .evcard, .tip') : [], function (el) {
-                if (el && el.classList) el.classList.add('trip-only');
-            });
-        } catch (e) {}
-        /* 3) ⋯ 更多设置页（云同步由 sync.js 挂载 #moreSync） */
+        /* 3) ⋯ 更多设置页（S32 大扫除：只留云同步/恢复原始/导入编辑层/显示续航设置/帮助/关于；
+               地名改名迁到 ⚑ 打卡行成员长按菜单；副标题/通知条编辑撤销） */
         var msBk = document.createElement('div');
         msBk.id = 'moreBk';
         var ms = document.createElement('div');
@@ -706,38 +729,41 @@
             '<div class="ms-sec">数据</div>' +
             '<div class="ms-row">' +
             '<button class="edit-mini ms-btn" id="msReset">↩️ 恢复原始数据</button>' +
-            '<button class="edit-mini ms-btn" id="msExport">📤 导出编辑层</button>' +
             '<button class="edit-mini ms-btn" id="msImport">📥 导入编辑层</button></div>' +
-            '<div class="ms-sec">📛 地名显示名</div><div id="etMarks"></div>' +
-            '<div class="ms-sec">📝 线路文案</div>' +
-            '<div class="ms-row">' +
-            '<button class="edit-mini ms-btn" id="msSub">改线路副标题</button>' +
-            '<button class="edit-mini ms-btn" id="msNotice">改纯电提示</button></div>' +
+            '<div class="ms-sec">显示</div>' +
+            '<div class="ms-row ms-row-check"><label class="ms-check"><input type="checkbox" id="msEvset"> 显示续航设置（默认隐藏，规划计算不受影响）</label></div>' +
             '<div class="ms-sec">❓ 帮助</div>' +
-            '<div class="ms-help">改动只保存在这台设备的浏览器里，原始线路数据不受影响。' +
-            '行程卡上的标题/备注/住宿直接点文字就能改；加过途经点后，点「保存我的版本」重新生成线路才会真正生效。' +
-            '换设备用云同步备份恢复。</div>';
+            '<div class="ms-help">改动先进草稿（点头部「保存修改」存进这台浏览器）；「保存我的版本」是把改动重新生成进线路数据，两件事。' +
+            '行程卡上的标题/备注/住宿直接点文字就能改；点成员长按可改名/飞到地图；拖点芯片到别天卡 = 归天。</div>' +
+            '<div class="ms-sec">关于</div>' +
+            '<div class="ms-help">xianlumap · 一张有观点的地图。线路轨迹/高程/站点为公开数据整理与实地口径校验，出发前请复核营业状态。</div>';
         if (document.body && document.body.appendChild) { document.body.appendChild(msBk); document.body.appendChild(ms); }
-        var pm = document.getElementById('panelMore');
-        if (pm) pm.onclick = openMoreSheet;
         var mc = document.getElementById('msClose');
         if (mc) mc.onclick = closeMoreSheet;
         if (msBk) msBk.onclick = closeMoreSheet;
         var msReset = document.getElementById('msReset');
         if (msReset) msReset.onclick = function () {
-            if (editAsk('清空本机全部改动，恢复线路原始数据？', '确定') !== null) { closeMoreSheet(); Edit.reset(); }
+            closeMoreSheet();
+            Edit.reset();   // S32：确认弹窗在 reset 内部（放弃未保存修改→已保存态）
         };
-        var msExport = document.getElementById('msExport');
-        if (msExport) msExport.onclick = function () { closeMoreSheet(); Edit.exportOverlay(); };
-        var msSub = document.getElementById('msSub');
-        if (msSub) msSub.onclick = function () {
-            var v = editAsk('线路副标题', ROUTE_META.sub);
-            if (v !== null) Edit.setMeta('sub', v);
-        };
-        var msNotice = document.getElementById('msNotice');
-        if (msNotice) msNotice.onclick = function () {
-            var v = editAsk('纯电提示（纯文本，页面会自动加标题与图标）', ROUTE_META.evNotice);
-            if (v !== null) Edit.setMeta('evNotice', v);
+        /* S32-B：续航设置显隐开关（默认隐藏；开了沿用 S31 折叠态） */
+        var EVSET_KEY = 'xlm.evset.show';
+        function applyEvsetVis() {
+            var show = false;
+            try { show = localStorage.getItem(EVSET_KEY) === '1'; } catch (e) {}
+            var t = document.getElementById('evsetToggle');
+            var b = document.getElementById('evsetBody');
+            if (t) t.style.display = show ? '' : 'none';
+            if (!show && b) b.style.display = 'none';
+            var sw = document.getElementById('msEvset');
+            if (sw) sw.checked = show;
+            return show;
+        }
+        applyEvsetVis();
+        var msEvset = document.getElementById('msEvset');
+        if (msEvset) msEvset.onchange = function () {
+            try { localStorage.setItem(EVSET_KEY, msEvset.checked ? '1' : '0'); } catch (e) {}
+            applyEvsetVis();
         };
         /* 导入编辑层（file input 读文件 → 剥注释 → JSON → Edit.importOverlay 校验并应用） */
         var fileInput = document.createElement('input');
@@ -764,8 +790,66 @@
             reader.readAsText(f);
         };
         if (document.body && document.body.appendChild) document.body.appendChild(fileInput);
-
-        /* 行程卡点击（捕获阶段拦截，避免触发 focusDay）：文字 → 就地输入框，其余区域仍是聚焦飞行 */
+        /* S32 点成员通用动作：飞到地图 / 改名（长按菜单与单击共用） */
+        function flyPtMember(t) {
+            var flyInfo = function (lat2, lng2, tags, title2, body2) {
+                try { map.setZoomAndCenter(12, [lng2, lat2]); } catch (er) {}
+                openInfo(lat2, lng2, tags, title2, body2);
+            };
+            if (t.getAttribute && t.getAttribute('data-spot') != null) {
+                var si = +t.getAttribute('data-spot');
+                var sp = (typeof SPOTS !== 'undefined' ? SPOTS : [])[si];
+                if (sp) flyInfo(sp.p[0], sp.p[1], [['打卡点', 's']], sp.n, sp.d);
+            } else if (t.getAttribute && t.getAttribute('data-wp') != null) {
+                var wi = +t.getAttribute('data-wp');
+                var wp = (typeof Wp !== 'undefined' && Wp.list) ? Wp.list[wi] : null;
+                if (wp) flyInfo(wp.p[0], wp.p[1], [[wp.kind === 'rest' ? '休整点' : '打卡点', 's']], wp.n,
+                    (wp.d || '') + '<br><span style="color:#94a3b8;font-size:10.5px">途经点（待保存生效）</span>');
+            }
+        }
+        function renamePtMember(t) {
+            if (t.getAttribute && t.getAttribute('data-spot') != null) {
+                var sp = (typeof SPOTS !== 'undefined' ? SPOTS : [])[+t.getAttribute('data-spot')];
+                if (!sp) return;
+                var v = editAsk('打卡点名称（原始名：' + sp.n + '）', sp.n);
+                if (v !== null) Edit.setMarkName(sp.n, v);
+            } else if (t.getAttribute && t.getAttribute('data-wp') != null) {
+                var wp = Wp.list[+t.getAttribute('data-wp')];
+                if (!wp) return;
+                var v2 = editAsk('途经点名称', wp.n);
+                if (v2 !== null && String(v2).trim()) { wp.n = String(v2).trim().slice(0, 20); wpSave(Wp.list); if (Wp.renderList) Wp.renderList(); try { refreshChips(); } catch (e) {} }
+            }
+        }
+        /* S32 长按弹出成员菜单（改名迁于此；桌面右键 = contextmenu，触屏 = 500ms 长按） */
+        function closePtMenu() { var m = document.getElementById('ptMenu'); if (m && m.remove) m.remove(); }
+        function openPtMenu(clientX, clientY, memberEl) {
+            closePtMenu();
+            var m = document.createElement('div');
+            m.id = 'ptMenu';
+            m.className = 'pt-menu';
+            m.innerHTML = '<button data-a="fly">🧭 飞到地图</button><button data-a="rename">✎ 改名</button>';
+            if (document.body && document.body.appendChild) document.body.appendChild(m);
+            try {
+                m.style.left = Math.max(8, Math.min(clientX, window.innerWidth - 150)) + 'px';
+                m.style.top = Math.max(60, clientY - 10) + 'px';
+            } catch (e) {}
+            Array.prototype.forEach.call(m.querySelectorAll ? m.querySelectorAll('button') : [], function (b) {
+                if (!b.addEventListener || !b.getAttribute) return;
+                b.addEventListener('click', function () {
+                    var a = b.getAttribute('data-a');
+                    closePtMenu();
+                    if (a === 'fly') flyPtMember(memberEl);
+                    else renamePtMember(memberEl);
+                });
+            });
+            setTimeout(function () {
+                try {
+                    document.addEventListener('click', function h() { closePtMenu(); document.removeEventListener('click', h); });
+                } catch (e) {}
+            }, 10);
+        }
+        /* 行程卡交互（捕获阶段拦截，避免触发 focusDay）：
+           文字 → 就地输入框；点成员单击 → 飞行；长按/右键 → 菜单；拖芯片 → 归天 */
         var listEl = document.getElementById('dayList');
         if (listEl && listEl.addEventListener) {
             listEl.addEventListener('click', function (e) {
@@ -781,24 +865,68 @@
                 if (t.className === 'day-title') { e.stopPropagation(); openInlineField(li, day, 'title'); }
                 else if (t.className === 'day-note') { e.stopPropagation(); openInlineField(li, day, 'note'); }
                 else if (t.className === 'day-stay') { e.stopPropagation(); openInlineField(li, day, 'stay'); }
-                else if (t.className === 'pt-m') {
-                    /* S29 三类行成员：点击 → 地图飞行到该点 + 信息窗 */
+                else if (t.className === 'pt-m') { e.stopPropagation(); flyPtMember(t); }
+                else if (t.className === 'et-chip add' || (t.className.indexOf('et-chip') === 0 && t.getAttribute && t.getAttribute('data-add'))) {
+                    /* S32「＋添加」入口：聚焦途经点区搜索框 */
                     e.stopPropagation();
-                    var flyInfo = function (lat2, lng2, tags, title2, body2) {
-                        try { map.setZoomAndCenter(12, [lng2, lat2]); } catch (er) {}
-                        openInfo(lat2, lng2, tags, title2, body2);
-                    };
-                    if (t.getAttribute && t.getAttribute('data-spot') != null) {
-                        var si = +t.getAttribute('data-spot');
-                        var sp = (typeof SPOTS !== 'undefined' ? SPOTS : [])[si];
-                        if (sp) flyInfo(sp.p[0], sp.p[1], [['打卡点', 's']], sp.n, sp.d);
-                    } else if (t.getAttribute && t.getAttribute('data-wp') != null) {
-                        var wi = +t.getAttribute('data-wp');
-                        var wp = (typeof Wp !== 'undefined' && Wp.list) ? Wp.list[wi] : null;
-                        if (wp) flyInfo(wp.p[0], wp.p[1], [[wp.kind === 'rest' ? '休整点' : '打卡点', 's']], wp.n,
-                            (wp.d || '') + '<br><span style="color:#94a3b8;font-size:10.5px">途经点（待保存生效）</span>');
-                    }
+                    try { focusWpSec(); } catch (er) {}
                 }
+            }, true);
+            /* 右键菜单（桌面） */
+            listEl.addEventListener('contextmenu', function (e) {
+                var t = e.target;
+                if (!t || t.className !== 'pt-m') return;
+                if (e.preventDefault) e.preventDefault();
+                e.stopPropagation();
+                openPtMenu(e.clientX, e.clientY, t);
+            }, true);
+            /* 触屏长按 500ms → 菜单（move/end 取消） */
+            var lpMenuTimer = null, lpMenuEl = null;
+            listEl.addEventListener('touchstart', function (e) {
+                var t = e.target;
+                if (!t || t.className !== 'pt-m') return;
+                var tt = e.touches && e.touches[0];
+                if (!tt) return;
+                lpMenuEl = t;
+                lpMenuTimer = setTimeout(function () {
+                    lpMenuTimer = null;
+                    openPtMenu(tt.clientX, tt.clientY, lpMenuEl);
+                }, 500);
+            }, { passive: true });
+            listEl.addEventListener('touchmove', function () { if (lpMenuTimer) { clearTimeout(lpMenuTimer); lpMenuTimer = null; } }, { passive: true });
+            listEl.addEventListener('touchend', function () { if (lpMenuTimer) { clearTimeout(lpMenuTimer); lpMenuTimer = null; } });
+            /* S32 拖芯片归天：dragstart 带 wp key → drop 到天卡 = assignWpDay（徽标点选保留为备选） */
+            listEl.addEventListener('dragstart', function (e) {
+                var t = e.target;
+                if (!t || !t.getAttribute) return;
+                var key = t.getAttribute('data-wk');
+                if (key == null || !e.dataTransfer) return;
+                try { e.dataTransfer.setData('text/plain', 'wp:' + key); e.dataTransfer.effectAllowed = 'move'; } catch (er) {}
+            }, true);
+            listEl.addEventListener('dragover', function (e) {
+                if (!e.dataTransfer) return;
+                try { if (e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } catch (er) {}
+            });
+            listEl.addEventListener('drop', function (e) {
+                var key = null;
+                try { var d = e.dataTransfer && e.dataTransfer.getData('text/plain'); if (d && d.indexOf('wp:') === 0) key = d.slice(3); } catch (er) {}
+                if (key == null) return;
+                if (e.preventDefault) e.preventDefault();
+                e.stopPropagation();
+                var li = e.target;
+                while (li && String(li.tagName).toLowerCase() !== 'li') li = li.parentNode;
+                if (!li) return;
+                var idx = -1;
+                Array.prototype.forEach.call(listEl.children, function (c, j) { if (c === li) idx = j; });
+                var T = visibleDayAt(idx);
+                if (!T) return;
+                var wi = -1;
+                Wp.list.forEach(function (w, j) { if (w.key === key) wi = j; });
+                if (wi < 0) return;
+                if (Edit.assignWpDay(wi, idx) !== false) {
+                    try { etToast('已归到 D' + T.id); } catch (er) {}
+                }
+                if (Wp.renderList) Wp.renderList();
             }, true);
         }
 
@@ -823,12 +951,16 @@
         if (typeof Wp === 'undefined' || !Wp || !Wp.list || !Wp.list.length || !day.altKm) return '';
         var names = [];
         Wp.list.forEach(function (w) {
-            if (wpDayIdx(w) >= 0 && DAYS[wpDayIdx(w)] === day) names.push(w.n);
+            if (wpDayIdx(w) >= 0 && DAYS[wpDayIdx(w)] === day) names.push({ n: w.n, key: w.key });
         });
         if (!names.length) return quiet ? '' : '<span class="et-none">途经点：无</span>';
         var shown = names.slice(0, 5);
-        var html = shown.map(function (n) { return '<span class="et-chip">' + escapeHtml(n) + '</span>'; }).join('');
+        var html = shown.map(function (m) {
+            /* S32：芯片可拖到别天卡归天（HTML5 DnD；触屏用行内 [Dn] 徽标） */
+            return '<span class="et-chip" draggable="true" data-wk="' + m.key + '" title="拖到别天卡 = 归天">' + escapeHtml(m.n) + '</span>';
+        }).join('');
         if (names.length > 5) html += '<span class="et-chip more">+' + (names.length - 5) + '</span>';
+        if (quiet) html += '<span class="et-chip add" data-add="1" title="添加途经点">＋ 添加</span>';   // S32 天卡行间入口
         return html;
     }
     function refreshChips() {
@@ -859,31 +991,11 @@
             }
         });
     }
-    function renderEtMarks() {
-        var box = document.getElementById('etMarks');
-        if (!box) return;
-        box.innerHTML = '';
-        ALT_MARKS.forEach(function (m) {
-            var row = document.createElement('div');
-            row.className = 'et-mark';
-            row.innerHTML = '<span class="mn">' + escapeHtml(m.n) + '</span>';
-            var b = document.createElement('button');
-            b.className = 'ms-btn';
-            b.textContent = '改名';
-            b.onclick = function () {
-                var v = editAsk('地名显示名（原始名：' + m.n + '）', m.n);
-                if (v !== null) Edit.setMarkName(m.n, v);
-            };
-            row.appendChild(b);
-            box.appendChild(row);
-        });
-    }
     /* 联动刷新总入口：任何编辑操作后重绘（函数提升，可在上文各处安全调用） */
     function refreshEditTabs() {
         try { Edit.refreshDayControls(); } catch (e) {}
         try { refreshChips(); } catch (e) {}
         if (typeof Wp !== 'undefined' && Wp.renderList) Wp.renderList();
-        try { renderEtMarks(); } catch (e) {}
     }
     /* ============================================================================
      * 途经点增删向导（S13：自定义线路第一块，用户已拍板）
@@ -938,13 +1050,16 @@
         } catch (e) {}
         return null;
     }
-    function wpSave(list) {
+    function wpSave(list) {   // S32：草稿语义（标脏），落盘走 Edit.commit → wpFlush
+        editSave();
+        refreshWpBadge();
+    }
+    function wpFlush() {   // 途经点草稿 → localStorage（commit/import 调用）
         try {
-            if (list && list.length) localStorage.setItem(WP_KEY, JSON.stringify({ list: list }));
+            if (Wp.list && Wp.list.length) localStorage.setItem(WP_KEY, JSON.stringify({ list: Wp.list }));
             else localStorage.removeItem(WP_KEY);
         } catch (e) {}
         try { if (typeof Sync !== 'undefined' && Sync.bumpLocal) Sync.bumpLocal(); } catch (e) {}
-        refreshWpBadge();
     }
     /* 初始列表 = 包内现有途经点（键与顺序保留）；overlay 存在则以 overlay 为准 */
     function wpBaseList() {
@@ -982,15 +1097,16 @@
             wpSave(this.list);
             return true;
         },
-        clear: function () {
+        clear: function () {   // 草稿层清除（不再动 localStorage；落盘走 commit）
             this.list = wpBaseList();
-            try { localStorage.removeItem(WP_KEY); } catch (e) {}
+            editSave();
             refreshWpBadge();
         },
         /* 云同步恢复用：整体替换 overlay（null = 清除回包内基准；wpSave 顺带刷徽标） */
-        replaceAll: function (list) {
+        replaceAll: function (list) {   // 云同步恢复：已保存态读写 → 直接落盘
             this.list = (list && list.length) ? list : wpBaseList();
-            wpSave((list && list.length) ? this.list : null);
+            wpFlush();
+            refreshWpBadge();
         },
         /* 生成 legs 初分：每段 from + ≤4 via + to（自动初分，标题/备注待人工润色） */
         buildLegs: function () {
@@ -1626,13 +1742,15 @@
         });
     }
 
-    /* 恢复原始数据：一并清途经点 overlay */
-    var _origReset = Edit.reset.bind(Edit);
-    Edit.reset = function () {
-        Wp.clear();
-        if (Wp.renderList) Wp.renderList();
-        _origReset();
-    };
+    /* S32：恢复原始数据的途经点处理已并入 Edit.reset（回到已保存 wp 态），旧包装退役 */
+
+    /* S32：离开页面前有未保存草稿 → beforeunload 提示 */
+    try {
+        window.addEventListener('beforeunload', function (e) {
+            if (!_draftDirty) return;
+            try { e.preventDefault(); e.returnValue = '有未保存的修改，确定离开？'; } catch (er) {}
+        });
+    } catch (e) {}
 
     /* ?wpautotest=1：程序化走通 加点→排序→删点→导出（headless 冒烟用） */
     (function wpAutotest() {

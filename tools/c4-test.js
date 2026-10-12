@@ -211,10 +211,10 @@ function runRoute(routeId) {
     console.log('\n【6】按天海拔图像化');
     const lis = created.filter(el => el.id === 'dyn:li');
     ok('每日列表项生成', lis.length >= totalDays, lis.length + ' 项（包内 ' + totalDays + ' 天）');
-    const withSpark = lis.filter(el => el.innerHTML.includes('day-spark') && el.innerHTML.includes('<svg'));
-    ok('除休整日外每项含 mini 海拔曲线', withSpark.length >= lis.length - 2, withSpark.length + '/' + lis.length + '（休整日无路线不画）');
-    const sparkOk = lis.filter(el => el.innerHTML.includes('polyline points=') || el.innerHTML.includes('<path d='));
-    ok('mini 曲线有几何数据（≥行程日数）', sparkOk.length >= driveDays, sparkOk.length + ' 项带 polyline（' + driveDays + ' 个行程日）');
+    ok('S32：天卡无 sparkline（产品拍板移除）', lis.every(el => !el.innerHTML.includes('day-spark')), lis.length + ' 张卡');
+    const withTitle = lis.filter(el => /<span class="day-title">[^<]* → [^<]*<\/span>/.test(el.innerHTML));
+    const restCards = lis.filter(el => /休整日|· 休整/.test(el.innerHTML));   // 休整日卡标题无 →（豁免）
+    ok('天卡主标题 from→to 完整（无 spark 占位挤压；休整日豁免）', withTitle.length + restCards.length >= lis.length, withTitle.length + '+' + restCards.length + '/' + lis.length);
     elCache['chartBox'].appendChild = function (c) { this.children.push(c); };
     lis[0].onclick();
     const svgEl = elCache['chartBox'].children[elCache['chartBox'].children.length - 1];
@@ -347,18 +347,18 @@ function runRoute(routeId) {
     console.log('\n【10】侧栏窄视口布局（v9-B）');
     ok('day-col 显式 flex column（S28 行程卡新层级）',
         /\.day-col\s*\{[^}]*flex-direction:\s*column/.test(cssOnly), '标题/备注/ chips 纵向排列');
-    ok('窄视口隐藏 sparkline 让位',
-        /max-width:\s*860px[\s\S]{0,120}\.day-spark\s*\{\s*display:\s*none/.test(cssOnly), '');
+    ok('窄视口隐藏 sparkline 让位（S32：全端移除）',
+        !/\.day-spark\s*\{/.test(cssOnly) && !/sparkSVG\(d\)/.test(mainScript), '');
     ok('窄视口侧栏变底部抽屉 + S16 信息架构（标题条/图层弹层/浮动钮/编辑全屏）',
         /max-width:\s*768px[\s\S]{0,500}#panel\s*\{[^}]*transform:\s*translateY\(calc\(100%\s*-\s*var\(--sheet-peek/.test(cssOnly) &&
         /body\.mob-full\s+#panel\s*\{[^}]*transform:\s*none/.test(cssOnly) &&
         /#mobBar\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
         /#mobLayers\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
         /#mobBtns\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
-        /#paneWp\s*\{[^}]*display:\s*none/.test(cssOnly) &&
-        /body\.pt-wp\s+#panel\s+\.trip-only\s*\{[^}]*display:\s*none/.test(cssOnly) &&
+        /getElementById\('wpSec'\)/.test(mainScript) &&
+        /btnDraftSave/.test(mainScript) &&
         /#planPeek\s*\{/.test(cssOnly),
-        '抽屉贴底全宽 + 常驻标题条 + 右下浮动组（全览条件钮）+ 面板双 Tab（S28 编辑内联化，无编辑全屏）');
+        '抽屉贴底全宽 + 常驻标题条 + 右下浮动组（全览条件钮）+ 统一行程视图（S32，wpSec 融入 + 保存修改按钮）');
     ok('中等视口侧栏收窄',
         /min-width:\s*721px[\s\S]{0,80}max-width:\s*1000px[\s\S]{0,80}width:\s*252px/.test(cssOnly), '');
     ok('面板自绘滚动条',

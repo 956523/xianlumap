@@ -37,7 +37,7 @@ var Sync = (function () {
     }
     function stateJSON() {
         return JSON.stringify({
-            edit: JSON.parse(JSON.stringify((typeof Edit !== 'undefined' && Edit.overlay) || {})),
+            edit: JSON.parse(JSON.stringify((typeof Edit !== 'undefined' && (Edit.saved || Edit.overlay)) || {})),   // S32：只读已保存态，不备份未保存草稿
             waypoints: wpRaw()
         });
     }
@@ -100,7 +100,7 @@ var Sync = (function () {
             kind: 'user-scheme',
             route: ROUTE_KEY,
             updatedAt: new Date().toISOString(),
-            edit: JSON.parse(JSON.stringify((typeof Edit !== 'undefined' && Edit.overlay) || {})),
+            edit: JSON.parse(JSON.stringify((typeof Edit !== 'undefined' && (Edit.saved || Edit.overlay)) || {})),   // S32：只读已保存态，不备份未保存草稿
             waypoints: wpRaw() || { list: [] }
         };
     }

@@ -176,31 +176,6 @@
         return d;
     }
 
-    /* --- 侧栏每日 mini 海拔曲线 --- */
-    function sparkSVG(d) {
-        if (!d.altKm || !d.km) return '<span class="day-spark"></span>';
-        var sl = altSlice(altSeries(), d.altKm[0], d.altKm[1]);
-        if (sl.pts.length < 2) return '<span class="day-spark"></span>';
-        var W = 62, H = 24, P = 3;
-        var minA = Infinity, maxA = -Infinity;
-        sl.pts.forEach(function (p) { minA = Math.min(minA, p.alt); maxA = Math.max(maxA, p.alt); });
-        if (maxA - minA < 60) { maxA += 30; minA -= 30; }
-        var x0 = sl.pts[0].km, x1 = sl.pts[sl.pts.length - 1].km;
-        function fx(km) { return P + (km - x0) / (x1 - x0) * (W - 2 * P); }
-        function fy(alt) { return (H - P) - (alt - minA) / (maxA - minA) * (H - 2 * P); }
-        var line = sl.pts.map(function (p) { return [fx(p.km), fy(p.alt)]; });
-        var dots = '';
-        altSeries().forEach(function (p) {
-            if (p.pass && p.km >= x0 && p.km <= x1) {
-                dots += '<circle cx="' + fx(p.km).toFixed(1) + '" cy="' + fy(p.alt).toFixed(1) + '" r="2.4" fill="#7c3aed" stroke="#fff" stroke-width="1"/>';
-            }
-        });
-        return '<span class="day-spark" title="海拔 ' + minA + '–' + maxA + 'm · 爬升' + sl.up + 'm / 下降' + sl.down + 'm">' +
-            '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
-            '<path d="' + smoothD(line) + '" fill="none" stroke="' + (sl.down > sl.up * 2 ? '#0ea5e9' : '#0d9488') + '" stroke-width="1.8" stroke-linejoin="round"/>' +
-            dots + '</svg></span>';
-    }
-
     /* ============ S27/S28：剖面「天边界」拖把手（默认可用，无需任何模式） ============
        剖面可见的每个「天与天相接的里程边界」画可拖把手（全程模式 = 全部内边界；
        聚焦模式 = 该天左右两条边界——拖它就是在调这一天长短）；拖动中用 elevTip

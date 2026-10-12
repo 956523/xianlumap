@@ -152,9 +152,18 @@
     .pt-dep { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; color: #92400e; }
     .pt-dep input[type=date] { flex: 1; min-width: 0; min-height: 34px; font-size: 12.5px; border: 1px solid #e2e8f0; border-radius: 7px; padding: 0 8px; font-family: inherit; background: #fff; color: #334155; }
     .pt-dep .edit-mini { min-height: 34px; }
-    #paneWp { display: none; }
-    body.pt-wp #panel .trip-only { display: none !important; }   /* S28：行程区整体让位（mobRoot 里的迁移节点不在 #panel 下，不受影响） */
-    body.pt-wp #panel #paneWp { display: block; }
+    /* S32：统一行程视图（无 Tab 显隐切换）；途经点区收进列表顶部 */
+    .wp-sec-box { border: 1px dashed #fcd34d; background: #fffbeb; border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; }
+    .pt-title { flex: 1; font-size: 13.5px; font-weight: 600; color: #0f172a; padding-left: 8px; }
+    .pt-save { border: none; background: #0f766e; color: #fff; border-radius: 8px; min-height: 32px; padding: 0 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-right: 2px; box-shadow: 0 2px 8px rgba(15,118,110,.3); }
+    .pt-save:hover { background: #115e59; }
+    .et-chip[draggable] { cursor: grab; }
+    .et-chip.add { color: #0f766e; background: #f0fdfa; border-color: #99f6e4; cursor: pointer; }
+    /* S32 点成员长按菜单 */
+    .pt-menu { position: fixed; z-index: var(--z-guide,1400); background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.18); padding: 4px; display: flex; flex-direction: column; min-width: 132px; }
+    .pt-menu button { border: none; background: none; text-align: left; min-height: 40px; padding: 0 12px; font-size: 13px; color: #1f2937; border-radius: 7px; cursor: pointer; font-family: inherit; }
+    .pt-menu button:hover { background: #f0fdfa; }
+    .ms-check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #334155; padding: 4px 0; cursor: pointer; }
     #moreBk { position: fixed; inset: 0; z-index: var(--z-guide,1400); background: rgba(15,23,42,.4); display: none; }   /* 与 moreSheet 同层，DOM 序在后=压在上面 */
     body.more-open #moreBk { display: block; }
     #moreSheet { position: fixed; right: 12px; top: 12px; bottom: 12px; width: min(360px, calc(100vw - 24px)); z-index: var(--z-guide,1400); background: #fff; border-radius: 14px; box-shadow: 0 16px 48px rgba(15,23,42,.25); padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; font-family: inherit; }
@@ -169,15 +178,8 @@
     #moreSheet .et-mark button { min-height: 34px; padding: 0 10px; border: 1px solid #e2e8f0; background: #fff; border-radius: 7px; font-size: 12px; cursor: pointer; font-family: inherit; }
     /* sparkline 是最低信息密度的一块：面板宽度不足时先把它收窄，
        而不是让标题先被截断（标题被截断用户根本不知道点的是哪一天）。 */
-    .day-spark {
-        flex: none; width: 44px; height: 24px; border-radius: 6px;
-        background: #f8fafc; border: 1px solid #e2e8f0; overflow: hidden;
-    }
-    .day-spark svg { display: block; }
-    li.active .day-spark { border-color: #0f766e; background: #f8fafc; }
-    /* 窄视口：sparkline 先让位（信息密度最低），保住标题+里程可读 */
+    /* S32：sparkline 已移除（产品拍板），从→到占满行宽 */
     @media (max-width: 860px) {
-        .day-spark { display: none; }
         .day-list li { gap: 6px; padding: 6px 6px; }
         .day-tag { width: 32px; }
     }
@@ -496,8 +498,6 @@
         #mobPlanBody .psum { border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px; }
         #mobPlanBody .prow, #mobPlanBody .warn { padding: 6px 0; border-bottom: 1px dashed #f1f5f9; line-height: 1.6; }
         #mobPlanBody .note { padding: 8px 0 4px; font-size: 11px; color: #94a3b8; line-height: 1.7; }
-        /* 行程卡缩略图：抽屉全宽后恢复 sparkline 并加大（860 块的隐藏只作用于 769–860 平板窄条） */
-        .day-spark { display: block; width: 84px; height: 40px; }
         .day-list li { min-height: 56px; }
         /* S28：编辑模式退役——行程卡默认就地可编辑，移动端无需编辑面板全屏化 */
     }
@@ -615,6 +615,11 @@
         <button id="panelFold" title="收起侧栏">‹</button>
     </h1>
     <div class="sub" id="routeSub"></div>
+    <div class="pt-tabs pt-bar">
+        <span class="pt-title">行程</span>
+        <button id="btnDraftSave" class="pt-save" style="display:none" type="button">💾 保存修改</button>
+        <button id="panelMore" class="pt-more" title="更多设置" type="button">⋯</button>
+    </div>
     <div class="chips">
         <div class="chip"><b id="chipKm">—</b>总里程 km</div>
         <div class="chip"><b id="chipDays">—</b>建议天数</div>
@@ -636,7 +641,7 @@
         </div>
     </details>
         <div class="evcard">
-        <button class="evset-t" id="evsetToggle" type="button">🔋 续航设置 ▾</button>
+        <button class="evset-t" id="evsetToggle" type="button" style="display:none">🔋 续航设置 ▾</button>
         <div id="evsetBody" style="display:none">
         <div class="evrow">
             <span class="seg">

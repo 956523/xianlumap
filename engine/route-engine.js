@@ -578,8 +578,7 @@
                 '<span class="day-note">' + noteTxt + '</span>' +
                 dayPtsHTML(d, DAYS.indexOf(d), supEv, supFuel) +
                 '<span class="et-chips">' + ((typeof wpChips === 'function') ? wpChips(d, true) : '') + '</span>' +
-                '</span>' +
-                (rest ? '' : sparkSVG(d));
+                '</span>';   // S32：移除 sparkline（产品拍板），从→到占满行宽
             li.onclick = rest ? null : (function (dayId) {   // 按 ID 在点击时解析：setStart 重建 DAYS 后旧卡闭包仍正确
                 return function () {
                     var idx = -1;

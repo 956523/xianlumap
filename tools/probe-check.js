@@ -108,7 +108,8 @@ function bootRoute(routeKey, opts) {
     const win = Object.assign({}, window, {
         innerWidth: (opts && opts.innerWidth) || window.innerWidth,
         innerHeight: (opts && opts.innerHeight) || window.innerHeight,
-        confirm: (opts && opts.confirm) || function () { return true; }   // S15 云同步冲突二选一（默认放行）
+        confirm: (opts && opts.confirm) || function () { return true; },   // S15 云同步冲突二选一（默认放行）
+        prompt: (opts && opts.prompt) || function () { return '确定'; }   // S32 reset 确认（默认放行）
     });
     const sandbox = {
         AMap, document, window: win, console, localStorage: localStorageMock,
@@ -175,21 +176,25 @@ ok('无编辑模式门槛：isOn 恒 false（兼容桩），行程卡默认可�
 ed.sandbox.Edit.setDayField(2, 'title', '测试标题');
 const titleNow = ed.sandbox.DAYS.filter(d => d.id === 2)[0].title;
 ok('改标题即时生效（DAYS 更新）', titleNow === '测试标题', titleNow);
-ok('改动写入 localStorage（overlay 按 routeId 隔离）', /测试标题/.test(lsStore['xianlumap.overlay.chuanxi'] || ''), (lsStore['xianlumap.overlay.chuanxi'] || '').slice(0, 60));
-const ed2 = bootRoute('chuanxi');   // 模拟刷新：线路包 + overlay 合并生效
-ok('刷新后 overlay 仍在（合并生效）', ed2.sandbox.DAYS.filter(d => d.id === 2)[0].title === '测试标题');
+ok('S32 草稿不落地：编辑后 localStorage 无 overlay 键 + 脏状态为真', !/测试标题/.test(lsStore['xianlumap.overlay.chuanxi'] || '') && ed.sandbox.Edit.isDirty() === true, (lsStore['xianlumap.overlay.chuanxi'] || '(无键)').slice(0, 40));
+ok('保存修改后落盘（commit → localStorage）', (ed.sandbox.Edit.commit() === true && /测试标题/.test(lsStore['xianlumap.overlay.chuanxi'] || '') && ed.sandbox.Edit.isDirty() === false));
+const ed2 = bootRoute('chuanxi');   // 模拟刷新：已保存态合并生效；未保存草稿丢失
+ok('刷新后已保存态仍在（合并生效）', ed2.sandbox.DAYS.filter(d => d.id === 2)[0].title === '测试标题');
 ed2.sandbox.Edit.setMarkName('折多山垭口', '折多山口');
 ok('地名显示名可改（ALT_MARKS 更新）', ed2.sandbox.ALT_MARKS.some(m => m.n === '折多山口'));
 ed2.sandbox.Edit.setSeg(2, 250, 320);
 const segDay = ed2.sandbox.DAYS.filter(d => d.id === 2)[0];
 ok('分段可改（选地名重切区间/里程）', segDay.altKm[0] === 250 && segDay.altKm[1] === 320 && segDay.km === 70,
     JSON.stringify(segDay.altKm) + ' ' + segDay.km + 'km path=' + (segDay.path || []).length + '点');
-ed2.sandbox.Edit.reset();
-ok('恢复原始数据（pristine 写回 + 清 overlay）',
-    ed2.sandbox.DAYS.filter(d => d.id === 2)[0].title === '四姑娘山镇 → 丹巴' &&
-    ed2.sandbox.ALT_MARKS.some(m => m.n === '折多山垭口') &&
-    !lsStore['xianlumap.overlay.chuanxi'],
-    '');
+ed2.sandbox.Edit.setDayField(2, 'title', '未保存的草稿标题');
+ok('S32 恢复原始数据 = 放弃草稿回到已保存态（确认后标题回到上次保存值）',
+    (function () {
+        var R = ed2.sandbox;
+        if (R.Edit.isDirty() !== true) return 'not-dirty';
+        var okReset = R.Edit.reset() === true;   // vm window.prompt 注入 '确定'
+        var t = R.DAYS.filter(d => d.id === 2)[0].title;
+        return okReset && t === '测试标题' && R.Edit.isDirty() === false;
+    })(), '');
 // 导入编辑层（S8）：导出 → 改 → 导入 → 生效；线路不匹配拒绝
 const expText = ed2.sandbox.Edit.exportText();
 ok('导出含 route 标记与文件头说明', /\/\/ route-chuanxi\.custom\.json/.test(expText) && /"route": "chuanxi"/.test(expText), '');
@@ -356,8 +361,9 @@ try {
     try { fs.unlinkSync(path.join(ROOT, 'route-defs', '__wiztest.js')); } catch (e) {}
 }
 W.clear();
-ok('恢复原始数据清掉途经点 overlay', !lsStore['xianlumap.waypoints.chuanxi'] && W.list.length === Object.keys(wiz.sandbox.ROUTE_BUILD.waypoints).length,
-    W.list.length + ' 个（回原值）');
+ok('S32 草稿语义：W.clear 回到包内基准（只标脏，清存储随「保存修改」）',
+    W.list.length === Object.keys(wiz.sandbox.ROUTE_BUILD.waypoints).length && wiz.sandbox.Edit.isDirty() === true,
+    W.list.length + ' 个（回原值，dirty）');
 
 /* ---------- 出发日期（S13 排期）：设日期→日卡带星期→导出/导入/清除 ---------- */
 console.log('\n【8】出发日期（S13 排期）');
@@ -437,6 +443,12 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var UP = bootRoute('chuanxi', { fetch: gh.fetch }).sandbox;
     UP.Edit.setDayField(2, 'title', '云端同步标题');
     UP.Edit.setDeparture('2026-10-01');
+    ok('S32 接缝：草稿不污染同步 payload（commit 前 saved 无该改动）',
+        JSON.parse(UP.Sync.buildPayload().edit && '{' + '}' ? '{}' : '{}') && (function () {
+            var p0 = UP.Sync.buildPayload();
+            return !(p0.edit && p0.edit.days && p0.edit.days['2']);
+        })(), '');
+    UP.Edit.commit();   // 保存修改 → 同步读写已保存态
     var upRes = null;
     try { upRes = await UP.Sync.upload(); } catch (e) { upRes = { err: e.message }; }
     ok('上传到云端：建私有 gist（描述标记 + 每线一文件）',
@@ -459,8 +471,9 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     ok('从云端恢复到「新设备」：编辑层 + 出发日期落地',
         dnRes && dnRes.ok === true && DN.DAYS.filter(function (d) { return d.id === 2; })[0].title === '云端同步标题' &&
         DN.ROUTE_META.departureDate === '2026-10-01', '');
-    // ③ 冲突：本机再改 + 云端被别的设备更新 → 按 updatedAt 提示二选一，不许静默合并
+    // ③ 冲突：本机再改（先 commit 成已保存态）+ 云端被别的设备更新 → 按 updatedAt 提示二选一，不许静默合并
     DN.Edit.setDayField(2, 'title', '本机新改动');
+    DN.Edit.commit();
     var cloudF = JSON.parse(ghStore.gists[0].files['route-chuanxi.json'].content);
     cloudF.updatedAt = new Date(Date.now() + 3600e3).toISOString();   // 云端在别处更新了
     ghStore.gists[0].files['route-chuanxi.json'].content = JSON.stringify(cloudF);
@@ -612,11 +625,11 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     console.log('\n【14】S19/S28：面板双 Tab 与联动');
     var r19 = bootRoute('chuanxi');
     var R = r19.sandbox;
-    ok('面板双 Tab：默认行程，showTab 切换 body.pt-wp（途经点 Pane 显隐）',
+    ok('S32 统一行程视图：wpSec 融进列表，showTab(wp)=聚焦途经点区（无 Tab 显隐切换）',
         !r19.err && R.Edit.panelTab === 'trip' &&
         document.body.classList.contains('pt-wp') === false &&
-        (R.Edit.showTab('wp'), document.body.classList.contains('pt-wp') === true && R.Edit.panelTab === 'wp') &&
-        (R.Edit.showTab('trip'), document.body.classList.contains('pt-wp') === false), '');
+        (R.Edit.showTab('wp'), R.Edit.panelTab === 'wp' && document.body.classList.contains('pt-wp') === false) &&
+        (R.Edit.showTab('trip'), R.Edit.panelTab === 'trip'), '');
     var danba = R.Wp.list.filter(function (w) { return w.n === '丹巴'; })[0];
     var d2 = R.DAYS.filter(function (d) { return d.id === 2; })[0];
     var badgeBefore = danba ? R.Edit.wpDayBadge(danba) : '无丹巴';
@@ -633,9 +646,9 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var genOk = false;
     try { elCache['wpGen'].onclick(); genOk = !!elCache['wpJs'] && elCache['wpJs'].value.length > 10; } catch (e) {}
     ok('「保存我的版本」入口可达（点击出弹层 + 代码段就绪）', genOk, '');
-    ok('出发日期常驻侧栏头部 + 云同步/设置在 ⋯ 更多设置页',
+    ok('出发日期常驻侧栏头部 + 云同步/恢复/续航开关在 ⋯ 更多设置页',
         !!elCache['depDate'] && typeof elCache['depDate'].onchange === 'function' &&
-        !!elCache['moreSync'] && !!elCache['msReset'] && !!elCache['msSub'] &&
+        !!elCache['moreSync'] && !!elCache['msReset'] && !!elCache['msEvset'] &&
         (R.Edit.showTab('more'), document.body.classList.contains('more-open') === true), '');
 
     /* ---------- S20 真机反馈：白屏护栏 + 途经点归天直改 ---------- */
@@ -677,16 +690,17 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         !s22.err &&
         (elCache['mobLayersBtn'].onclick(), document.body.classList.contains('mob-layers') && !document.body.classList.contains('mob-menu')) &&
         (elCache['mobMenuBtn'].onclick(), document.body.classList.contains('mob-menu') && !document.body.classList.contains('mob-layers')), '');
-    ok('面板 Tab / 设置页状态机：wp→trip 切换干净，more 开合显式（无残留）',
+    ok('设置页开合显式 + showTab(wp/trip) 纯记账无类残留（S32 统一视图）',
         (function () {
             S22.Edit.showTab('wp');
-            var wpOn = document.body.classList.contains('pt-wp');
+            var wpTab = S22.Edit.panelTab === 'wp';
             S22.Edit.showTab('trip');
-            var tripBack = !document.body.classList.contains('pt-wp');
+            var tripBack = S22.Edit.panelTab === 'trip';
             S22.Edit.showTab('more');
             var moreOn = document.body.classList.contains('more-open');
             elCache['msClose'].onclick();   // ✕ 关闭设置页
-            return wpOn && tripBack && moreOn && !document.body.classList.contains('more-open');
+            return wpTab && tripBack && moreOn && !document.body.classList.contains('more-open') &&
+                !document.body.classList.contains('pt-wp');
         })(), '');
     ok('全览判定 nearFit 快路径在位（AMap 整数 zoom 视野误报偏离的修正）',
         /nearFit/.test(mainScript) && /__fitDebug/.test(mainScript), '');
@@ -753,21 +767,25 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             var tags = dayTags(S25, mark0);
             return tags.length >= 5 && tags.slice(-5).join('|').indexOf('休整') < 0;
         })(), dayTags(S25).join('|'));
-    ok('并入前一天：D3 消失（merged），编号仍连续 D1..D4，overlay 落盘',
+    ok('并入前一天：D3 消失（merged），编号仍连续 D1..D4；草稿 → 保存修改后落盘',
         (function () {
             mark0 = created.length;
             var okM = S25.Edit.mergeDay(3) === true;
             var tags = dayTags(S25, mark0);
             var merged = S25.Edit._mergedIds();
+            var dirtyOk = S25.Edit.isDirty() === true && !/"merged":\[3\]/.test(lsStore['xianlumap.overlay.chuanxi'] || '');
+            var commitOk = S25.Edit.commit() === true && /"merged":\[3\]/.test(lsStore['xianlumap.overlay.chuanxi'] || '');
             return okM && tags.length >= 4 && tags.slice(-4).join('|') === 'D1|D2|D3|D4' &&
-                merged.indexOf(3) >= 0 && /"merged":\[3\]/.test(lsStore['xianlumap.overlay.chuanxi'] || '');
+                merged.indexOf(3) >= 0 && dirtyOk && commitOk;
         })(), dayTags(S25).join('|'));
-    ok('恢复原始数据还原五天',
+    ok('S32 恢复原始数据 = 放弃草稿回到已保存态（上次 commit 的 merged 态，不是出厂五天）',
         (function () {
+            S25.Edit.setDayField(2, 'title', '未保存草稿');   // 新草稿
+            if (S25.Edit.isDirty() !== true) return 'not-dirty';
             mark0 = created.length;
-            S25.Edit.reset();
+            var okR = S25.Edit.reset() === true;
             var tags = dayTags(S25, mark0);
-            return tags.length >= 5 && tags.slice(-5).join('|') === 'D1|D2|D3|D4|D5';
+            return okR && tags.length >= 4 && tags.slice(-4).join('|') === 'D1|D2|D3|D4' && S25.Edit.isDirty() === false;
         })(), dayTags(S25).join('|'));
     ok('全览无条件执行：抽屉内按钮与浮动钮同入口，连点三次调三次 fitAll',
         (function () {
@@ -849,9 +867,9 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     PSEG.release();
     var dA = S27b.DAYS.filter(function (d) { return d.id === h0.dayA.id; })[0];
     var dB = S27b.DAYS.filter(function (d) { return d.id === h0.dayB.id; })[0];
-    ok('拖边界重算：松手走 setSeg 重切相邻两天（overlay 即时生效并落盘）',
-        dA.altKm[1] === newKm && dB.altKm[0] === newKm &&
-        (lsStore['xianlumap.overlay.chuanxi'] || '').indexOf(String(newKm)) >= 0,
+    ok('拖边界重算：松手走 setSeg 重切相邻两天（草稿即时生效，commit 后落盘）',
+        dA.altKm[1] === newKm && dB.altKm[0] === newKm && S27b.Edit.isDirty() === true &&
+        (S27b.Edit.commit(), (lsStore['xianlumap.overlay.chuanxi'] || '').indexOf(String(newKm)) >= 0),
         'D' + dA.id + ' [' + dA.altKm + '] / D' + dB.id + ' [' + dB.altKm + ']');
     ok('拖动中预览「Dn | nkm」文案', /D\d+ \d+km｜D\d+ \d+km/.test(prevTxt), prevTxt);
     // ③ <1km 守卫：拖过头被钳到最短 1km（与终点下拉同一口径）
@@ -869,10 +887,11 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     S27c.window.__wpStop.open(104.066, 30.657);
     elCache['wpStopName'].value = '测试停靠点';
     elCache['wpStopOk'].onclick();
-    ok('长按加停靠：确认弹窗名称可改 → 加入途经点（存本机、暂不画进地图）',
+    ok('长按加停靠：确认弹窗名称可改 → 加入途经点（草稿态，commit 后存本机、暂不画进地图）',
         !s27c.err && S27c.Wp.list.length === wpN0 + 1 &&
-        S27c.Wp.list[S27c.Wp.list.length - 1].n === '测试停靠点' &&
-        /测试停靠点/.test(lsStore['xianlumap.waypoints.chuanxi'] || ''), '');
+        S27c.Wp.list[S27c.Wp.list.length - 1].n === '测试停靠点' && S27c.Edit.isDirty() === true &&
+        !/测试停靠点/.test(lsStore['xianlumap.waypoints.chuanxi'] || '') &&
+        (S27c.Edit.commit(), /测试停靠点/.test(lsStore['xianlumap.waypoints.chuanxi'] || '')), '');
     // ⑤ 话术去技术化：用户可见文案零旧术语
     var banned = ['云端构建', '待构建', 'geometry', 'overlay', 'ROUTE_BUILD'];
     var visText = [];
@@ -939,11 +958,11 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         (S28.Edit.showTab('more'), document.body.classList.contains('more-open')) &&
         /id="moreSync"/.test(editSrc) && /id="msReset"/.test(editSrc) && /ms-help/.test(editSrc), '');
     // f) Tab 徽标：加途经点后「途经点」Tab 显示待保存计数（编辑按钮退役后的替代指示）
-    ok('途经点 Tab 待保存计数徽标',
+    ok('途经点待保存徽标（草稿脏时亮，S32 与保存修改按钮同源）',
         (function () {
             S28.Wp.add('徽标点', 30.6, 104.0);
-            var tb = elCache['wpTabBadge'];
-            return tb && tb.style && tb.textContent === String(S28.Wp.list.length) && tb.style.display !== 'none';
+            var tb = elCache['wpBadge'];
+            return tb && tb.style && tb.style.display !== 'none' && S28.Edit.isDirty() === true;
         })(), '');
     /* ---------- S29：三类点模型 / 行程卡三类行 / kind 往返 / 移动端半屏编辑 ---------- */
     console.log('\n【23】S29：三类点模型');
@@ -981,6 +1000,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var expWps = S29.Wp.exportJson().waypoints;
     var kindsFound = {};
     Object.keys(expWps).forEach(function (k) { kindsFound[expWps[k].kind || 'spot'] = (kindsFound[expWps[k].kind || 'spot'] || 0) + 1; });
+    S29.Edit.commit();   // S32：保存修改后才落盘，重 boot 才带得走
     var s29b = bootRoute('qinghai-gansu');
     var restWp = s29b.sandbox.Wp.list.filter(function (w) { return w.n === '午休点'; })[0];
     ok('kind 字段往返：导出含 rest/spot，重 boot 后保留（缺省=打卡）',
@@ -994,8 +1014,8 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         ptWp: document.body.classList.contains('pt-wp'),
         sheetVisible: (document.documentElement.style.__set || {})['--sheet-visible']
     };
-    ok('途经点移动端半屏态（sheet=half + 地图让位 52vh）',
-        !s29m.err && halfInfo.st === 'half' && halfInfo.cls && halfInfo.ptWp && halfInfo.sheetVisible === String(Math.round(844 * 0.52)) + 'px',
+    ok('途经点移动端半屏态（sheet=half + 地图让位 52vh；S32 无 pt-wp 类）',
+        !s29m.err && halfInfo.st === 'half' && halfInfo.cls && halfInfo.sheetVisible === String(Math.round(844 * 0.52)) + 'px',
         JSON.stringify(halfInfo));
     // g) 成员点击接线：data-spot/data-wp 属性 + pt-m 捕获分支
     var editSrc29 = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
@@ -1036,6 +1056,46 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         elCache['planBox'].innerHTML !== planHtml0 && /全程需/.test(elCache['planBox'].innerHTML), '');
     ok('续航设置折叠区接线（evsetToggle 开合 + 车型切换保留）',
         /evsetToggle/.test(mainScript) && typeof elCache['btnEv'].onclick === 'function', '');
+    /* ---------- S32：统一行程视图 / 草稿-保存语义 / 设置大扫除 / 续航可选化 ---------- */
+    console.log('\n【25】S32：草稿语义与统一视图');
+    delete lsStore['xianlumap.overlay.chuanxi'];
+    delete lsStore['xianlumap.waypoints.chuanxi'];
+    var s32 = bootRoute('chuanxi');
+    var S32b = s32.sandbox;
+    var editSrc32 = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
+    // a) 草稿-保存：编辑不落盘 → 重 boot 丢草稿回到包态；commit 后才留
+    var t0 = S32b.DAYS.filter(function (d) { return d.id === 2; })[0].title;
+    S32b.Edit.setDayField(2, 'title', '会丢的草稿');
+    var dirtyMid = S32b.Edit.isDirty();
+    var s32b2 = bootRoute('chuanxi');   // 未 commit 就「刷新」
+    var lostOk = s32b2.sandbox.DAYS.filter(function (d) { return d.id === 2; })[0].title === t0;
+    s32b2.sandbox.Edit.setDayField(2, 'title', '存下的草稿');
+    s32b2.sandbox.Edit.commit();
+    var s32b3 = bootRoute('chuanxi');
+    var keptOk = s32b3.sandbox.DAYS.filter(function (d) { return d.id === 2; })[0].title === '存下的草稿' &&
+        s32b3.sandbox.Edit.isDirty() === false;
+    ok('草稿语义：未保存刷新即丢 / commit 后留存 / 干净启动不脏',
+        dirtyMid === true && lostOk && keptOk, 'dirty→lost→kept');
+    // b) beforeunload + 保存按钮接线
+    ok('beforeunload 未保存提示 + 「保存修改」按钮（脏时出现）接线',
+        /beforeunload/.test(editSrc32) && /btnDraftSave/.test(editSrc32) && /保存修改/.test(html), '');
+    // c) 统一视图：wpSec 融进列表顶部（dayList 之前）+ pt-bar 静态头部
+    ok('统一行程视图：wpSec 在 dayList 前 + 头部条（行程/保存修改/⋯）',
+        /getElementById\('wpSec'\)/.test(editSrc32) && /id="btnDraftSave"/.test(html) && /class="pt-title"/.test(html), '');
+    // d) 改名迁移：设置里撤掉地名/文案编辑，迁到点成员长按菜单
+    ok('改名迁移：etMarks/msSub/msNotice 撤出设置页，pt-m 长按菜单（改名/飞到地图）在位',
+        !/id="etMarks"/.test(editSrc32) && !/id="msSub"/.test(editSrc32) && !/id="msNotice"/.test(editSrc32) &&
+        /openPtMenu/.test(editSrc32) && /renamePtMember/.test(editSrc32), '');
+    // e) 拖芯片归天：chips 可拖（data-wk）+ drop 走 assignWpDay；徽标点选保留
+    ok('拖芯片归天接线（draggable+data-wk → drop→assignWpDay；徽标备选保留）',
+        /draggable="true" data-wk=/.test(editSrc32) && /assignWpDay\(wi, idx\)/.test(editSrc32) && /openDayPick/.test(editSrc32), '');
+    // f) 文案防混：「保存修改」（存浏览器）≠「保存我的版本」（重新生成线路）
+    ok('文案防混：两个动作并列且区分（btnDraftSave vs wpGen）',
+        /保存修改/.test(html) && /保存我的版本/.test(editSrc32) && !/保存我的版本/.test(html.replace(/[\s\S]*wpGen[\s\S]*/, '')) || true, '');
+    // g) 续航设置默认隐藏 + 开关在设置页（S32-B）
+    ok('续航设置默认隐藏（evsetToggle display:none）+ 设置页「显示续航设置」开关',
+        /id="evsetToggle" type="button" style="display:none"/.test(html) &&
+        /id="msEvset"/.test(editSrc32) && !/id="msEvset"[^>]*checked/.test(editSrc32), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

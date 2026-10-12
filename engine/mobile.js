@@ -117,8 +117,7 @@ function onSheetEnd() {
     else if (d.vy < -0.45) target = (ty > h - MOBILE_PEEK * 0.5) ? 'hidden' : 'peek';
     else {
         // 按最近档位 snap（途经点 Tab 半屏态把 half 加进候选，S29）
-        var cands = ['full', 'peek', 'hidden'];
-        if (document.body && document.body.classList && document.body.classList.contains('pt-wp')) cands.push('half');
+        var cands = ['full', 'peek', 'hidden', 'half'];   // S32：半屏常候选（统一视图，不再限途经点 Tab）
         var best = cands[0], bd2 = Infinity;
         cands.forEach(function (c) { var dd = Math.abs(ty - sheetBase(h, c)); if (dd < bd2) { bd2 = dd; best = c; } });
         target = best;
@@ -268,7 +267,7 @@ function buildIA() {
 
     /* ⋯菜单 + 遮罩（S18：点外部关闭，对齐图层弹层） */
     var menu = mobEl('div', 'mobMenu');
-    menu.appendChild(mobEl('button', 'mobMenuEdit', null, '➕ 途经点管理'));
+    menu.appendChild(mobEl('button', 'mobMenuEdit', null, '➕ 添加途经点'));
     menu.appendChild(mobEl('button', 'mobMenuSync', null, '☁️ 云同步'));
     menu.appendChild(mobEl('button', 'mobMenuData', null, 'ℹ️ 数据来源说明'));
     iaRoot.appendChild(menu);
