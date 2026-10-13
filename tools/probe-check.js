@@ -1275,6 +1275,57 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         manifestOk && /engine\/enroute\.js/.test(swSrc) && /network-first/i.test(swSrc) &&
         /cache-first/i.test(swSrc) && /走网络/.test(swSrc) &&
         /rel="manifest"/.test(html) && /serviceWorker/.test(html), '');
+    /* ---------- S30.5：完成态返场规划视图 + 已完成天编辑锁 ---------- */
+    console.log('\n【28】S30.5：完成态返场与编辑锁');
+    delete lsStore['xianlumap.overlay.chuanxi'];
+    // a) 规划视图完成态：注入行中打卡数据 → 天卡 ✓/绿边 + 节点 done + 段绿（源断言）+ 全完成横幅
+    var s35 = bootRoute('chuanxi');
+    var P = s35.sandbox;
+    P.Edit.overlay.progress = { checks: { s0: { t: '2026-10-13T01:00:00Z', auto: true, ok: 1 } },
+        daysDone: { 1: { t: '2026-10-13T02:00:00Z', durMin: 250, report: 1 } } };
+    P.renderAll();
+    var lis35 = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-5);
+    var day1Done = /D1 ✓|✓/.test(lis35[0].innerHTML) &&
+        /li.classList.add\('done'\)/.test(fs.readFileSync(path.join(ROOT, 'engine', 'route-engine.js'), 'utf8'));
+    var nodeDone = /ch-node done/.test(lis35[0].innerHTML);
+    var day2Normal = !/ch-item done/.test(lis35[1].innerHTML);
+    var reEngSrc = fs.readFileSync(path.join(ROOT, 'engine', 'enroute.js'), 'utf8');
+    ok('完成态返场：已打卡天卡绿边+✓、节点 done、未打卡天不受影响、行中退出重放绿（源）',
+        day1Done && nodeDone && day2Normal && /_restoreSegStyles[\s\S]{0,600}daysDone/.test(reEngSrc), '');
+    // b) 全完成横幅
+    P.Edit.overlay.progress.daysDone = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    P.renderAll();
+    var bannerOk = created.some(function (el) { return el.id === 'allDoneBanner' && /全部完成/.test(el.textContent + el.innerHTML); });
+    ok('全完成横幅：5 天全打卡 → 「全程 5 天全部完成」', bannerOk, '');
+    // c) 编辑锁：取消（prompt 返回 null）拦截已完成天的标题/分段；「继续」放行
+    var prompted = [];
+    var s35b = bootRoute('chuanxi', { prompt: function (msg) { prompted.push(msg); return null; } });
+    var B = s35b.sandbox;
+    B.Edit.overlay.progress = { checks: {}, daysDone: { 2: { t: 'x' } } };
+    var t0 = B.DAYS.filter(function (d) { return d.id === 2; })[0].title;
+    var blocked1 = B.Edit.setDayField(2, 'title', '改写试试');
+    var blocked2 = B.Edit.setSeg(2, 10, 20);
+    var unchanged = B.DAYS.filter(function (d) { return d.id === 2; })[0].title === t0 &&
+        B.DAYS.filter(function (d) { return d.id === 2; })[0].altKm[0] !== 10;
+    var lockMsgOk = prompted.some(function (m) { return /已完成打卡/.test(m) && /改写历史/.test(m); });
+    var s35c = bootRoute('chuanxi', { prompt: function () { return '继续'; } });
+    var C = s35c.sandbox;
+    C.Edit.overlay.progress = { checks: {}, daysDone: { 2: { t: 'x' } } };
+    var passed = C.Edit.setDayField(2, 'title', '确认后放行') === undefined &&
+        C.DAYS.filter(function (d) { return d.id === 2; })[0].title === '确认后放行';
+    ok('已完成天编辑锁：取消拦截（标题/分段不动）+ 确认文案 + 输入「继续」放行',
+        blocked1 !== true && blocked2 === false && unchanged && lockMsgOk && passed,
+        'prompts=' + prompted.length);
+    // d) 恢复原始数据 progress 不动（打卡是旅程事实）
+    var s35d = bootRoute('chuanxi', { prompt: function () { return '确定'; } });
+    var D = s35d.sandbox;
+    D.Edit.overlay.progress = { checks: { s1: { t: 'x', auto: true, ok: 1 } }, daysDone: { 3: { t: 'x' } } };
+    D.Edit.setDayField(2, 'title', '会丢的草稿');
+    D.Edit.reset();
+    var progKept = !!(D.Edit.overlay.progress && D.Edit.overlay.progress.daysDone && D.Edit.overlay.progress.daysDone[3] &&
+        D.Edit.overlay.progress.checks && D.Edit.overlay.progress.checks.s1);
+    ok('恢复原始数据：progress 不被撤销（旅程事实），规划草稿回滚',
+        progKept === true && D.DAYS.filter(function (d) { return d.id === 2; })[0].title !== '会丢的草稿', '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

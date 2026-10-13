@@ -63,6 +63,8 @@
             this._clearMarks();
             var m = document.getElementById('enrMarks');
             if (m && m.remove) m.remove();
+            /* S30.5：退出即整卡重建——行中打卡的完成态（天卡 ✓/节点/段绿）立即返场规划视图 */
+            try { if (typeof renderAll === 'function') renderAll(); } catch (e) {}
         },
 
         /* ---------- 定位投影 ---------- */
@@ -272,9 +274,14 @@
         },
         _restoreSegStyles: function () {
             if (typeof dayLines === 'undefined') return;
-            dayLines.forEach(function (pl) {
+            var prog = (typeof Edit !== 'undefined' && Edit.overlay && Edit.overlay.progress) || null;
+            dayLines.forEach(function (pl, i) {
                 if (!pl) return;
                 try { pl.setStyles({ default: NORMAL }); } catch (e) {}
+                /* S30.5：规划视图的完成态绿描边返场（行中退出不带走进度视觉） */
+                if (prog && prog.daysDone && DAYS[i] && prog.daysDone[DAYS[i].id]) {
+                    try { pl.setStyles({ default: { color: '#0f766e', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } } }); } catch (e) {}
+                }
             });
         },
 

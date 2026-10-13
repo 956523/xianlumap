@@ -621,12 +621,19 @@
         document.body.classList.toggle('has-dep', !!ROUTE_META.departureDate);
         var loopRt = isLoopRoute();
         var startNodeName = ((STARTS[0].head && STARTS[0].head.n) || STARTS[0].name);
+        /* S30.5 完成态返场：行中打卡（overlay.progress.daysDone）在规划视图同样可见——
+           已打卡的天卡带 ✓ 角标+绿边、链上节点/段保持完成态视觉、全完成出横幅。
+           数据跨模式共享（同一份 overlay.progress），进度条仍只在行中态底部。 */
+        var prog = (typeof Edit !== 'undefined' && Edit.overlay && Edit.overlay.progress) || null;
+        function dayDoneP(id) { return !!(prog && prog.daysDone && prog.daysDone[id]); }
         disp.forEach(function (dd, vi) {
             var d = origOf(dd);   // 编辑/归属一律落原对象；显示用 dd（镜像时 altKm/path 已换）
             var li = document.createElement('li');
             li.className = 'ch-item';
             var rest = !dd.altKm || (dd.altKm[1] - dd.altKm[0]) < 1;   // 切空/无区间 = 休整占位
             if (rest) li.classList.add('rest');
+            var doneDay = dayDoneP(d.id);
+            if (doneDay) li.classList.add('done');
             li.title = dd.energy;
             var tag = 'D' + (vi + 1);   // 连续编号（显示层序；逆行自动反排）
             if (ROUTE_META.departureDate) {
@@ -636,6 +643,7 @@
                     '日一二三四五六'.charAt(dep.getDay());
             }
             if (rest) tag += ' · 休整';
+            if (doneDay) tag += ' ✓';   // S30.5 完成角标
             /* 起点节点（列表最顶） */
             var pre = '';
             if (vi === 0) {
@@ -659,7 +667,7 @@
             var isLast = vi === disp.length - 1;
             var node = '';
             if (!isLast) {
-                node = '<div class="ch-node" data-node-day="' + d.id + '">' +
+                node = '<div class="ch-node' + (doneDay ? ' done' : '') + '" data-node-day="' + d.id + '">' +
                     '<span class="ch-node-ic">' + ((typeof BRAND !== 'undefined' && BRAND.moon) || '⛺') + '</span>' +
                     '<div class="ch-node-tx"><b>' + escapeHtml2(nodeName(dd)) + '</b><span>' + nodeDates(vi) + '</span></div></div>';
             } else {
@@ -679,6 +687,29 @@
             })(d.id);
             listEl.appendChild(li);
         });
+        /* S30.5：已完成天的链段在规划视图保持完成态视觉（粗实绿，与行中态同口径） */
+        if (prog && prog.daysDone) {
+            dayLines.forEach(function (pl, i) {
+                if (!pl || !DAYS[i] || !prog.daysDone[DAYS[i].id]) return;
+                try {
+                    pl.setStyles({ default: { color: '#0f766e', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } } });
+                } catch (e) {}
+            });
+        }
+        /* 全部完成横幅 */
+        (function () {
+            var old = document.getElementById('allDoneBanner');
+            if (old && old.remove) old.remove();
+            if (!prog || !prog.daysDone || !disp.length) return;
+            var allOk = disp.every(function (d2) { return dayDoneP(origOf(d2).id); });
+            if (!allOk) return;
+            var b = document.createElement('div');
+            b.id = 'allDoneBanner';
+            b.className = 'all-done';
+            b.textContent = '🎉 全程 ' + disp.length + ' 天全部完成';
+            if (listEl.firstChild && listEl.insertBefore) listEl.insertBefore(b, listEl.firstChild);
+            else listEl.appendChild(b);
+        })();
         // 统计（全部从数据算出，不再写死 —— 写死的数会跟数据脱节）
         /* S33 修复 4259 叠加 bug：必须按【可见/显示天】合计——merged 天虽隐藏，其 km 仍挂在
            DAYS 里，而并入它的天已被 setSeg 延长，全量合计把同一段路算了两遍

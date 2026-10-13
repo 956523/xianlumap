@@ -227,6 +227,22 @@
         overlay: editLoad(),
         saved: null,
         isDirty: function () { return _draftDirty; },
+        /* S30.5 已完成天的编辑锁：打卡是旅程事实，改写需确认（确认弹窗口径，成本最低）。
+           dayDone 判定走 overlay.progress.daysDone（行中打卡写入）。 */
+        _dayDone: function (id) {
+            var p = this.overlay && this.overlay.progress;
+            return !!(p && p.daysDone && p.daysDone[id]);
+        },
+        confirmEditDoneDay: function (id, what) {
+            if (!this._dayDone(id)) return true;
+            try {
+                if (typeof window !== 'undefined' && window.prompt) {
+                    return window.prompt('这一天已完成打卡，' + (what || '修改') + '会改写历史。输入「继续」确认：', '') === '继续';
+                }
+            } catch (e) {}
+            try { if (typeof prompt === 'function') return prompt('这一天已完成打卡，修改会改写历史。输入「继续」确认：', '') === '继续'; } catch (e) {}
+            return true;   // vm/无 UI 环境默认放行（测试接缝）
+        },
         /* 保存修改：草稿 → localStorage（与「保存我的版本=重新生成线路」是两个动作） */
         commit: function () { flushStorage(); return true; },
         isOn: function () { return false; },
@@ -375,6 +391,10 @@
             var w = (typeof Wp !== 'undefined' && Wp && Wp.list) ? Wp.list[wpIdx] : null;
             var T = (typeof DAYS !== 'undefined' ? DAYS : [])[dayIdx];
             if (!w || !T) return false;
+            /* S30.5：归天若动到已打卡天（移出/移入），改写历史 → 确认 */
+            if (this._dayDone(T.id) || this._dayDone((DAYS[wpDayIdx(w)] || {}).id)) {
+                if (this.confirmEditDoneDay(T.id, '调整途经点归属') === false) return false;
+            }
             var km = routeKmOf(w.p[0], w.p[1]);
             var EPS = 0.5;
             if (wpDayIdx(w) === dayIdx) return true;
@@ -407,6 +427,7 @@
         /* —— 编辑操作（API 与 UI 共用；每个操作立即存 overlay；S28 起无需任何模式） —— */
         setDayField: function (id, field, value) {
             if (['title', 'note', 'stay'].indexOf(field) < 0 || value == null) return;
+            if (this.confirmEditDoneDay(id, '改' + ({ title: '标题', note: '备注', stay: '住宿' }[field] || '内容')) === false) return false;
             var f = {}; f[field] = value;
             applyDayFields(id, f);
             // 当前视角的 DAYS 可能是 buildDays 的拼接副本（接入段出发地）——同步改活副本，立即生效
@@ -425,6 +446,8 @@
                 editNotice(Edit.segViewHint());
                 return false;
             }
+            /* S30.5：已打卡天的分段改写历史 → 确认（内部联动调用同样过这道口） */
+            if (this.confirmEditDoneDay(id, '调整分段') === false) return false;
             if (!applySeg(id, fromKm, toKm)) return false;
             this.overlay.seg = this.overlay.seg || {};
             this.overlay.seg[id] = { fromKm: +fromKm.toFixed(1), toKm: +toKm.toFixed(1) };
@@ -551,8 +574,14 @@
             ROUTE_META.sub = EDIT_PRISTINE.meta.sub;
             ROUTE_META.evNotice = EDIT_PRISTINE.meta.evNotice;
             delete ROUTE_META.departureDate;
+            /* S30.5：打卡进度是旅程事实——「恢复原始数据」只还原规划（天/文案/分段/途经点），
+               progress 原样保留（不因恢复规划而撤销）。progress 已由行中打卡即时持久化，
+               这里显式从旧 overlay 摘回来挂回（防止 savedOv 缺字段的边角）。 */
+            var progKeep = (this.overlay && this.overlay.progress) ? JSON.parse(JSON.stringify(this.overlay.progress))
+                : (((this.saved || {}).progress) ? JSON.parse(JSON.stringify(this.saved.progress)) : null);
             this.overlay = savedOv;
             applyOverlay(savedOv);
+            if (progKeep) this.overlay.progress = progKeep;
             _draftDirty = false;
             updateSaveBtn();
             /* 途经点同样回到已保存态 */
@@ -749,6 +778,8 @@
     function openInlineField(li, day, field) {
         var span = li.querySelector ? li.querySelector('.day-' + field) : null;
         if (!span || span.__inline) return false;
+        /* S30.5 编辑锁：已完成天的就地编辑先确认（确认弹窗口径；取消 = 不打开输入框） */
+        if (Edit.confirmEditDoneDay(day.orig ? day.orig.id : day.id, '编辑') === false) return false;
         if (!span.parentNode || typeof span.parentNode.insertBefore !== 'function') return false;
         var input = document.createElement('input');
         input.type = 'text';
