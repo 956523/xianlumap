@@ -1201,6 +1201,80 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             vm.runInNewContext(manifestSrc, sbm);
             return (sbm.ROUTE_MANIFEST || []).every(function (r) { return r.season === '5–10月'; });
         })(), '');
+    /* ---------- S30：行中模式（四态/投影/打卡数据流）+ 离线 PWA ---------- */
+    console.log('\n【27】S30：行中模式 + PWA');
+    delete lsStore['xianlumap.overlay.qinghai-gansu'];
+    var s30 = bootRoute('qinghai-gansu');
+    var E = s30.sandbox;
+    var EN = s30.sandbox.window.Enroute || s30.sandbox.Enroute;   // enroute.js 走 window.Enroute（同 __mobile 模式）
+    // a) 模式进出零残留
+    EN.enter();
+    var cardIn = (function(){ var found=false; created.forEach(function(el){ if(el.id==='enrCard') found=true; }); return found; })();
+    var clsIn = document.body.classList.contains('enroute');
+    EN.exit();
+    var clsOut = !document.body.classList.contains('enroute');
+    ok('行中模式进出：body.enroute + 进度卡创建/移除',
+        !s30.err && EN && cardIn && clsIn && clsOut, 'in=' + clsIn + ' out=' + clsOut);
+    // b) 锚点定位投影：km 中段 → 当前段 + 距休整点 + 已走里程 + 全程条
+    EN.setAnchorKm(400);
+    var segI = EN._segIdx();
+    var cardHtml = elCache['enrCard'].innerHTML || '';
+    var projOk = segI >= 0 && EN.curKm === 400 &&
+        /距今晚休整点/.test(cardHtml) && /已走 /.test(cardHtml) && /全程 \d+\/\d+ 天/.test(cardHtml);
+    ok('锚点投影：curKm=400 → 当前段 + 进度卡主任务/段内进度/全程条',
+        projOk, 'seg=' + segI + ' km=' + EN.curKm);
+    // c) 支线提醒态：锚到当前段内某未打卡点前方 1km
+    var dd0 = E.currentDisp()[segI];
+    var spots = EN._segSpots(segI);
+    var sideOk = false, sideTxt = '';
+    if (spots.length) {
+        /* 锚到「段内靠前且前方还有未打卡点」位置：选距段首 ≥3km 的首个未打卡点，锚其前方 1km */
+        var sideSpot = null;
+        spots.forEach(function (it) { if (!sideSpot && it.km - dd0.altKm[0] >= 3) sideSpot = it; });
+        if (sideSpot) {
+            EN.setAnchorKm(+(sideSpot.km - 1).toFixed(1));
+            sideTxt = elCache['enrCard'].innerHTML || '';
+            sideOk = EN._state === 'side' && /支线 · 前方 /.test(sideTxt);
+        }
+    }
+    ok('支线提醒态：前方未打卡点 15km 内 → 「支线 · 前方 N km」横幅', spots.length === 0 || sideOk, sideTxt.slice(0, 60));
+    // d) 到达打卡态 → 三键打卡 → 今日完成态 + 数据落草稿
+    EN.setAnchorKm(dd0.altKm[1] - 0.3);
+    var arriveOk = EN._state === 'arrive' && /打卡/.test(elCache['enrCard'].innerHTML || '');
+    EN.checkIn(1);
+    var doneOk = EN._state === 'done' && /今日完成/.test(elCache['enrCard'].innerHTML || '') &&
+        /明天|全程完成/.test(elCache['enrCard'].innerHTML || '');
+    var prog = E.Edit.overlay.progress || {};
+    var dataOk = prog.daysDone && prog.daysDone[E.origOf(dd0).id] && prog.daysDone[E.origOf(dd0).id].report === 1 &&
+        E.Edit.isDirty() === true;
+    E.Edit.commit();
+    var persisted = /"daysDone"/.test(lsStore['xianlumap.overlay.qinghai-gansu'] || '') && /"progress"/.test(lsStore['xianlumap.overlay.qinghai-gansu'] || '');
+    ok('四态切换：到达打卡 → 三键上报(report=1) → 今日完成 + 明天预告',
+        arriveOk && doneOk && dataOk, 'state=' + EN._state);
+    ok('打卡数据流：overlay.progress 草稿 → commit 落盘（云同步读 saved 自动覆盖）', persisted, '');
+    // e) 支线自动点亮：定位到未打卡点 200m 内（路过即点亮，不强求）
+    var E2s = bootRoute('qinghai-gansu').sandbox;
+    var EN2 = E2s.window.Enroute || E2s.Enroute;
+    var sp2 = EN2._segSpots(0)[0];
+    var autoOk = false;
+    if (sp2) {
+        var p2 = sp2.s ? sp2.s.p : sp2.wp.p;
+        EN2.setPosition(p2[0] + 0.001, p2[1] + 0.001);   // ~140m 内
+        var key2 = sp2.si != null ? 's' + sp2.si : 'w' + sp2.wi;
+        autoOk = EN2.checked(key2) === true;
+    }
+    ok('支线路过自动点亮：200m 内定位 → 打卡点 ✓（不强求）', !sp2 || autoOk, '');
+    // f) 成绩分享图 + PWA 资产
+    var enrSrc = fs.readFileSync(path.join(ROOT, 'engine', 'enroute.js'), 'utf8');
+    var manifestOk = false;
+    try { manifestOk = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8')).display === 'standalone'; } catch (e) {}
+    var swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+    ok('今日成绩分享图：canvas 生成器在位（只画去过的点）',
+        /shareTodayPng/.test(enrSrc) && /只展示去过/.test(enrSrc) && /!EN2?/.test('x') || (/shareTodayPng/.test(enrSrc) && /只展示去过/.test(enrSrc)), '');
+    ok('离线 PWA：manifest standalone + sw 缓存清单（engine/enroute.js）+ HTML network-first + 瓦片走网络',
+        manifestOk && /engine\/enroute\.js/.test(swSrc) && /network-first/i.test(swSrc) &&
+        /cache-first/i.test(swSrc) && /走网络/.test(swSrc) &&
+        /rel="manifest"/.test(html) && /serviceWorker/.test(html), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

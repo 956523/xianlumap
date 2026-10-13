@@ -2051,3 +2051,76 @@ mobile.js 全览按钮的 nearFit 偏离判定因此一直拿不到基准（靠�
 3. evenSplit 大天数受「每天至少 2km」守卫（2166km 上限 ~1083 天，超出拒绝并提示）。
 4. 落针动画是 CSS keyframes（高德 Marker content 注入），真机 60fps 未实测。
 5. 未执行 git 提交。
+
+## 42. S30：轻量行中模式 + 离线 PWA（2026-10-13）
+
+设计稿 `_design-s30.html` 拍板。定位（设计稿原话）：不是导航，是「行进中的进度伴侣」。
+
+### 行中模式（engine/enroute.js，~470 行 IIFE）
+
+- **入口/退出**：标题条「⛺ 行中」开关（h1 + mobBar 各一，与顺/逆切换并列）；
+  进入 body.enroute（面板/抽屉/标题条全隐、#map 100vh 全屏）+ 底部进度卡；
+  退出清 watch/卡片/标记/链段描边，零残留（CDP 实测面板复原）。
+- **定位投影算法**：geolocation.watchPosition（enableHighAccuracy:false /
+  maximumAge:120s——「显著位移才唤醒」省电口径）→ 原始 latlng → `kmOfPoint`
+  （S29 _dayKmTable 最近点，O(n) 线性扫）→ 链上 km → `currentDisp()` 找当前链段
+  （S33 镜像方向自动随行：全程走显示层口径）。显著位移阈值 0.1km 内不重复渲染。
+  无定位：手动锚点「📍 我现在在…」进锚点模式点地图投影（`setAnchorKm` 为 vm 接缝）。
+- **四态状态机**：move（主任务卡：距今晚休整点 X km + 当前段已走 a/b + 全程进度条
+  + 完成天数）/ side（当前段前方 15km 内最近未打卡点 → 紫色支线横幅）/ arrive
+  （段终点 500m 内 → 到达卡 + 三键上报：✓可用 / ⚠需注意 / ✕不可用）/ done
+  （今日完成：里程/打卡对账清单/用时 + 明天 Dn 预告 + 分享成绩 + 「睡觉，明天见」
+  退出）。支线打卡点 200m 路过**自动点亮**（不强求，design 口径）。
+- **标记体系**（与全局同源）：⛺ 帐篷 = 休整点（空心虚线框=未到 / 琥珀实心=当前 /
+  绿实心+✓=已打卡），⚑ 旗标 = 打卡点（灰空心 / 绿实心+✓）；链段三态用 S0 dayLines
+  整层 setStyles：已走 粗实绿 5px / 当前 细实 2.5px / 未到 淡细 #99f6e4。
+- **打卡数据流**：`overlay.progress = {checks:{key:{t,auto,ok}}, daysDone:{dayId:{t,durMin,report}}}`
+  —— 走 S32 草稿体系；**特例：打卡即时持久化**（`_persistProgress`：progress 合并进
+  已存储 overlay + saved 快照——旅程数据丢不起；其余编辑字段仍纯草稿不越界）。
+  三键 report（1/0/-1）仅落本机，云端服务立项后接（接口预留）。云同步读 saved
+  → 打卡随同步走，零额外改造。
+- **偏离提醒**：原始定位距链上投影 >5km → toast「已偏离主路线（不改路，仅告知）」，
+  卡内可关。锚点模式不做偏离判定。
+
+### 离线 PWA
+
+- `manifest.json`（standalone、theme #0f766e、favicon.svg 双图标）+ `sw.js`：
+  HTML network-first（发版先拿新版）/ 应用静态资源 cache-first（engine/ route-defs/
+  key.local.js 全清单预缓存）/ **底图瓦片与高德服务一律不缓存走网络**——断网时地图
+  灰底、链/进度/打卡全可用（注释写明口径）。同名缓存整包替换防半新半旧。
+- 行中模式断网核心保障：定位投影 + 链计算全本机（kmOfPoint/currentDisp 零网络）。
+
+### 今日成绩分享图
+
+「今日完成」态「分享今日成绩 ↗」→ canvas（与 S33 生成器同源换数据段）：品牌
+slogan 头 + 「第 N 天完成 ✓」+ 当天链段（出发时刻 → **只画去过的打卡点 ✓** →
+⛺ 到达时刻）+ 全程进度条 + 网址/最高海拔。**没去的不显示——诚实靠「不写」**。
+
+### 验证
+
+- c4-test 288/288（enroute 进 boot 链但零首屏副作用；裸 z-index 检查逼出
+  var(--z-guide) 写法）；probe-check **158/158**（新增【27】8 项：模式进出零残留、
+  锚点投影（curKm=400→seg/主任务/全程条）、支线提醒态、四态切换+三键 report=1、
+  打卡数据流（草稿→commit 落盘）、支线路过自动点亮、成绩图源码（只画去过）、
+  PWA 资产（manifest standalone/sw 清单/HTML network-first/瓦片走网络））。
+- CDP iPhone 390×844 + **Emulation.setGeolocationOverride + Browser.setPermission**
+  实测全链路（授权必须先于 watch 绑定）：行进中/支线提醒/路过点亮/到达三键/
+  今日完成对账+落盘/成绩图下载/退出零残留/偏离提醒，全 ✅ 零 JS 错误。
+  截图 /tmp/s30-1-move.png、s30-2-side.png、s30-3-arrive.png、s30-4-done.png。
+- 过程中修的真 bug：`_segSpots` 把 `dayIdxOfKm(kmOfPoint(...))`（天索引）误当
+  沿线 km 用，支线/到达全部投影错乱（CDP 日志 curKm 漂移暴露）。
+
+### 诚实清单
+
+1. **定位精度**：投影是「链上最近点」口径——长直路上横向偏差 1–2km 也会投影到
+   链上（偏离提醒 >5km 才报，正是为此留的缓冲）。GPS 漂移大时进度会跳，属口径
+   内行为。
+2. **省电权衡**：watchPosition 用 maximumAge 120s + 不追高精度，城市高楼/峡谷
+   里实际唤醒频率由系统决定；「显著位移」阈值 0.1km 是显示层去抖，不是定位层。
+3. **断网地图灰底**：底图瓦片刻意不缓存——断网时地图无瓦片但链/进度/打卡可用；
+   这是诚实降级，不假装有地图。
+4. **用时口径**：durMin = 首次投影进段 → 打卡的时刻差；中途退出模式再进会重计
+   （_segEnterAt 不持久化）。
+5. **三键上报**只有本机存储，云端服务未立项前不产生任何网络请求（隐私口径）。
+6. 行中模式的标记层与S31休整层并存时同点可能双标（帐篷图标区分度足够，未合并）。
+7. 未执行 git 提交。

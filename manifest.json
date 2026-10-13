@@ -1,0 +1,15 @@
+{
+  "name": "自驾线路图 · xianlumap",
+  "short_name": "线路图",
+  "description": "把整条路，摊开看。青甘大环线 / 川西小环线 / 318 川藏南线。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f766e",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "favicon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

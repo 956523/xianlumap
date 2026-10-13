@@ -27,6 +27,7 @@
     document.write('<script src="engine/profile.js"><\/script>');
     document.write('<script src="engine/mobile.js"><\/script>');
     document.write('<script src="engine/edit.js"><\/script>');
+    document.write('<script src="engine/enroute.js"><\/script>');
     document.write('<script src="engine/sync.js"><\/script>');
     document.write('<script src="engine/ui.js"><\/script>');
 })();
