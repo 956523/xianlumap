@@ -358,10 +358,12 @@ function runRoute(routeId) {
         /#mobBar\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
         /#mobLayers\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
         /#mobBtns\s*\{[^}]*position:\s*fixed/.test(cssOnly) &&
-        /getElementById\('wpSec'\)/.test(mainScript) &&
+        /* S34：wpSec 管理区退役（wpSec.id 创建语句清零），三钮落户 ⋯ 设置页（wpGen 仍在） */
+        !/wpSec\.id\s*=/.test(mainScript) &&
+        /id="wpGen"/.test(mainScript) &&
         /btnDraftSave/.test(mainScript) &&
         /#planPeek\s*\{/.test(cssOnly),
-        '抽屉贴底全宽 + 常驻标题条 + 右下浮动组（全览条件钮）+ 统一行程视图（S32，wpSec 融入 + 保存修改按钮）');
+        '抽屉贴底全宽 + 常驻标题条 + 右下浮动组（全览条件钮）+ S34：wpSec 退役、三钮迁入 ⋯ 设置 + 保存修改按钮');
     ok('中等视口侧栏收窄',
         /min-width:\s*721px[\s\S]{0,80}max-width:\s*1000px[\s\S]{0,80}width:\s*252px/.test(cssOnly), '');
     ok('面板自绘滚动条',

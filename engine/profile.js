@@ -37,7 +37,9 @@
        S17：剖面把手改为「仅聚焦某天/手动展开时常显」——全览（body.elev-hide）时
        收起态让位量与露出的把手高度都归 0，不占布局。 */
     function syncMapOccupy() {
-        var gripOn = !(document.body && document.body.classList && document.body.classList.contains('elev-hide'));
+        /* S34：窄屏把手已退役（elevGripShow 强制收起），peek 不占 46px，地图 ≥70% */
+        var narrow = typeof window !== 'undefined' && window.innerWidth <= 768;
+        var gripOn = !narrow && !(document.body && document.body.classList && document.body.classList.contains('elev-hide'));
         var occupy = isOpen() ? drawerH : (gripOn ? PEEK : 0);
         var root = document.documentElement;
         if (root && root.style && typeof root.style.setProperty === 'function') {

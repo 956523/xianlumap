@@ -12,7 +12,7 @@
  * edit.js / ui.js 后加载；窄屏点日卡由 route-engine focusDay 调 setSheet('peek')。
  * ========================================================================== */
 
-var MOBILE_PEEK = 112;       // peek 露出高度（手柄28 + 规划概要行 + 首张日卡一截），与 CSS --sheet-peek 同值
+var MOBILE_PEEK = 108;       // S34：peek 露出高度（手柄28 + 概要行 + 天数轨），与 CSS --sheet-peek 同值
 var MOBILE_BREAK = 768;
 var sheetState = 'peek';     // 'peek' | 'full' | 'hidden'
 var mobActive = false;       // 当前是否处于移动断点
@@ -26,9 +26,11 @@ function setSheet(st) {
     var b = document.body;
     if (b && b.classList) {
         b.classList.remove('mob-drag');
+        b.classList.remove('mob-peek');   // S34：peek 态由 mob-peek 驱动（其余档先清）
         b.classList.toggle('mob-full', st === 'full');
         b.classList.toggle('mob-half', st === 'half');   // S29：半屏编辑态
         b.classList.toggle('mob-hidden', st === 'hidden');
+        if (st === 'peek') b.classList.add('mob-peek');   // S34：peek 瘦身（只露概要盒+手柄）
     }
     // 行程单露出高度 → CSS 变量：地图容器缩短、剖面把手贴其下沿（两张表叠放）
     var root = document.documentElement;
@@ -200,8 +202,9 @@ setPanelOpen = function (open) {
  * S16 移动端信息架构（≤768px）：标题条 + ⋯菜单 + 图层弹层 + 浮动按钮组
  *
  * 结构（首次进入移动断点时构建 #mobRoot，回桌面整体隐藏并把节点归位）：
- *   #mobBar   常驻标题条：线路名 + 出发地切换（startSeg 迁入）+ 车型开关 + ⋯菜单
- *   #mobMenu  ⋯菜单：编辑模式 / 云同步 / 数据来源说明
+ *   #mobBar   常驻标题条：Logo + 线路名 + 规划/行中模式开关 + ⋯菜单（S34 一行化）
+ *   #mobCtl   抽屉头部控制行：出发地切换 + 顺/逆 + 车型（full 态才见；peek 被 CSS 边界隐藏）
+ *   #mobMenu  ⋯菜单：添加途经点 / 云同步 / 数据来源说明
  *   #mobLayersBk + #mobLayers  图层弹层：图例开关 + 续航卡整体迁入，点遮罩关闭
  *   #mobBtns  地图右下浮动组：图层按钮 + 「全览」条件按钮（偏离全览视野才出现，
  *             判定挂 zoomchange/moveend 防抖链，基准取 fitAll 写入的 __fitDebug）
@@ -255,13 +258,12 @@ function buildIA() {
     var _rn = (typeof ROUTE_META !== 'undefined' && ROUTE_META && ROUTE_META.name) || '线路';
     bar.appendChild(mobEl('b', 'mobRouteName', null,
         (typeof BRAND !== 'undefined' && BRAND.stripEmoji) ? BRAND.stripEmoji(_rn) : _rn));   // S24 去 emoji
-    bar.appendChild(mobEl('span', 'mobStartSlot'));
-    var evsw = mobEl('span', null, 'mob-evsw');
-    var _evB = mobEl('button', 'mobEv', null, (typeof BRAND !== 'undefined') ? BRAND.bolt + ' 电车' : '⚡ 电车');
-    var _fuB = mobEl('button', 'mobFuel', null, (typeof BRAND !== 'undefined') ? BRAND.pump + ' 油车' : '⛽ 油车');
-    evsw.appendChild(_evB);
-    evsw.appendChild(_fuB);
-    bar.appendChild(evsw);
+    /* S34 标题条一行化：只剩 Logo + 线路名 + 规划/行中模式开关 + ⋯；
+       出发地/车型/顺逆全部收进抽屉头部控制行 #mobCtl（full 态才见） */
+    var mode = mobEl('span', 'mobMode');
+    mode.appendChild(mobEl('button', 'mobModePlan', 'on', '规划'));
+    mode.appendChild(mobEl('button', 'mobModeEnr', null, '行中'));
+    bar.appendChild(mode);
     bar.appendChild(mobEl('button', 'mobMenuBtn', null, '⋯'));
     iaRoot.appendChild(bar);
 
@@ -311,19 +313,32 @@ function buildIA() {
     }
 
     /* 迁移：出发地切换 → 标题条；图例 + 续航卡 → 图层弹层（原事件随节点走） */
-    mobMove(document.getElementById('startSeg'), bar.querySelector ? bar.querySelector('#mobStartSlot') || bar.children[1] : bar.children[1]);
-    mobMove(document.getElementById('dirSeg'), bar.querySelector ? bar.querySelector('#mobStartSlot') || bar.children[1] : bar.children[1]);   // S33 逆行切换随 startSeg 进标题条
-    var lb = document.getElementById('mobLayersBody');
-    mobMove(document.getElementById('legendBox'), lb);
-    mobMove(document.querySelector ? document.querySelector('.evcard') : null, lb);
-
-    attachEditClose();
-
+    /* S34 控制行：出发地 + 顺/逆 + 车型（抽屉头部第二行；peek 态被 CSS 边界隐藏） */
+    var evsw = mobEl('span', null, 'mob-evsw');
+    var _evB = mobEl('button', 'mobEv', null, (typeof BRAND !== 'undefined') ? BRAND.bolt + ' 电车' : '⚡ 电车');
+    var _fuB = mobEl('button', 'mobFuel', null, (typeof BRAND !== 'undefined') ? BRAND.pump + ' 油车' : '⛽ 油车');
+    evsw.appendChild(_evB);
+    evsw.appendChild(_fuB);
+    var _panel = document.getElementById('panel');
+    if (_panel && _panel.insertBefore) {
+        var _ctl = mobEl('div', 'mobCtl');
+        _panel.insertBefore(_ctl, _panel.firstChild ? _panel.firstChild.nextSibling : null);
+        mobMove(document.getElementById('startSeg'), _ctl);
+        mobMove(document.getElementById('dirSeg'), _ctl);   // S33 逆行切换
+        /* evsw 是本次新建的游离节点（无 parentNode，mobMove 会跳过）——直接落位；
+           桌面时 mobCtl 整体 display:none（全局规则），不需迁回登记 */
+        _ctl.appendChild(evsw);
+    }
     /* 车型开关：代理点击隐藏的真实按钮（planner 的 handler 原样复用） */
     var mobEv = document.getElementById('mobEv');
     var mobFuel = document.getElementById('mobFuel');
     if (mobEv) mobEv.onclick = function () { var b = document.getElementById('btnEv'); if (b && typeof b.click === 'function') b.click(); };
     if (mobFuel) mobFuel.onclick = function () { var b = document.getElementById('btnFuel'); if (b && typeof b.click === 'function') b.click(); };
+    var lb = document.getElementById('mobLayersBody');
+    mobMove(document.getElementById('legendBox'), lb);
+    mobMove(document.querySelector ? document.querySelector('.evcard') : null, lb);
+
+    attachEditClose();
 
     /* 菜单 */
     var menuBtn = document.getElementById('mobMenuBtn');
@@ -331,12 +346,34 @@ function buildIA() {
         toggleClass('mob-menu');
         if (document.body.classList.contains('mob-menu')) toggleClass('mob-layers', false);   // S22：两弹层互斥
     };
+    /* S34 模式开关：规划 ↔ 行中（Enroute 挂在 window 上，enroute.js 导出方式） */
+    var mPlan = document.getElementById('mobModePlan');
+    var mEnr = document.getElementById('mobModeEnr');
+    function enrApi() { return (typeof window !== 'undefined' && window.Enroute) ? window.Enroute : (typeof Enroute !== 'undefined' ? Enroute : null); }
+    function syncModeSeg() {
+        var E = enrApi();
+        var on = false;
+        try { on = !!(E && E.isOn && E.isOn()); } catch (e) {}
+        if (mPlan && mPlan.classList) mPlan.classList.toggle('on', !on);
+        if (mEnr && mEnr.classList) mEnr.classList.toggle('on', on);
+    }
+    if (mEnr) mEnr.onclick = function () {
+        try { var E = enrApi(); if (E && E.enter) E.enter(); } catch (e) {}
+        syncModeSeg();
+    };
+    if (mPlan) mPlan.onclick = function () {
+        try { var E2 = enrApi(); if (E2 && E2.exit) E2.exit(); } catch (e) {}
+        syncModeSeg();
+    };
+    syncModeSeg();
     var menuBkEl = document.getElementById('mobMenuBk');   // 遮罩经 getElementById 接线（mock 可断言）
     if (menuBkEl) menuBkEl.onclick = function () { toggleClass('mob-menu', false); };
     var mEdit = document.getElementById('mobMenuEdit');
     if (mEdit) mEdit.onclick = function () {
         toggleClass('mob-menu', false);
-        /* S29：途经点 Tab 一步可达；半屏态由 showTab 内部落位（上半屏地图可取点） */
+        /* S34：wpSec 管理区退役——「添加途经点」直接打开「添加停靠点」对话框
+           （搜索/类型选择都在对话框里；__wpStop 桥在 edit.js 模块级） */
+        try { if (window.__wpStop && typeof window.__wpStop.open === 'function') window.__wpStop.open(null, null, ''); } catch (e) {}
         try { if (typeof Edit !== 'undefined' && Edit.showTab) Edit.showTab('wp'); } catch (e) {}
     };
     var mSync = document.getElementById('mobMenuSync');
@@ -504,7 +541,7 @@ function refreshMob() {
         var b = document.body;
         if (b && b.classList) {
             b.classList.remove('mob-full'); b.classList.remove('mob-half'); b.classList.remove('mob-hidden');
-            b.classList.remove('mob-elev'); b.classList.remove('mob-drag');
+            b.classList.remove('mob-elev'); b.classList.remove('mob-drag'); b.classList.remove('mob-peek');
             b.classList.remove('mob-menu'); b.classList.remove('mob-layers');
         }
         if (sheetPanel && sheetPanel.classList) {

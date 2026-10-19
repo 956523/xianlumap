@@ -2174,3 +2174,69 @@ slogan 头 + 「第 N 天完成 ✓」+ 当天链段（出发时刻 → **只画
    与 setSeg 口径一致，属有意收窄。
 3. 全完成横幅插在天卡列表顶，行中退出重建后也在（renderAll 统一出口）。
 4. 未执行 git 提交。
+## 44. S34：移动端正统化（2026-10-14）
+
+设计稿 `_design-s34.html` 一轮落地：peek 瘦身 / 标题条一行化 / 打卡筛选 /
+支线排除 / wpSec 退役 / 常驻把手退役。全部窄屏 scope，桌面零变化（VM 快照
+逐字节一致）。
+
+### 1. peek 态瘦身
+
+- peek 只露「手柄 + 概要盒 #peekBox」：`body.mob-peek #panel > :not(#sheetGrip):not(#peekBox)`
+  边界一刀切（标题/日期/行程头/chips/控制行/天卡全藏，full 态才见），
+  地图拿回 ~87% 屏幕（--sheet-peek 112→108px）。
+- 概要盒 = 今日一行（Dn · 从→到 · km · 打卡 N · 充电 N · 加油 N，今日=首个未完成天）
+  + 天数轨（Dn✓ done / Dn cur，点击 → full + focusDay 该天）。
+- renderPeekBox 宽屏早退（innerWidth>768 不建不渲染）——桌面零变化硬守卫。
+
+### 2. 标题条一行化
+
+- mobBar 只剩 Logo + 线路名 + **规划/行中模式开关** + ⋯；S30 的独立「⛺ 行中」
+  按钮从标题条退役（入口统一到模式开关，桌面侧栏 h1 入口不动）。
+- 出发地 / 顺逆 / 车型收进抽屉头部控制行 #mobCtl（全局 display:none，
+  仅窄屏媒体块放行；peek 态被 mob-peek 边界隐藏，full 态才见）。
+  evsw 为新建游离节点（无 parentNode，mobMove 会静默跳过）——直接 appendChild。
+
+### 3. 打卡行筛选 + 支线排除
+
+- 窄屏打卡行 DOM 全量渲染但强信号词优先重排（SPOT_STRONG + 观景台），
+  CSS 截断第 5 个起（.pt-m.extra{display:none}）；「等N处 ▾」（.pt-cap，窄屏专属）
+  点击行展开（li.pts-open，edit.js dayList 捕获监听 classList.toggle）。
+  桌面恢复 S29 原样（前 4 + 等N处，逐字节同 HEAD）。
+- 支线排除：SPOTS/Wp 距 CLASSIC.simplified/EXTRA_LINES 任一顶点 <0.03°（≈3km）
+  即支线点，仅窄屏不进主线归属（天卡打卡行 + 归天 chips + peekBox 计数三处同口径）；
+  途经点加同名兜底（拉脊山 wp 与拉脊山垭口 SPOT 孪生——数据坐标偏差 11km，
+  几何够不着）。塔尔寺/拉脊山从 D1 消失，桌面仍含（零变化）。
+
+### 4. 退役清单
+
+- **wpSec「途经点管理」整块退役**：保存我的版本 / 地图点选 / 维护指南三钮
+  收进 ⋯ 更多设置「数据」区（ID 保持 wpGen/wpPick/wpGuideBtn，接线零改动）；
+  删除途经点收口到点成员长按/右键菜单（✕ 删除，确认 → Wp.remove）；
+  「➕ 添加途经点」⋯菜单入口直接打开「添加停靠点」对话框。
+- **移动端常驻剖面把手退役**：elevGripShow 窄屏强制收起 + syncMapOccupy 窄屏
+  peek 不占 46px；点天卡 → 剖面抽屉随天滑出（抽屉打开态盖过 body.elev-hide 的
+  全隐规则——窄屏专项覆盖，桌面不动）。
+
+### 验证
+
+- c4-test 288/288；probe-check **172/172**（新增【29】10 项：peek 边界源码/CSS、
+  窄屏 peekBox 内容格式、mob-peek body class、打卡筛选上界（窄屏 extra+等N处▾ /
+  桌面无）、支线排除（窄屏 D1 无塔尔寺/拉脊山 / 桌面仍含）、把手守卫
+  （elev-hide + --elev-peek=0 + 源码双守卫）、模式开关 body.enroute 往返、
+  mobCtl 三控件收纳源码）。
+- 桌面零变化：git HEAD vs 工作区 VM 快照对比（3 条线路 dayList innerHTML +
+  chipKm/chipMaxAlt/planBox/curEnergy + 桌面不渲染 peekBox）逐字节一致。
+- CDP iPhone 390×844 实证：peek 地图 87% + 概要行/天数轨、full 控制行三控件、
+  D1 打卡 4 代表点 + 等24处▾ 展开 24 项、D1 无塔尔寺/拉脊山、点天卡剖面滑出
+  把手不占位、行中模式开关往返、⋯菜单 + 添加对话框、数据区三钮在位。
+  截图 /tmp/s34-*.png。
+
+### 诚实清单
+
+1. 拉脊山 wp 的排除靠「同名兜底」而非几何（数据坐标距支线 11km）——若后续
+   数据修正坐标，几何口径自然接管，兜底不碍事。
+2. 支线排除仅窄屏启用：桌面保留原归属口径（零变化优先于一致性）。
+3. mobCtl 里的控件迁回桌面走 mobMove 登记（startSeg/dirSeg），evsw 是新建
+   节点随 mobCtl 全局隐藏，不回迁。
+4. 未执行 git 提交。

@@ -750,9 +750,10 @@
     /* ---------- S32：统一行程视图（S28 双 Tab 合并）+ 常驻出发日期 + ⋯ 更多设置 ----------
        产品拍板：抽屉不再分「行程/途经点」——一个统一视图：
        - 头部条 = 行程标题 + 「保存修改」（草稿脏时出现，S32 草稿语义）+ ⋯ 设置
-       - 途经点管理区（wpSec）收进列表顶部（搜索/点选/长按添加 + 行内滑删/长按拖/归天）
-       - 天卡保持 S28/S29 成果；点成员长按弹菜单（改名/飞到地图）
-       showTab('wp') 语义 = 聚焦途经点区（滚动+移动半屏），不再有 Tab 显隐切换。 */
+       - S34：wpSec 途经点管理区整块退役（三钮落户 ⋯ 设置「数据」区，删除收口到
+         点成员菜单）——链上节点/链段即管理入口，不再有独立管理区块
+       - 天卡保持 S28/S29 成果；点成员长按弹菜单（改名/飞到地图/删除）
+       showTab('wp') 语义 = 聚焦途经点区（移动半屏），不再有 Tab 显隐切换。 */
     function switchPanelTab(name) {
         Edit.panelTab = (name === 'wp') ? 'wp' : 'trip';
         Edit.tab = Edit.panelTab;
@@ -837,35 +838,9 @@
         };
         var pm0 = document.getElementById('panelMore');
         if (pm0) pm0.onclick = openMoreSheet;
-        /* 2) 途经点管理区（S32 统一行程视图：收进列表顶部，dayList 之前） */
-        var wpSec = document.createElement('div');
-        wpSec.id = 'wpSec';
-        wpSec.className = 'wp-sec-box slim';
-        /* S33：黄色盒霸屏整改——收进可折叠管理区；搜索/类型选择移进「添加停靠点」对话框 */
-        wpSec.innerHTML =
-            '<button class="wp-sec-t" id="wpSecT" type="button">途经点管理（<span id="wpCount">0</span>）<span class="wp-badge" id="wpBadge">待保存生效</span><span class="wp-sec-ar">▾</span></button>' +
-            '<div class="wp-sec-body" id="wpSecBody" style="display:none">' +
-            '<div class="wp-note">行内：☰ 拖动排序 · 右键/左滑删除 · [Dn] 归天（拖天卡芯片也能归天）；' +
-            '地图：📍 点选 / 长按。添加走头部「＋ 添加」（选类型 ⚑打卡/⛺休整）。改动进草稿，「保存修改」存本机。</div>' +
-            '<div id="wpList"></div>' +
-            '<div class="wp-row">' +
-            '<button class="edit-mini" id="wpPick">📍 地图点选</button>' +
-            '<button class="edit-mini" id="wpGuideBtn">维护指南</button>' +
-            '</div>' +
-            '<button id="wpGen" class="et-gen">💾 保存我的版本（导出 + 重新生成线路）</button></div>';
-        var dayListEl = document.getElementById('dayList');
-        if (dayListEl && dayListEl.parentNode && typeof dayListEl.parentNode.insertBefore === 'function') {
-            dayListEl.parentNode.insertBefore(wpSec, dayListEl);
-        } else if (panel.appendChild) panel.appendChild(wpSec);
-        var wpSecT = document.getElementById('wpSecT');
-        if (wpSecT) wpSecT.onclick = function () {
-            var b = document.getElementById('wpSecBody');
-            var open = b && b.style.display === 'none';
-            if (b) b.style.display = open ? '' : 'none';
-            wpSecT.setAttribute && wpSecT.setAttribute('data-open', open ? '1' : '');
-            var ar = wpSecT.querySelector ? wpSecT.querySelector('.wp-sec-ar') : null;
-            if (ar) ar.textContent = open ? '▴' : '▾';
-        };
+        /* 2) S34：途经点管理区（wpSec）整块退役——加点的链上能力走「＋ 添加」/点成员「＋ 添加」，
+           保存/点选/指南三钮收进 ⋯ 更多设置「数据」区（下方 moreSheet，ID 保持 wpGen/wpPick/wpGuideBtn，
+           buildWaypointPanel 既有 getElementById 接线零改动自动接上）。 */
         /* 头部「＋ 添加」「分享」按钮 */
         var addBtn = document.getElementById('btnAddWp');
         if (addBtn) addBtn.onclick = function () { openStopDlg(null, null, ''); };
@@ -891,6 +866,11 @@
             '<div class="ms-row">' +
             '<button class="edit-mini ms-btn" id="msReset">↩️ 恢复原始数据</button>' +
             '<button class="edit-mini ms-btn" id="msImport">📥 导入编辑层</button></div>' +
+            /* S34：wpSec 退役后三钮落户于此（ID 不动，buildWaypointPanel 接线照旧） */
+            '<div class="ms-row">' +
+            '<button class="edit-mini ms-btn" id="wpPick">📍 地图点选</button>' +
+            '<button class="edit-mini ms-btn" id="wpGuideBtn">📖 途经点维护指南</button></div>' +
+            '<div class="ms-row"><button class="edit-mini ms-btn" id="wpGen">💾 保存我的版本（导出 + 重新生成线路）</button></div>' +
             '<div class="ms-sec">显示</div>' +
             '<div class="ms-row ms-row-check"><label class="ms-check"><input type="checkbox" id="msEvset"> 显示续航设置（默认隐藏，规划计算不受影响）</label></div>' +
             '<div class="ms-sec">❓ 帮助</div>' +
@@ -1000,7 +980,9 @@
             m.innerHTML = '<button data-a="fly">🧭 飞到地图</button><button data-a="rename">✎ 改名</button>' +
                 (wpIdx >= 0 ?
                     '<button data-a="kind-spot"' + (curKind === 'spot' ? ' disabled class="cur"' : '') + '>⚑ 改为打卡点</button>' +
-                    '<button data-a="kind-rest"' + (curKind === 'rest' ? ' disabled class="cur"' : '') + '>⛺ 改为休整点</button>' : '');
+                    '<button data-a="kind-rest"' + (curKind === 'rest' ? ' disabled class="cur"' : '') + '>⛺ 改为休整点</button>' +
+                    /* S34：wpSec 行内删除随管理区退役，删途经点收口到本菜单 */
+                    '<button data-a="del">✕ 删除途经点</button>' : '');
             if (document.body && document.body.appendChild) document.body.appendChild(m);
             try {
                 m.style.left = Math.max(8, Math.min(clientX, window.innerWidth - 150)) + 'px';
@@ -1014,6 +996,14 @@
                     if (a === 'fly') flyPtMember(memberEl);
                     else if (a === 'rename') renamePtMember(memberEl);
                     else if (a === 'kind-spot' || a === 'kind-rest') Edit.setWpKind(wpIdx, a === 'kind-rest' ? 'rest' : 'spot');
+                    else if (a === 'del') {
+                        /* S34：菜单删除 = 确认 → Wp.remove（零丢失语义与旧行内删除一致） */
+                        var dw = (typeof Wp !== 'undefined' && Wp.list) ? Wp.list[wpIdx] : null;
+                        if (dw && editAsk('删除途经点「' + dw.n + '」？', '确定') !== null) {
+                            Wp.remove(wpIdx);
+                            if (Wp.renderList) Wp.renderList();
+                        }
+                    }
                 });
             });
             setTimeout(function () {
@@ -1270,7 +1260,12 @@
                 if (t.className === 'day-title') { e.stopPropagation(); openInlineField(li, day, 'title'); }
                 else if (t.className === 'day-note') { e.stopPropagation(); openInlineField(li, day, 'note'); }
                 else if (t.className === 'day-stay') { e.stopPropagation(); openInlineField(li, day, 'stay'); }
-                else if (t.className === 'pt-m') { e.stopPropagation(); flyPtMember(t); }
+                /* S34：「等N处 ▾」点击 = 展开当天全部打卡点（li.pts-open），不触发聚焦 */
+                else if (t.className === 'pt-cap') {
+                    e.stopPropagation();
+                    if (li.classList) li.classList.toggle('pts-open');
+                }
+                else if (t.className === 'pt-m' || t.className === 'pt-m extra') { e.stopPropagation(); flyPtMember(t); }
                 else if (t.className === 'et-chip add' || (t.className.indexOf('et-chip') === 0 && t.getAttribute && t.getAttribute('data-add'))) {
                     /* S33「＋添加」= 打开添加对话框（搜索/选类型） */
                     e.stopPropagation();
@@ -1294,7 +1289,7 @@
                 if (e.preventDefault) e.preventDefault();
                 e.stopPropagation();
                 if (chip) { openPtMenu(e.clientX, e.clientY, chip); return; }
-                if (!t || t.className !== 'pt-m') return;
+                if (!t || (t.className !== 'pt-m' && t.className !== 'pt-m extra')) return;
                 if (e.preventDefault) e.preventDefault();
                 e.stopPropagation();
                 openPtMenu(e.clientX, e.clientY, t);
@@ -1315,7 +1310,7 @@
                     }, 500);
                     return;
                 }
-                if (!t || t.className !== 'pt-m') return;
+                if (!t || (t.className !== 'pt-m' && t.className !== 'pt-m extra')) return;
                 lpMenuEl = t;
                 lpMenuTimer = setTimeout(function () {
                     lpMenuTimer = null;
@@ -1378,8 +1373,12 @@
     /* ---------- S19 联动渲染（S28 重构：编辑面板退役，刷新面 = 行程卡控件 + chips + 途经点列表 + 地名列表） ---------- */
     function wpChips(day, quiet) {
         if (typeof Wp === 'undefined' || !Wp || !Wp.list || !Wp.list.length || !day.altKm) return '';
+        /* S34：窄屏支线点不进主线归属——chips（归天管理）同样剔除支线覆盖的途经点 */
+        var branchWp = null;
+        try { if (window.innerWidth <= 768 && typeof branchExclWpSet === 'function') branchWp = branchExclWpSet(); } catch (e) {}
         var names = [];
-        Wp.list.forEach(function (w) {
+        Wp.list.forEach(function (w, wi) {
+            if (branchWp && branchWp[wi]) return;
             if (wpDayIdx(w) >= 0 && DAYS[wpDayIdx(w)] === day) names.push({ n: w.n, key: w.key });
         });
         if (!names.length) return quiet ? '' : '<span class="et-none">途经点：无</span>';
@@ -1595,11 +1594,8 @@
     }
 
     /* ---------- 面板 UI ---------- */
+    /* S34：管理区计数/徽标随 wpSec 一并退役；脏指示走「保存修改」按钮体系 */
     function refreshWpBadge() {
-        var b = document.getElementById('btnEdit');
-        var n = Wp.dirty() ? Wp.list.length : 0;
-        var cnt = document.getElementById('wpCount');   // S33：折叠管理区计数
-        if (cnt) cnt.textContent = String(Wp.list.length);
         try { refreshEditTabs(); } catch (e) {}   // S19：途经点增删 → 行程 chips / [Dn] 徽标联动
     }
     (function buildWaypointPanel() {
@@ -1822,8 +1818,6 @@
                 bindWpGestures(row, i);
                 el.appendChild(row);
             });
-            var badge = document.getElementById('wpBadge');
-            if (badge) badge.style.display = Wp.dirty() ? '' : 'none';
             try { refreshChips(); } catch (e) {}   // S28：途经点变化 → 行程卡 chips 联动
         }
         renderList();
@@ -1837,6 +1831,7 @@
         var pickBtn = document.getElementById('wpPick');
         if (pickBtn) {
             pickBtn.onclick = function () {
+                try { closeMoreSheet(); } catch (e) {}   // S34：钮在 ⋯ 设置页里，先关层再进点选
                 picking = !picking;
                 pickBtn.classList.toggle('wp-pick-on', picking);
                 pickBtn.textContent = picking ? '📍 点选模式：点地图…' : '📍 地图点选';

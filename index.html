@@ -240,6 +240,8 @@
     body.enroute #map { height: 100vh !important; }
     .enr-toggle { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 2px 10px; font-size: 11.5px; color: #64748b; cursor: pointer; font-family: inherit; margin-left: 4px; }
     .enr-toggle.on { background: #0f766e; border-color: #0f766e; color: #fff; font-weight: 600; }
+    /* S34：mobCtl（抽屉头部控制行）全局隐藏——只在窄屏媒体块内放行；桌面零影响 */
+    #mobCtl { display: none; }
     .enr-card { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 12px 36px rgba(15,23,42,.22); padding: 12px 16px; font-family: inherit; z-index: var(--z-guide,1400); }
     .enr-t { font-size: 15px; font-weight: 600; color: #0f172a; }
     .enr-sub { font-size: 12px; color: #64748b; margin-top: 3px; line-height: 1.6; }
@@ -454,10 +456,11 @@
         #elevTitle { display: none; }
     }
     /* ============ 移动端底部抽屉系统（S14，≤768px；桌面零影响） ============
-       结构：#panel 变底部行程单抽屉（peek 露手柄+标题+chips / full 全高 / hidden 收起），
-       剖面抽屉 #elev 是第二张表（打开时盖住行程单）。手势/互斥逻辑在 engine/mobile.js。 */
+       结构：#panel 变底部行程单抽屉（S34 peek 瘦身：只露手柄+概要盒+天数轨 /
+       full 全高 / hidden 收起），剖面抽屉 #elev 是第二张表（打开时盖住行程单）。
+       手势/互斥逻辑在 engine/mobile.js。 */
     @media (max-width: 768px) {
-        :root { --sheet-peek: 112px; }
+        :root { --sheet-peek: 108px; }   /* S34：peek 瘦身（手柄+概要盒+天数轨） */
         #panel {
             left: 0; right: 0; top: auto; bottom: 0; width: 100%;
             max-height: none; height: auto;
@@ -468,6 +471,22 @@
         }
         #panel { overflow: hidden; }                             /* 非全展态内容不滚，避免 peek 里手势变成滚内容 */
         body.mob-full #panel { transform: none; height: calc(100vh - 48px - env(safe-area-inset-top)); max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+        /* S34 peek 边界：peek 态只露手柄 + 概要盒（标题/日期/行程头/chips/控制行/天卡全藏，full 态才见） */
+        #peekBox { display: none; }
+        body.mob-peek #peekBox { display: block; }
+        body.mob-peek #panel > :not(#sheetGrip):not(#peekBox) { display: none !important; }
+        #peekBox { padding: 2px 2px 4px; }
+        .peek-sum { font-size: 13px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .peek-rail { display: flex; gap: 5px; overflow-x: auto; margin-top: 6px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+        .peek-d { flex: none; font-size: 10.5px; border: 1px solid #e2e8f0; border-radius: 7px; padding: 3px 7px; color: #475569; cursor: pointer; }
+        .peek-d.done { border-color: #a7d7c9; color: #0f766e; }
+        .peek-d.cur { border-color: #0f766e; color: #0f766e; background: #f0fdfa; font-weight: 600; }
+        /* S34 抽屉头部控制行（出发地/顺逆/车型；peek 态被上面的边界隐藏，full 态才见） */
+        #mobCtl { display: flex; gap: 6px; align-items: center; padding: 2px 0 8px; border-bottom: 1px solid #f1f5f9; margin-bottom: 6px; overflow-x: auto; }
+        /* S34 打卡行筛选：窄屏截断第 5 个起（.pt-m.extra），点「等N处 ▾」行展开（li.pts-open） */
+        .day-pts .pt-m.extra { display: none; }
+        li.pts-open .day-pts .pt-m.extra { display: inline; }
+        .pt-cap { cursor: pointer; padding: 2px 0; }   /* 展开后再点一次 = 收起（classList.toggle） */
         /* S20 Bug1①：full 态面板严格从标题条（48px+safe-area）下沿起算——表头不再被标题条压住截断 */
         body.mob-hidden #panel { transform: translateY(100%); }
         /* S29-C：途经点半屏编辑态——下半屏面板（贴底定高），上半屏地图可见可取点 */
@@ -477,6 +496,9 @@
            地图容器相应缩短，三带互不重叠（--sheet-visible 由 mobile.js 按档位写入） */
         #map { height: calc(100vh - var(--elev-occupy, 0px) - var(--sheet-visible, 0px)); }
         #elev { transform: translateY(calc(100% - var(--elev-peek, 46px) + 14px - var(--sheet-visible, 0px))); }
+        /* S34：窄屏把手退役 = body 常驻 elev-hide；抽屉「打开」时必须盖过 elev-hide 的全隐规则
+           （桌面 elev-hide 语义=收起把手，窄屏=没有把手，open 态按第二张表正常落位） */
+        body.elev-hide #elev.open { transform: translateY(calc(-1 * var(--sheet-visible, 0px))); }
         #elev.open { transform: translateY(calc(-1 * var(--sheet-visible, 0px))); }
         body.mob-elev { --sheet-visible: 0px; }                 /* 剖面成为主表：落回贴底 */
         body.mob-full #elev { visibility: hidden; }              /* 全展看行程单时，不被剖面把手压住 */
@@ -528,13 +550,15 @@
         #mobBar b#mobRouteName { font-size: 15px; color: #0f172a; flex: none; max-width: 32vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #mobBrandMark { width: 20px; height: 20px; flex: none; display: inline-flex; color: #0f766e; }
         #mobBrandMark svg { width: 100%; height: 100%; }
+        /* S34 标题条一行化：模式开关（规划/行中）顶到右端，⋯ 紧随其后 */
+        #mobMode { margin-left: auto; flex: none; display: flex; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        #mobMode button { border: none; background: none; padding: 4px 11px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; font-family: inherit; }
+        #mobMode button.on { background: #0f766e; color: #fff; }
         .mob-evsw button svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
-        #mobStartSlot { flex: none; min-height: 34px; }
-        #mobStartSlot .seg button { min-height: 34px; padding: 4px 10px; }
         .mob-evsw { display: flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 2px; flex: none; }
         .mob-evsw button { border: none; background: none; min-width: 44px; min-height: 34px; border-radius: 7px; font-size: 12.5px; cursor: pointer; color: #64748b; font-weight: 600; font-family: inherit; }
         .mob-evsw button.on { background: #0f766e; color: #fff; }
-        #mobMenuBtn { margin-left: auto; flex: none; width: 44px; min-height: 40px; border: none; background: #f1f5f9; border-radius: 9px; font-size: 20px; color: #475569; cursor: pointer; font-family: inherit; }
+        #mobMenuBtn { margin-left: 0; flex: none; width: 44px; min-height: 40px; border: none; background: #f1f5f9; border-radius: 9px; font-size: 20px; color: #475569; cursor: pointer; font-family: inherit; }
         /* ⋯菜单（下拉）+ 遮罩（点外部关闭，S18） */
         #mobMenuBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
         body.mob-menu #mobMenuBk { display: block; }

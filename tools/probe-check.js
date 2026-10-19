@@ -916,10 +916,14 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         })(), '');
     ok('新话术在位：保存我的版本 / 待保存生效 / PAT 人话说明',
         (function () {
-            var barHtml = created.filter(function (el) { return el.innerHTML && el.innerHTML.indexOf('wpGen') >= 0; })
+            /* S34：wpSec 退役——wpGen 落户 ⋯ 设置页（moreSheet innerHTML 含 wpGen），
+               「待保存生效」随 wpBadge 退役，改由点成员 hover 文案承担（源码断言）。 */
+            var msHtml = created.filter(function (el) { return el.innerHTML && el.innerHTML.indexOf('wpGen') >= 0; })
                 .map(function (el) { return el.innerHTML; }).join('\n');
-            return barHtml.indexOf('保存我的版本') >= 0 && barHtml.indexOf('待保存生效') >= 0 &&
-                barHtml.indexOf('云端构建') < 0 && barHtml.indexOf('待构建') < 0;
+            var editSrc = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
+            return msHtml.indexOf('保存我的版本') >= 0 &&
+                msHtml.indexOf('云端构建') < 0 && msHtml.indexOf('待构建') < 0 &&
+                editSrc.indexOf('待保存生效') >= 0 && !/wpSec\.id\s*=/.test(editSrc);
         })() &&
         (function () {
             elCache['wpGen'].onclick();   // 打开弹层 → PAT 人话说明渲染
@@ -958,12 +962,13 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     ok('⋯ 更多设置页：云同步/恢复原始/帮助都在',
         (S28.Edit.showTab('more'), document.body.classList.contains('more-open')) &&
         /id="moreSync"/.test(editSrc) && /id="msReset"/.test(editSrc) && /ms-help/.test(editSrc), '');
-    // f) Tab 徽标：加途经点后「途经点」Tab 显示待保存计数（编辑按钮退役后的替代指示）
-    ok('途经点待保存徽标（草稿脏时亮，S32 与保存修改按钮同源）',
+    // f) S34：wpBadge 随 wpSec 退役——草稿脏指示改由「保存修改」按钮体系承担；删除收口到点成员菜单
+    ok('途经点待保存指示：草稿脏即 isDirty（徽标退役）+ 点成员菜单含删除途经点',
         (function () {
             S28.Wp.add('徽标点', 30.6, 104.0);
-            var tb = elCache['wpBadge'];
-            return tb && tb.style && tb.style.display !== 'none' && S28.Edit.isDirty() === true;
+            var editSrcF = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
+            return S28.Edit.isDirty() === true && !/wpBadge/.test(editSrcF) &&
+                /data-a="del"/.test(editSrcF) && /Wp\.remove\(wpIdx\)/.test(editSrcF);
         })(), '');
     /* ---------- S29：三类点模型 / 行程卡三类行 / kind 往返 / 移动端半屏编辑 ---------- */
     console.log('\n【23】S29：三类点模型');
@@ -1080,9 +1085,11 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     // b) beforeunload + 保存按钮接线
     ok('beforeunload 未保存提示 + 「保存修改」按钮（脏时出现）接线',
         /beforeunload/.test(editSrc32) && /btnDraftSave/.test(editSrc32) && /保存修改/.test(html), '');
-    // c) 统一视图：wpSec 融进列表顶部（dayList 之前）+ pt-bar 静态头部
-    ok('统一行程视图：wpSec 在 dayList 前 + 头部条（行程/保存修改/⋯）',
-        /getElementById\('wpSec'\)/.test(editSrc32) && /id="btnDraftSave"/.test(html) && /class="pt-title"/.test(html), '');
+    // c) S34：wpSec 管理区退役（创建语句清零）+ 三钮落户 ⋯ 设置页 + pt-bar 静态头部
+    ok('统一行程视图：wpSec 退役、三钮进 ⋯ 设置页 + 头部条（行程/保存修改/⋯）',
+        !/wpSec\.id\s*=/.test(editSrc32) && /id="wpGen"/.test(editSrc32) &&
+        /id="wpPick"/.test(editSrc32) && /id="wpGuideBtn"/.test(editSrc32) &&
+        /id="btnDraftSave"/.test(html) && /class="pt-title"/.test(html), '');
     // d) 改名迁移：设置里撤掉地名/文案编辑，迁到点成员长按菜单
     ok('改名迁移：etMarks/msSub/msNotice 撤出设置页，pt-m 长按菜单（改名/飞到地图）在位',
         !/id="etMarks"/.test(editSrc32) && !/id="msSub"/.test(editSrc32) && !/id="msNotice"/.test(editSrc32) &&
@@ -1326,6 +1333,75 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         D.Edit.overlay.progress.checks && D.Edit.overlay.progress.checks.s1);
     ok('恢复原始数据：progress 不被撤销（旅程事实），规划草稿回滚',
         progKept === true && D.DAYS.filter(function (d) { return d.id === 2; })[0].title !== '会丢的草稿', '');
+
+    /* ---------- S34：移动端正统化（peek 瘦身 / 标题条一行化 / 打卡筛选 / 支线排除 / wpSec 退役 / 把手按需） ---------- */
+    console.log('\n【29】S34：移动端正统化');
+    // a) 源码/CSS 边界：mob-peek 只露手柄+概要盒；桌面根本不建 peekBox（零变化）
+    var css34 = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/) || ['', ''])[1];
+    var reSrc = fs.readFileSync(path.join(ROOT, 'engine', 'route-engine.js'), 'utf8');
+    var mobSrc = fs.readFileSync(path.join(ROOT, 'engine', 'mobile.js'), 'utf8');
+    var profSrc = fs.readFileSync(path.join(ROOT, 'engine', 'profile.js'), 'utf8');
+    ok('peek 边界在位（mob-peek 隐藏面板其余子元素 + peekBox 样式 + 桌面守卫）',
+        /body\.mob-peek #panel > :not\(#sheetGrip\):not\(#peekBox\)\s*\{[^}]*display:\s*none/.test(css34) &&
+        /#peekBox\s*\{[^}]*display:\s*none/.test(css34) &&
+        /\.peek-rail\s*\{/.test(css34) && /\.peek-d\.done/.test(css34) &&
+        /mob-peek/.test(mobSrc) &&
+        /function renderPeekBox[\s\S]{0,300}innerWidth > 768\s*\) return/.test(reSrc), '');
+    // b) 窄屏 boot：peekBox 内容 = 一行概要（D1 · 标题 · km · 打卡/充电/加油）+ 天数轨
+    var s34m = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    var M = s34m.sandbox;
+    var peekHtml = elCache['peekBox'] && elCache['peekBox'].innerHTML || '';
+    var peekOk = !s34m.err && peekHtml.indexOf('peek-sum') >= 0 &&
+        /^<div class="peek-sum">D\d+ · [^<]*· \d+km · 打卡 \d+ · 充电 \d+ · 加油 \d+<\/div><div class="peek-rail">[\s\S]*class="peek-d/.test(peekHtml);
+    ok('窄屏 peekBox：今日概要一行（Dn · 标题 · km · 打卡/充电/加油）+ 天数轨', peekOk,
+        peekHtml.replace(/<[^>]+>/g, ' ').slice(0, 80));
+    ok('窄屏 peek 态 body 带 mob-peek（CSS 边界生效前提）',
+        document.body.classList.contains('mob-peek'), '');
+    // c) 打卡筛选上界：窄屏 D1 出现 .pt-m.extra + 「等N处 ▾」；桌面 boot 无（零变化）
+    var mobLi = created.filter(function (el) { return el.id === 'dyn:li'; });
+    var mobD1 = mobLi.length && mobLi[0].innerHTML || '';
+    var s34d = bootRoute('chuanxi');
+    var deskLi = created.filter(function (el) { return el.id === 'dyn:li'; });
+    var deskD1 = deskLi.length && deskLi[0].innerHTML || '';
+    ok('打卡代表点筛选：窄屏第 5 个起收 .pt-m.extra + 「等N处 ▾」收尾',
+        mobD1.indexOf('pt-m extra') >= 0 && /等\d+处 ▾/.test(mobD1), '');
+    ok('桌面零变化：桌面 D1 打卡行无 extra/无截断帽（▾/data-cap 仅窄屏）',
+        deskD1.indexOf('pt-m extra') < 0 && deskD1.indexOf('data-cap') < 0 && deskD1.indexOf('▾') < 0, '');
+    // d) 支线排除：青甘窄屏 D1 不含塔尔寺/拉脊山（支线点）；桌面仍含（零变化）
+    var s34q = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+    var qLi = created.filter(function (el) { return el.id === 'dyn:li'; });
+    var qD1 = qLi.length && qLi[0].innerHTML || '';
+    var s34qd = bootRoute('qinghai-gansu');
+    var qdLi = created.filter(function (el) { return el.id === 'dyn:li'; });
+    var qdD1 = qdLi.length && qdLi[0].innerHTML || '';
+    ok('支线点排除：窄屏青甘 D1 打卡行不含塔尔寺/拉脊山垭口',
+        !s34q.err && qD1.indexOf('塔尔寺') < 0 && qD1.indexOf('拉脊山') < 0,
+        '塔尔寺@' + qD1.indexOf('塔尔寺') + ' 拉脊山@' + qD1.indexOf('拉脊山') + ' | ' +
+        qD1.replace(/<[^>]+>/g, ' ').slice(0, 90));
+    ok('支线排除仅窄屏：桌面青甘 D1 仍含塔尔寺（归属口径不变）',
+        qdD1.indexOf('塔尔寺') >= 0, '');
+    // e) 剖面把手按需：窄屏 focusDay 后把手仍收起（elev-hide 在 + --elev-peek=0）
+    try { M.focusDay(0); } catch (e) {}
+    var gripHidden = document.body.classList.contains('elev-hide') &&
+        (document.documentElement.style.__set || {})['--elev-peek'] === '0px';
+    ok('移动把手退役：窄屏点天卡 → 剖面抽屉滑出但把手收起不占位',
+        gripHidden && /innerWidth <= 768\) on = false/.test(reSrc) &&
+        /var gripOn = !narrow/.test(profSrc), '');
+    // f) 标题条一行化：模式开关接线（行中进出 body.enroute）+ 控制行 mobCtl 收纳出发地/顺逆/车型
+    var enrIn = false, enrOut = false;
+    try {
+        elCache['mobModeEnr'].onclick();
+        enrIn = document.body.classList.contains('enroute');
+        elCache['mobModePlan'].onclick();
+        enrOut = !document.body.classList.contains('enroute');
+    } catch (e) {}
+    ok('标题条模式开关：行中进入/退出（body.enroute 往返）',
+        enrIn && enrOut, '');
+    ok('标题条一行化源码：mobMode 段在位 + mobStartSlot 撤出标题条 + mobCtl 收纳三控件',
+        /id="mobMode"|mobModePlan/.test(mobSrc) && mobSrc.indexOf('mobStartSlot') < 0 &&
+        /mobMove\(document\.getElementById\('startSeg'\), _ctl\)/.test(mobSrc) &&
+        /mobMove\(document\.getElementById\('dirSeg'\), _ctl\)/.test(mobSrc) &&
+        /_ctl\.appendChild\(evsw\)/.test(mobSrc), '');
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

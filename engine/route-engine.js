@@ -462,6 +462,66 @@
         return nearest;
     }
 
+    /* S34 支线排除：CLASSIC / EXTRA_LINES 走廊覆盖的点不参与主线归属——
+       塔尔寺/拉脊山垭口这类支线点不再出现在主线天卡（地图上仍作为景点层存在）。
+       口径：点距任一支线轨迹顶点 < 0.03°（约 3km）即视为支线点。仅移动端启用（桌面零变化）。 */
+    var _branchExcl = null;
+    function branchVerts() {
+        var verts = [];
+        try {
+            if (typeof CLASSIC !== 'undefined' && CLASSIC && CLASSIC.simplified) {
+                CLASSIC.simplified.forEach(function (p) { verts.push(p); });
+            }
+            (typeof EXTRA_LINES !== 'undefined' ? EXTRA_LINES : []).forEach(function (br) {
+                (br.pts || []).forEach(function (p) { verts.push(p); });
+            });
+        } catch (e) {}
+        return verts;
+    }
+    function nearBranch(verts, lat, lng) {
+        for (var i = 0; i < verts.length; i++) {
+            var dd = (verts[i][0] - lat) * (verts[i][0] - lat) + (verts[i][1] - lng) * (verts[i][1] - lng);
+            if (dd < 0.0009) return true;   // 0.03° ≈ 3km
+        }
+        return false;
+    }
+    function branchExclSet() {
+        if (_branchExcl) return _branchExcl;
+        _branchExcl = {};
+        var verts = branchVerts();
+        if (!verts.length || typeof SPOTS === 'undefined' || !SPOTS) return _branchExcl;
+        SPOTS.forEach(function (s, si) {
+            if (nearBranch(verts, s.p[0], s.p[1])) _branchExcl[si] = 1;
+        });
+        return _branchExcl;
+    }
+    /* S34：途经点同名口径——支线走廊覆盖的 kind=spot 途经点也不进主线归属
+       （塔尔寺/拉脊山这类支线打卡从主线天卡消失）。几何口径之外，同名口径兜底：
+       与任一被排除支线 SPOT 同名/互含命名的途经点，视为该支线点的孪生记录。
+       每次现算：Wp.list 随草稿增删变。 */
+    function branchExclWpSet() {
+        var set = {};
+        var verts = branchVerts();
+        if ((!verts.length && (typeof SPOTS === 'undefined' || !SPOTS)) ||
+            typeof Wp === 'undefined' || !Wp || !Wp.list) return set;
+        var bex = branchExclSet();
+        Wp.list.forEach(function (w, wi) {
+            if (w.kind === 'rest') return;
+            if (verts.length && nearBranch(verts, w.p[0], w.p[1])) { set[wi] = 1; return; }
+            /* 同名兜底：拉脊山 wp 与拉脊山垭口 SPOT（数据坐标有偏差时几何够不着） */
+            if (typeof SPOTS !== 'undefined' && SPOTS) {
+                for (var si = 0; si < SPOTS.length; si++) {
+                    if (!bex[si]) continue;
+                    var sn = SPOTS[si].n, wn = w.n;
+                    if (sn === wn || (sn.length > 1 && wn.length > 1 && (sn.indexOf(wn) >= 0 || wn.indexOf(sn) >= 0))) {
+                        set[wi] = 1; break;
+                    }
+                }
+            }
+        });
+        return set;
+    }
+
     /* --- S29 行程卡三类分组行（休整/打卡/补给） ---
        行内格式：线性图标 + 类型名 + 成员（· 分隔，超 4 个收「等N处」）；
        成员可点（data-spot/data-wp → 地图飞行 + 信息窗，edit.js 捕获监听）；空类整行不显示。
@@ -471,13 +531,32 @@
             return '<span class="pt-ic">' + ((typeof BRAND !== 'undefined' && BRAND[name]) || '') + '</span>';
         };
         var msHTML = function (list, kind) {
-            var shown = list.slice(0, 4);
-            var h = shown.map(function (m) {
+            /* S34 移动端正统化：窄屏打卡行每屏 ≤4 个代表点（强信号词优先：雪山/湖/垭口/
+               观景台/国家…），其余收「等 N 处 ▾」（点击行展开全部）；桌面不筛（零变化）。 */
+            var narrow = false;
+            try { narrow = window.innerWidth <= 768 && kind === 'ckin'; } catch (e) {}
+            var ordered = list;
+            if (narrow && list.length > 4) {
+                /* 强信号词优先重排，DOM 全量渲染——CSS 在窄屏截断第 5 个起（.pt-m.extra），
+                   「等 N 处 ▾」点击行展开（li.pts-open）；桌面不筛不截（零变化） */
+                var strong = list.filter(function (m) { return SPOT_STRONG.test(m.n) || /观景台/.test(m.n); });
+                var weak = list.filter(function (m) { return !(SPOT_STRONG.test(m.n) || /观景台/.test(m.n)); });
+                ordered = strong.concat(weak);
+            }
+            /* 桌面 = S29 原样（前 4 个 + 等N处，逐字节同 HEAD，零变化）；
+               窄屏 DOM 全量（强信号优先序），CSS 截断第 5 个起（.pt-m.extra） */
+            var renderList2 = (narrow && list.length > 4) ? ordered : list.slice(0, 4);
+            var h = renderList2.map(function (m, mi) {
                 var attr = kind === 'ckin' && m.spotIdx != null ? ' data-spot="' + m.spotIdx + '"' :
                     (m.wpIdx != null ? ' data-wp="' + m.wpIdx + '"' : '');
-                return '<span class="pt-m"' + attr + '>' + m.n + '</span>';
+                var extra = (narrow && mi >= 4) ? ' extra' : '';
+                return '<span class="pt-m' + extra + '"' + attr + '>' + m.n + '</span>';
             }).join('<span class="pt-sep">·</span>');
-            if (list.length > 4) h += '<span class="pt-sep">·</span><span class="pt-cap">等' + list.length + '处</span>';
+            if (list.length > 4) {
+                /* 窄屏：带 ▾ 可点展开（li.pts-open）；桌面保持 S29 原样（零变化） */
+                h += narrow ? '<span class="pt-sep">·</span><span class="pt-cap" data-cap="1">等' + list.length + '处 ▾</span>' :
+                    '<span class="pt-sep">·</span><span class="pt-cap">等' + list.length + '处</span>';
+            }
             return h;
         };
         var rows = '';
@@ -495,8 +574,13 @@
         /* ② 打卡：SPOTS 归属天 + kind=spot（缺省打卡，向后兼容）途经点 */
         if (d.altKm) {
             var ckin = [];
+            var branchExcl = null, branchExclWp = null;
+            try {
+                if (window.innerWidth <= 768) { branchExcl = branchExclSet(); branchExclWp = branchExclWpSet(); }
+            } catch (e) {}
             if (typeof SPOTS !== 'undefined' && SPOTS) {
                 SPOTS.forEach(function (s, si) {
+                    if (branchExcl && branchExcl[si]) return;   // S34：支线覆盖的点不进主线归属
                     if (dayIdxOfKm(kmOfPoint(s.p[0], s.p[1])) !== gIdx) return;
                     ckin.push({ n: s.n, spotIdx: si });
                 });
@@ -504,6 +588,7 @@
             if (typeof Wp !== 'undefined' && Wp && Wp.list) {
                 Wp.list.forEach(function (w, wi) {
                     if (w.kind === 'rest') return;   // 缺省/spot 都是打卡
+                    if (branchExclWp && branchExclWp[wi]) return;   // S34：支线覆盖的途经点同样不进主线归属
                     if (dayIdxOfKm(kmOfPoint(w.p[0], w.p[1])) !== gIdx) return;
                     ckin.push({ n: w.n, wpIdx: wi });
                 });
@@ -565,6 +650,77 @@
         for (var i = 0; i < disp.length; i++) if (origOf(disp[i]).id === id) return 'D' + (i + 1);
         return 'D' + id;
     }
+    /* S34 peek 概要盒：移动端 peek 态的唯一内容——一行概要（今日从→到/km/打卡/充电/加油）
+       + 天数轨（Dn✓ 完成态）；标题/日期/行程头/chips/管理区全部只在 full 态（CSS 边界）。
+       「今日」= 首个未完成天（全完成取最后一天）。桌面不显示（body.mob-peek 才出现）。 */
+    function renderPeekBox(disp, dayDoneP) {
+        /* 桌面零变化：peek 盒只服务窄屏（CSS 显隐规则也在窄屏媒体块内），宽屏不建不渲染 */
+        if (window.innerWidth > 768) return;
+        var box = document.getElementById('peekBox');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'peekBox';
+            var panel = document.getElementById('panel');
+            if (panel && panel.insertBefore) {
+                var grip = document.getElementById('sheetGrip');
+                if (grip && panel.insertBefore) panel.insertBefore(box, grip.nextSibling);
+                else panel.insertBefore(box, panel.firstChild || null);
+            }
+        }
+        if (!box) return;
+        var todayI = 0;
+        for (var i = 0; i < disp.length; i++) {
+            todayI = i;
+            if (!dayDoneP(origOf(disp[i]).id)) break;
+        }
+        var dd = disp[todayI];
+        if (!dd) return;
+        var oday = origOf(dd);
+        var nCk = 0, nEv = 0, nFuel = 0;
+        try {
+            var bex = branchExclSet();
+            var bexWp = branchExclWpSet();
+            if (typeof SPOTS !== 'undefined' && SPOTS) {
+                SPOTS.forEach(function (s, si) {
+                    if (bex[si]) return;
+                    var k = kmOfPoint(s.p[0], s.p[1]);
+                    if (oday.altKm && k >= oday.altKm[0] - 0.5 && k <= oday.altKm[1] + 0.5) nCk++;
+                });
+            }
+            if (typeof Wp !== 'undefined' && Wp.list) {
+                Wp.list.forEach(function (w, wi) {
+                    if (w.kind === 'rest' || bexWp[wi]) return;
+                    var k = routeKmOf(w.p[0], w.p[1]);
+                    if (oday.altKm && k >= oday.altKm[0] - 0.5 && k <= oday.altKm[1] + 0.5) nCk++;
+                });
+            }
+            if (typeof stationsAll === 'function') {
+                stationsAll('ev').forEach(function (s) { if (oday.altKm && s.km >= oday.altKm[0] && s.km <= oday.altKm[1]) nEv++; });
+                stationsAll('fuel').forEach(function (s) { if (oday.altKm && s.km >= oday.altKm[0] && s.km <= oday.altKm[1]) nFuel++; });
+            }
+        } catch (e) {}
+        var rail = disp.map(function (d2, i2) {
+            var done = dayDoneP(origOf(d2).id);
+            return '<span class="peek-d' + (done ? ' done' : '') + (i2 === todayI ? ' cur' : '') + '" data-pday="' + i2 + '">D' + (i2 + 1) + (done ? '✓' : '') + '</span>';
+        }).join('');
+        box.innerHTML = '<div class="peek-sum">D' + (todayI + 1) + ' · ' + dd.title + ' · ' + (dd.km || 0) + 'km · 打卡 ' + nCk + ' · 充电 ' + nEv + ' · 加油 ' + nFuel + '</div>' +
+            '<div class="peek-rail">' + rail + '</div>';
+        if (!box.__wired) {
+            box.__wired = true;
+            if (box.addEventListener) box.addEventListener('click', function (e) {
+                var t = e.target;
+                if (!t || !t.getAttribute) return;
+                var pi = t.getAttribute('data-pday');
+                if (pi == null) return;
+                try { if (typeof setSheet === 'function') setSheet('full'); } catch (er) {}
+                var idx = -1;
+                var target = origOf(disp[+pi]);
+                DAYS.forEach(function (x, j) { if (x.id === target.id) idx = j; });
+                if (idx >= 0) focusDay(idx);
+            });
+        }
+    }
+
     function setRouteDir(dir) {
         routeDir = (dir < 0) ? -1 : 1;
         if (typeof Edit !== 'undefined' && Edit.overlay) {
@@ -739,6 +895,7 @@
         if (typeof Edit !== 'undefined' && Edit.refreshDayControls) Edit.refreshDayControls();
         renderRestMarkers();   // S31 休整点层（住宿/午休变动后随 renderAll 重建）
         try { renderDirSeg(); } catch (e) {}
+        try { renderPeekBox(disp, dayDoneP); } catch (e) {}   // S34 peek 概要盒
     }
 
     /* --- 长盲区上图（S4 可信度透出）---
@@ -842,6 +999,8 @@
        由 fitAll/focusDay 两处驱动（含桌面——这是对桌面的小行为修正，docs §25 留痕）。 */
     function elevGripShow(on) {
         try {
+            /* S34：移动端常驻把手退役（改点天卡 → 剖面随天滑出）——窄屏一律收起不占位 */
+            if (window.innerWidth <= 768) on = false;
             if (document.body && document.body.classList) document.body.classList.toggle('elev-hide', !on);
             if (typeof syncMapOccupy === 'function') syncMapOccupy();
         } catch (e) {}

@@ -538,7 +538,9 @@
         }
     }
 
-    /* ---------- 入口按钮（标题条右侧，与顺/逆切换并列；移动端同款随 mobBar） ---------- */
+    /* ---------- 入口按钮 ----------
+       S34：移动端入口统一为标题条「规划/行中」模式开关（mobile.js mobMode），
+       不再往 mobBar 塞独立按钮；桌面入口仍是侧栏标题（#panel h1）上的本钮。 */
     (function bindEntry() {
         function mkBtn() {
             var b = document.createElement('button');
@@ -550,8 +552,6 @@
         }
         var h1 = document.querySelector ? document.querySelector('#panel h1') : null;
         if (h1 && h1.appendChild) h1.appendChild(mkBtn());
-        var mobBar = document.getElementById('mobBar');
-        if (mobBar && mobBar.appendChild) mobBar.appendChild(mkBtn());
     })();
 
     try { window.Enroute = Enroute; } catch (e) {}
