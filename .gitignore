@@ -24,3 +24,8 @@ _*
 
 # 浏览器端地图 Key（本地生成，绝不入库）
 key.local.js
+ios-native/build/
+ios-native/www/
+ios-native/*.xcodeproj
+ios-native/DerivedData/
+.DS_Store

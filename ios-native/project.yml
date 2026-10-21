@@ -1,0 +1,20 @@
+name: XianluMap
+options:
+  bundleIdPrefix: com.xianlumap
+targets:
+  XianluMap:
+    type: application
+    platform: iOS
+    deploymentTarget: "13.0"
+    sources:
+      - Sources
+      - path: www
+        buildPhase: resources
+        type: folder
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xianlumap.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_FILE: Sources/Info.plist
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
