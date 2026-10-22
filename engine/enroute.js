@@ -562,11 +562,6 @@
             '<span id="enrSup">补给 ' + supCount() + '</span>' +
             '<span id="enrExit">退出行中</span></div>';
     }
-    function ghostRowHtml() {
-        return '<div class="enr-sub2">' +
-            '<button class="enr-mini ghost" id="enrAnchor">📍 锚点</button>' +
-            '<button class="enr-mini ghost" id="enrDev">' + (Enroute._devOff ? '偏离提醒·开' : '偏离提醒·关') + '</button></div>';
-    }
     function playIcon() {
         return (typeof BRAND !== 'undefined' && BRAND.play) ? BRAND.play : '▶';
     }
@@ -630,7 +625,7 @@
                     (foot ? '<div class="erfoot"><span>' + escapeHtml2e(foot) + '</span></div>' : '') +
                     supLineHtml() +
                     '<button class="ctab" id="enrGoBtn">' + playIcon() + '出发 · 开始第' + (segIdx + 1) + '程</button>' +
-                    toolsHtml() + ghostRowHtml();
+                    toolsHtml();
             } else {
                 var barW = Math.round((segIdx + walked / segLen) / Math.max(1, disp.length) * 100);
                 var clock = legRec.startTs
@@ -644,7 +639,7 @@
                     ((foot || eta) ? '<div class="erfoot"><span>' + escapeHtml2e(foot) + '</span>' + (eta ? '<span>' + eta + '</span>' : '') + '</div>' : '') +
                     supLineHtml() +
                     '<button class="ctab share" id="enrShare2">分享今日成绩</button>' +
-                    toolsHtml() + ghostRowHtml();
+                    toolsHtml();
                 clockOn = !!legRec.startTs;
             }
         }

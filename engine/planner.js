@@ -466,8 +466,9 @@
         /* S17：手机全览（窄容器 + 远景 z<7，口径与景点胶囊一致）收起必充/必加标注——
            国家缩放级别只留极少量信息；近景或聚焦天（fly 后 z 必然 ≥7）自动恢复，
            规划结果仍有 #planPeek 概要行兜底，信息不丢。 */
-        /* S33：规划标注全端同窄屏规则——近景/聚焦天才显示「充至 80%」（不再桌面例外） */
-        var hidePlanFar = z < 7;
+        /* S33：规划标注全端同窄屏规则——近景/聚焦天才显示「充至 80%」（不再桌面例外）
+           S36 减重：阈值收紧到中远档 z<8（与盲区红虚线同档）——远景只留路线+计数药丸+城镇名 */
+        var hidePlanFar = z < 8;
         try { window.__planFarHidden = hidePlanFar; } catch (e) {}   // S17 测试钩子：规划标注远景收起状态
         planM = createMarkerLayer({
             map: hidePlanFar ? null : map,
@@ -552,9 +553,8 @@
             _zoomTimer = null;
             _lastZoomForStations = getMapZoom();
             renderStations();
-            // S36：休整层远景药丸（⛺ N ↔ 圆点）随档位切换（同一条防抖链，不另起监听）
-            if (typeof renderRestMarkers === 'function') renderRestMarkers();
-            // 同一条防抖链顺带刷新景点胶囊分级（不另起监听，S0 复用）
+            if (typeof renderRestMarkers === 'function') renderRestMarkers(); if (typeof renderWarnings === 'function') renderWarnings();   // S36 随档位收放
+            // 顺带刷新胶囊/城名分级（S0 复用）
             if (typeof renderSpotLabels === 'function') renderSpotLabels(_lastZoomForStations);
             if (typeof renderCityLabels === 'function') renderCityLabels(_lastZoomForStations);
             if (typeof renderCityMarkers === 'function') renderCityMarkers(_lastZoomForStations);

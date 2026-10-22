@@ -1153,6 +1153,24 @@
             if (noB) noB.onclick = closeChainDlg;
         }
         /* 节点长按菜单：飞到/改名/在此后多住一晚/删除休整点（合并后段） */
+        /* S36 屏三：休整点「更换地点」——搜索选点后替换节点：住宿名直改；坐标经 kmOfPoint
+           投影到链上，用既有 Edit.setSeg 重算该程终点（链/剖面/站点分级随 renderAll 一并刷新）。
+           简化口径：只动名称+节点 km 位置，不碰其它字段。 */
+        var relocDayId = null;
+        function relocateNode(dayId, lat, lng, name) {
+            var d = dayByIdAny(dayId);
+            if (!d) return false;
+            var ok = false;
+            if (name) Edit.setDayField(d.id, 'stay', String(name).trim());
+            try {
+                var km = kmOfPoint(lat, lng);
+                if (d.altKm && isFinite(km) && km > d.altKm[0] + 0.5) {
+                    ok = Edit.setSeg(d.id, d.altKm[0], km) === true;
+                }
+            } catch (e) {}
+            try { etToast(ok ? '已更换地点：' + name : '已更新名称（坐标未改动）'); } catch (e) {}
+            return ok;
+        }
         function openNodeMenu(x, y, dayId) {
             closeChainDlg();
             var d = dayByIdAny(dayId);
@@ -1162,6 +1180,7 @@
             m.className = 'pt-menu';
             m.innerHTML = '<button data-a="fly">🧭 飞到地图</button>' +
                 '<button data-a="rename">✎ 改名</button>' +
+                '<button data-a="reloc">📍 更换地点</button>' +
                 '<button data-a="split">＋ 在此后多住一晚（拆分）</button>' +
                 '<button data-a="del">✕ 删除休整点（前后两段合并成一程）</button>';
             if (document.body && document.body.appendChild) document.body.appendChild(m);
@@ -1179,6 +1198,10 @@
                     } else if (a === 'rename') {
                         var v = editAsk('夜宿名（写在该程住宿上）', d.stay || '');
                         if (v !== null) Edit.setDayField(d.id, 'stay', String(v).trim());
+                    } else if (a === 'reloc') {
+                        /* S36 屏三「更换地点」：复用停靠点搜索框选点，确认后替换该节点（relocateNode） */
+                        relocDayId = dayId;
+                        openStopConfirm(null, null, '');
                     } else if (a === 'split') {
                         openSplitDialog(d.id);
                     } else if (a === 'del') {
@@ -1271,7 +1294,11 @@
                     e.stopPropagation();
                     if (li.classList) li.classList.toggle('pts-open');
                 }
-                else if (t.className === 'pt-m' || t.className === 'pt-m extra') { e.stopPropagation(); flyPtMember(t); }
+                /* S36 屏三：单点 chip = 弹出点成员菜单（飞到/改名/改类型/删除；此前单击只飞、菜单仅长按/右键） */
+                else if (t.className === 'pt-m' || t.className === 'pt-m extra') {
+                    e.stopPropagation();
+                    openPtMenu(e.clientX || 200, e.clientY || 320, t);
+                }
                 else if (t.className === 'et-chip add' || (t.className.indexOf('et-chip') === 0 && t.getAttribute && t.getAttribute('data-add'))) {
                     /* S33「＋添加」= 打开添加对话框（搜索/选类型） */
                     e.stopPropagation();
@@ -1919,6 +1946,7 @@
             lpMapEl.addEventListener('touchcancel', lpCancel);
         }
         function closeStopConfirm() {
+            relocDayId = null;   // S36：更换地点语义随对话框关闭取消
             var w = document.getElementById('wpStop');
             if (w && w.remove) w.remove();
             if (lpMarker && lpMarker.setMap) { try { lpMarker.setMap(null); } catch (e) {} }
@@ -2046,6 +2074,13 @@
                 var nm = (input && input.value && String(input.value).trim()) ? String(input.value).trim() : '';
                 var alat = dlgPick.lat, alng = dlgPick.lng;
                 if (alat == null || !nm) { editNotice('请先搜索选点（或地图点选/长按），并给个名称。'); return; }
+                /* S36 屏三「更换地点」语义：替换休整点（名 + 节点 km 位置），不走 Wp.add */
+                if (relocDayId != null) {
+                    var rid = relocDayId;
+                    closeStopConfirm();
+                    relocateNode(rid, alat, alng, nm);
+                    return;
+                }
                 var kindTxt = wpAddKind === 'rest' ? '休整点' : '打卡点';
                 var kuseTxt = wpAddKind === 'rest' ? '（' + wpAddKuse + '）' : '';
                 Wp.add(nm, alat, alng, wpAddKind, wpAddKind === 'rest' ? wpAddKuse : null);

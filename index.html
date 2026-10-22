@@ -318,11 +318,9 @@
     /* 完成态/未定位 + 次级 ghost 行 */
     .enr-t { font-size: 15px; font-weight: 600; color: #fff; }
     .enr-sub { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 5px; line-height: 1.6; }
-    .enr-sub2 { display: flex; gap: 8px; margin-top: 10px; }
     .enr-row { display: flex; gap: 8px; margin-top: 10px; }
     .enr-mini { flex: 1; border: none; background: rgba(255,255,255,.12); color: #e2e8f0; border-radius: var(--r-pill); min-height: 44px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
     .enr-mini.ok { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #fff; }
-    .enr-mini.ghost { flex: none; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); min-height: 32px; padding: 0 12px; font-size: 11.5px; }
     .enr-chks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
     .enr-chk { font-size: 11.5px; color: rgba(255,255,255,.55); background: rgba(255,255,255,.06); border: 1px dashed rgba(255,255,255,.16); border-radius: var(--r-pill); padding: 3px 10px; }
     .enr-chk.on { color: #5eead4; background: rgba(20,184,166,.14); border: 1px solid rgba(45,212,191,.4); }
@@ -564,8 +562,21 @@
         .peek-d.cur { color: #fff; background: var(--green); border-color: var(--green); font-weight: 600; }
         /* 程轨下方地名刻度（起点/四分位/终点近似，与药丸对位） */
         .pk-ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--weak); margin-top: 6px; padding: 0 2px; }
-        /* S34 抽屉头部控制行（出发地/顺逆/车型；peek 态被上面的边界隐藏，full 态才见） */
-        #mobCtl { display: flex; gap: 6px; align-items: center; padding: 2px 0 8px; border-bottom: 1px solid #f1f5f9; margin-bottom: 6px; overflow-x: auto; }
+        /* S36 行中续接提示条：已出发未完成的程 → peek hero 上方细条（hairline 同族，点击入行中） */
+        .pk-resume { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 9px 12px; border: 1px solid #bfe3dd; border-radius: 12px; background: #f0faf7; color: var(--green-deep); font-size: 12px; font-weight: 700; cursor: pointer; }
+        /* ============ S36 full 抽屉去缝合 ============
+           full 抽屉 = 抓手 + peek 同一张 hero 大卡 + 轻量控制行 + 链式列表；
+           桌面侧栏残留（旧面板头/副标题/出发日期/工具栏/统计卡）仅桌面保留。 */
+        body.mob-full #panel > h1,
+        body.mob-full #panel > .sub,
+        body.mob-full #panel > .pt-dep,
+        body.mob-full #panel > .pt-bar,
+        body.mob-full #panel > .chips { display: none !important; }
+        /* full 态同用 hero 大卡（与 peek 同一张；滚动可滚走，链式列表为主体） */
+        body.mob-full #peekBox { display: block; }
+        /* S34 抽屉头部控制行 → S36 轻量控制行（full 态唯一控制行：出发地/顺逆已平移至此） */
+        #mobCtl { display: flex; gap: 6px; align-items: center; padding: 2px 0 10px; border-bottom: none; margin: 2px 0 4px; overflow-x: auto; }
+        #mobCtl .seg button { font-size: 11px; padding: 3px 9px; }
         /* S34 打卡行筛选：窄屏截断第 5 个起（.pt-m.extra），点「等N处 ▾」行展开（li.pts-open） */
         .day-pts .pt-m.extra { display: none; }
         li.pts-open .day-pts .pt-m.extra { display: inline; }

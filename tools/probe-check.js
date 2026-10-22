@@ -129,16 +129,18 @@ function bootRoute(routeKey, opts) {
 
 /* ---------- 青甘（默认线，回归） ---------- */
 console.log('\n【1】青甘大环线（默认）');
+MOCK_ZOOM = 8.5;   // S36 减重：盲区/规划标注 z≥8 近景档才上图——boot 用近景档保留「长盲区上图」语义
 const qh = bootRoute('qinghai-gansu');
 ok('主脚本执行无异常', !qh.err, qh.err ? qh.err.message.slice(0, 120) : '');
 const qhDays = created.filter(el => el.id === 'dyn:li');
 ok('每日列表渲染 10 天', qhDays.length === 10, qhDays.length + ' 项');
 ok('总里程 chip ≈2164（日行程合计口径）', Math.abs(parseInt(elCache['chipKm'].textContent, 10) - 2164) <= 25, elCache['chipKm'].textContent);
 ok('最高海拔 chip >3700（祁连段去噪后）', parseInt(elCache['chipMaxAlt'].textContent, 10) > 3700, elCache['chipMaxAlt'].textContent);
-ok('续航规划输出 + 长盲区上图（无桩段渲染为图层）',
+ok('续航规划输出 + 长盲区上图（无桩段渲染为图层；S36 起 z≥8 近景档才上图）',
     elCache['planBox'].innerHTML.includes('全程需充电') &&
     calls.labels.some(function (l) { const t = (l.opts && l.opts.text) || l.text || ''; return /km\d+–\d+ .*（[\d.]+km）/.test(t); }),
     '');
+MOCK_ZOOM = 7.3;   // 回归默认档（后续分级断言各自显式设置）
 // 信息窗站点来源日期透出（S4）：站点信息窗统一拼 stationSourceNote()（数据包 sourceShort/builtAt）
 let srcNote = '';
 try { srcNote = qh.sandbox.stationSourceNote(); } catch (e) { srcNote = 'ERR ' + e.message; }
@@ -568,11 +570,12 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var labelsBefore2 = calls.labels.length;
     var deskFar = bootRoute('qinghai-gansu');
     var capD = capsuleCount(labelsBefore2);
-    if (!deskFar.err && capD === 3 && typeof deskFar.sandbox.window.__spotLabels === 'function') {   // 3=盲区胶囊（新），景点默认关
+    /* S36 减重后 far 档盲区胶囊不上图 → 白底胶囊基准=0；模拟勾选景点层再验 25km 桶 >12 */
+    if (!deskFar.err && capD === 0 && typeof deskFar.sandbox.window.__spotLabels === 'function') {
         deskFar.sandbox.window.__spotLabels(true);
         capD = capsuleCount(labelsBefore2);
     }
-    ok('桌面宽屏同缩放：胶囊不受 12 上限约束（25km 桶，>12 个）；规划标注全端同规则（S33：z<7 收起）',
+    ok('桌面宽屏同缩放：胶囊不受 12 上限约束（25km 桶，>12 个）；规划标注全端同规则（S36：z<8 收起）',
         !deskFar.err && capD > 12 &&
         deskFar.sandbox.window.__planFarHidden === true,
         capD + ' 个胶囊');
@@ -812,9 +815,11 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             /* mock 监听不可触发，持久化走源码断言（saveLayerPrefs 绑定在各开关上） */
             return htmlOk && ls.ev === true && ls.fuel === true && ls.rest === true && /saveLayerPrefs/.test(mainScript);
         })(), JSON.stringify(S26.window.__layerState()));
-    ok('盲区标注双类型上图（S35 删号：车型过滤下线，ev/fuel 盲区全量显示）',
+    ok('盲区标注双类型上图（S35 删号：车型过滤下线；S36 起 z≥8 近景档才上图）',
         (function () {
+            MOCK_ZOOM = 8.5;
             var b318 = bootRoute('chengdu-lhasa-318');
+            MOCK_ZOOM = 7.3;
             if (b318.err) return 'ERR ' + b318.err.message.slice(0, 80);
             var warnTexts = calls.labels.map(function (l) { return (l.opts && l.opts.text) || l.text || ''; })
                 .filter(function (t) { return /无快充|无加油站/.test(t); });
@@ -1585,6 +1590,73 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
                 var b2 = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
                 return !b2.err && b2.sandbox.window.__sup.count() === 0;
             } catch (e) { return false; }
+        })(), '');
+    /* ---------- S36 E 段：full 抽屉去缝合 / 屏三增减交互 / 远档减重 / 导航与续接 ---------- */
+    console.log('\n【33】S36：抽屉去缝合 + 点菜单 + 远档减重 + 续接');
+    var cssE = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/) || ['', ''])[1];
+    var editSrcE = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
+    // a) full 抽屉去缝合：旧侧栏残留仅 full 态隐藏（DOM 保留，桌面零变化）+ hero 复用 + 控制行轻量
+    ok('full 抽屉去缝合：h1/sub/出发日期/工具栏/统计卡仅 full 态隐藏 + hero 大卡复用 + mobCtl 轻量 11px',
+        /body\.mob-full #panel > h1,[\s\S]{0,240}body\.mob-full #panel > \.chips \{ display: none !important; \}/.test(cssE) &&
+        /body\.mob-full #peekBox \{ display: block; \}/.test(cssE) &&
+        /#mobCtl \.seg button \{ font-size: 11px/.test(cssE), '');
+    // b) ⋯菜单确定性入口：保存修改/分享行程图（代理桌面真实按钮）+ 更换线路（去 route 参数回选线器）
+    ok('⋯菜单收入确定性入口：保存修改/分享行程图（代理 btnDraftSave/btnShare）+ 更换线路（searchParams 删 route）',
+        /mobMenuSave/.test(mobSrc) && /mobMenuShare/.test(mobSrc) && /mobMenuSwitch/.test(mobSrc) &&
+        /getElementById\('btnDraftSave'\)[\s\S]{0,80}\.click\(\)/.test(mobSrc) &&
+        /getElementById\('btnShare'\)[\s\S]{0,80}\.click\(\)/.test(mobSrc) &&
+        /searchParams\.delete\('route'\)/.test(mobSrc), '');
+    // c) 屏三：pt-m 单击 → openPtMenu；节点菜单含「更换地点」（relocateNode 替换名+节点 km）
+    ok('屏三增减交互：打卡 chip 单击出点菜单（openPtMenu）；节点菜单「更换地点」项在位',
+        /pt-m extra'\) \{\s*e\.stopPropagation\(\);\s*openPtMenu\(e\.clientX/.test(editSrcE) &&
+        /data-a="reloc"/.test(editSrcE) &&
+        /function relocateNode\(dayId, lat, lng, name\)/.test(editSrcE) &&
+        /relocateNode\(rid, alat, alng, nm\)/.test(editSrcE), '');
+    // d) 远档减重：z=7 → planM 收起（__planFarHidden）且盲区胶囊不上图；z=8.5 → 恢复
+    ok('远档减重（z<8）：z=7 时 planM 收起 + 无盲区胶囊文本；z=8.5 恢复上图',
+        (function () {
+            MOCK_ZOOM = 7.0;
+            var lblB = calls.labels.length;
+            var b7 = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+            var farHidden = b7.sandbox.window.__planFarHidden === true;
+            var warnFar = calls.labels.slice(lblB).some(function (l) { var t = (l.opts && l.opts.text) || l.text || ''; return /无快充|无加油站/.test(t); });
+            MOCK_ZOOM = 8.5;
+            var lblB2 = calls.labels.length;
+            var b85 = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+            var nearOk = b85.sandbox.window.__planFarHidden === false &&
+                calls.labels.slice(lblB2).some(function (l) { var t = (l.opts && l.opts.text) || l.text || ''; return /无快充|无加油站/.test(t); });
+            MOCK_ZOOM = 7.3;
+            return !b7.err && !b85.err && farHidden && !warnFar && nearOk;
+        })(), '');
+    // e) 行中续接：预置 legs.startTs（未完成）→ 提示条出现 → 点击 enter → body.enroute
+    ok('行中续接：预置已出发未完成程 → peek 上方「▶ 继续行中 · 第 N 程 →」→ 点击入行中',
+        (function () {
+            try {
+                delete lsStore['xianlumap.overlay.qinghai-gansu'];
+                lsStore['xianlumap.overlay.qinghai-gansu'] = JSON.stringify({ progress: { legs: { 1: { startTs: 1699999999000 } }, daysDone: {}, checks: {} } });
+                var be = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+                var peekH = elCache['peekBox'].innerHTML || '';
+                var barOk = /class="pk-resume" id="pkResume"[^>]*>▶ 继续行中 · 第 1 程 →</.test(peekH);
+                var rEl = elCache['pkResume'];
+                if (rEl && typeof rEl.onclick === 'function') rEl.onclick();
+                var entered = document.body.classList.contains('enroute');
+                if (entered && be.sandbox.window.Enroute) be.sandbox.window.Enroute.exit();
+                document.body.classList.remove('enroute');
+                delete lsStore['xianlumap.overlay.qinghai-gansu'];
+                return !be.err && barOk && entered;
+            } catch (e) { return 'THROW ' + e.message; }
+        })(), '');
+    // f) 规划续接：预置 EDIT_KEY 草稿 → boot 自动应用（editLoad + bootMerge 机制在位）
+    ok('规划续接：预置草稿（第 2 程标题）→ boot 自动应用到链上',
+        (function () {
+            try {
+                delete lsStore['xianlumap.overlay.chuanxi'];
+                lsStore['xianlumap.overlay.chuanxi'] = JSON.stringify({ days: { 2: { title: '续接验证标题' } }, meta: {} });
+                var bc = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+                var ok2 = !bc.err && bc.sandbox.DAYS.filter(function (d) { return d.id === 2; })[0].title === '续接验证标题';
+                delete lsStore['xianlumap.overlay.chuanxi'];
+                return ok2;
+            } catch (e) { return 'THROW ' + e.message; }
         })(), '');
     /* ---------- S35：无「天」UI 锁 ---------- */
     console.log('\n【30】S35：「程」改名零残留锁');

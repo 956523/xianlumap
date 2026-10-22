@@ -271,6 +271,9 @@ function buildIA() {
     var menu = mobEl('div', 'mobMenu');
     menu.appendChild(mobEl('button', 'mobMenuEdit', null, '➕ 添加途经点'));
     menu.appendChild(mobEl('button', 'mobMenuSync', null, '☁️ 云同步'));
+    menu.appendChild(mobEl('button', 'mobMenuSave', null, '💾 保存修改'));      // S36：full 抽屉去缝合后工具栏隐藏，确定性入口收进菜单（代理隐藏的真实按钮）
+    menu.appendChild(mobEl('button', 'mobMenuShare', null, '🖼 分享行程图'));
+    menu.appendChild(mobEl('button', 'mobMenuSwitch', null, '🗺 更换线路'));     // S36：去掉 ?route 回线路选择器（App 内同生效）
     menu.appendChild(mobEl('button', 'mobMenuData', null, 'ℹ️ 数据来源说明'));
     iaRoot.appendChild(menu);
     var menuBk = mobEl('div', 'mobMenuBk');
@@ -377,6 +380,29 @@ function buildIA() {
     if (mSync) mSync.onclick = function () {
         toggleClass('mob-menu', false);
         try { if (typeof Edit !== 'undefined' && Edit.showTab) Edit.showTab('more'); } catch (e) {}   // S28：云同步在 ⋯ 更多设置页
+    };
+    /* S36 去缝合后的确定性入口（工具栏移动态隐藏；代理点击桌面真实按钮，行为同源） */
+    var mSave = document.getElementById('mobMenuSave');
+    if (mSave) mSave.onclick = function () {
+        toggleClass('mob-menu', false);
+        try { var bs = document.getElementById('btnDraftSave'); if (bs && typeof bs.click === 'function') bs.click(); } catch (e) {}
+    };
+    var mShare = document.getElementById('mobMenuShare');
+    if (mShare) mShare.onclick = function () {
+        toggleClass('mob-menu', false);
+        try { var bh = document.getElementById('btnShare'); if (bh && typeof bh.click === 'function') bh.click(); } catch (e) {}
+    };
+    /* S36 任务4：返回大首页——去掉 ?route 参数（保留 origin/path 与其余参数，无 route 即选线器） */
+    var mSwitch = document.getElementById('mobMenuSwitch');
+    if (mSwitch) mSwitch.onclick = function () {
+        toggleClass('mob-menu', false);
+        try {
+            var u = new URL(location.href);
+            u.searchParams.delete('route');
+            location.href = u.toString();
+        } catch (e) {
+            try { location.href = location.pathname; } catch (e2) {}
+        }
     };
     var mData = document.getElementById('mobMenuData');
     if (mData) mData.onclick = function () {

@@ -737,7 +737,31 @@
                 return '<span>' + escapeHtml2(nm) + '</span>';
             }).join('');
         } catch (e) {}
-        box.innerHTML = '<div class="peekcard">' +
+        /* S36 行中续接：progress 里已出发未完成的程 → peek hero 上方细提示条（点 → Enroute.enter()；
+           全程不自动进入，用户点才算）。 */
+        var resumeHtml = '';
+        try {
+            var enrOn = (typeof window !== 'undefined' && window.Enroute && typeof window.Enroute.isOn === 'function') ? window.Enroute.isOn() : false;
+            if (!enrOn) {
+                var progR = (typeof Edit !== 'undefined' && Edit.overlay && Edit.overlay.progress) || null;
+                var legsR = (progR && progR.legs) || null;
+                var doneR = (progR && progR.daysDone) || {};
+                if (legsR) {
+                    for (var lid in legsR) {
+                        if (!Object.prototype.hasOwnProperty.call(legsR, lid)) continue;
+                        if (!legsR[lid] || !legsR[lid].startTs || doneR[lid]) continue;
+                        var rIdx = -1;
+                        for (var ri = 0; ri < disp.length; ri++) {
+                            if (String(origOf(disp[ri]).id) === String(lid)) { rIdx = ri; break; }
+                        }
+                        if (rIdx < 0) rIdx = todayI;
+                        resumeHtml = '<div class="pk-resume" id="pkResume" data-pres="1">▶ 继续行中 · 第 ' + (rIdx + 1) + ' 程 →</div>';
+                        break;
+                    }
+                }
+            }
+        } catch (e) {}
+        box.innerHTML = resumeHtml + '<div class="peekcard">' +
             '<div class="pk-eyebrow">第 ' + (todayI + 1) + ' 程 · 共 ' + disp.length + ' 程</div>' +
             '<div class="pk-hero"><span class="pk-ft">' + escapeHtml2(dd.title) + '</span>' +
             '<span class="pk-km">' + (dd.km || 0) + '<small>km</small></span></div>' +
@@ -751,11 +775,22 @@
             '<div class="peek-rail">' + rail + '</div>' +
             '<div class="pk-ticks">' + tickSpans + '</div>' +
             '</div>';
+        /* 续接条直挂 onclick（Delegation 之外的显式入口；mock 下 getElementById 可断言可触发） */
+        var rEl = document.getElementById('pkResume');
+        if (rEl && typeof rEl.onclick !== 'undefined') rEl.onclick = function (ev) {
+            try { if (ev && ev.stopPropagation) ev.stopPropagation(); } catch (e) {}
+            try { if (window.Enroute && typeof window.Enroute.enter === 'function') window.Enroute.enter(); } catch (e) {}
+        };
         if (!box.__wired) {
             box.__wired = true;
             if (box.addEventListener) box.addEventListener('click', function (e) {
                 var t = e.target;
                 if (!t || !t.getAttribute) return;
+                /* S36 行中续接：点提示条进入行中 */
+                if (t.getAttribute('data-pres') != null) {
+                    try { if (window.Enroute && typeof window.Enroute.enter === 'function') window.Enroute.enter(); } catch (er) {}
+                    return;
+                }
                 /* S36：打卡 chip 点开 full（不切天） */
                 if (t.getAttribute('data-pfull') != null) {
                     try { if (typeof setSheet === 'function') setSheet('full'); } catch (er) {}
@@ -975,7 +1010,12 @@
         clearWarnings();
         var ws = (typeof STATION_DATA !== 'undefined' && STATION_DATA && STATION_DATA.warnings) || [];
         if (!ws.length || !DAYS.length) return;
-        /* S35 删号（车型切换下线）：ev/fuel 盲区全部上图（补给点分类覆盖，数据有就显示） */
+        /* S35 删号（车型切换下线）：ev/fuel 盲区全部上图（补给点分类覆盖，数据有就显示）
+           S36 减重：中远档（z<8）只留路线+计数药丸+城镇名，盲区红虚线+胶囊近景（z≥8）才上；
+           缩放重绘走 planner 的 zoomchange 防抖链（同一条，不另起监听）。 */
+        var wz = 7.3;
+        try { if (typeof map !== 'undefined' && map && typeof map.getZoom === 'function') wz = map.getZoom(); } catch (e) {}
+        if (wz < 8) return;
         // km → 经纬度表：每天 path 按 altKm 线性插值（画盲区带足够，精度 ~天/240 点）
         var table = [];
         DAYS.forEach(function (d) {
