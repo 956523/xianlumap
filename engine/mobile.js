@@ -12,7 +12,7 @@
  * edit.js / ui.js 后加载；窄屏点日卡由 route-engine focusDay 调 setSheet('peek')。
  * ========================================================================== */
 
-var MOBILE_PEEK = 108;       // S34：peek 露出高度（手柄28 + 概要行 + 天数轨），与 CSS --sheet-peek 同值
+var MOBILE_PEEK = 150;       // S34：peek 露出高度（手柄28 + 概要行 + 天数轨），与 CSS --sheet-peek 同值
 var MOBILE_BREAK = 768;
 var sheetState = 'peek';     // 'peek' | 'full' | 'hidden'
 var mobActive = false;       // 当前是否处于移动断点
@@ -314,26 +314,17 @@ function buildIA() {
 
     /* 迁移：出发地切换 → 标题条；图例 + 续航卡 → 图层弹层（原事件随节点走） */
     /* S34 控制行：出发地 + 顺/逆 + 车型（抽屉头部第二行；peek 态被 CSS 边界隐藏） */
-    var evsw = mobEl('span', null, 'mob-evsw');
-    var _evB = mobEl('button', 'mobEv', null, (typeof BRAND !== 'undefined') ? BRAND.bolt + ' 电车' : '⚡ 电车');
-    var _fuB = mobEl('button', 'mobFuel', null, (typeof BRAND !== 'undefined') ? BRAND.pump + ' 油车' : '⛽ 油车');
-    evsw.appendChild(_evB);
-    evsw.appendChild(_fuB);
+    /* S35 删号：车型切换整体下线（补给点分类覆盖）——evsw 不再创建 */
     var _panel = document.getElementById('panel');
     if (_panel && _panel.insertBefore) {
         var _ctl = mobEl('div', 'mobCtl');
         _panel.insertBefore(_ctl, _panel.firstChild ? _panel.firstChild.nextSibling : null);
         mobMove(document.getElementById('startSeg'), _ctl);
         mobMove(document.getElementById('dirSeg'), _ctl);   // S33 逆行切换
-        /* evsw 是本次新建的游离节点（无 parentNode，mobMove 会跳过）——直接落位；
-           桌面时 mobCtl 整体 display:none（全局规则），不需迁回登记 */
-        _ctl.appendChild(evsw);
+        /* S35：mobCtl 只收出发地/顺逆（车型已下线） */
     }
     /* 车型开关：代理点击隐藏的真实按钮（planner 的 handler 原样复用） */
-    var mobEv = document.getElementById('mobEv');
-    var mobFuel = document.getElementById('mobFuel');
-    if (mobEv) mobEv.onclick = function () { var b = document.getElementById('btnEv'); if (b && typeof b.click === 'function') b.click(); };
-    if (mobFuel) mobFuel.onclick = function () { var b = document.getElementById('btnFuel'); if (b && typeof b.click === 'function') b.click(); };
+    /* S35：车型代理按钮随删号下线 */
     var lb = document.getElementById('mobLayersBody');
     mobMove(document.getElementById('legendBox'), lb);
     mobMove(document.querySelector ? document.querySelector('.evcard') : null, lb);

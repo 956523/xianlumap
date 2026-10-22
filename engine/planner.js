@@ -293,7 +293,7 @@
         if (typeof STATION_DATA === 'undefined' || !STATION_DATA || !STATION_DATA.builtAt) return '';
         var short = STATION_DATA.sourceShort ||
             ((STATION_DATA.source || '').split('（')[0] || 'POI 数据');
-        return '<br><span style="color:#94a3b8;font-size:10.5px">' + short + ' · ' + STATION_DATA.builtAt + '</span>';
+        return '<br><span style="color:#8b98a9;font-size:10.5px">' + short + ' · ' + STATION_DATA.builtAt + '</span>';
     }
 
     /* ============ 站点一键导航（S27） ============
@@ -509,41 +509,20 @@
         box.innerHTML = html;
     }
 
-    /* --- 设置卡事件 --- */
+    /* --- 设置卡（S35 删号后 dormant） ---
+       车型切换/续航设置 UI 已整体下线（补给点分类覆盖，用户拍板）。规划计算保留：
+       默认口径满电 500km + 高原折算 ×0.85，planBox/mobPlanBody 照常输出。
+       测试接缝 __plannerSet({mode,range,alt}) 供 vm 断言驱动（无任何 UI 残留）。 */
     function bindEvCard() {
-        /* S31：续航设置折叠区（滑杆/高原折算/车型说明收进图层弹层底部「续航设置 ▾」，默认收起） */
-        var evsetT = document.getElementById('evsetToggle');
-        var evsetB = document.getElementById('evsetBody');
-        if (evsetT) evsetT.onclick = function () {
-            var open = evsetB && evsetB.style.display === 'none';
-            if (evsetB) evsetB.style.display = open ? '' : 'none';
-            evsetT.textContent = open ? '🔋 续航设置 ▴' : '🔋 续航设置 ▾';
-        };
-        var rng = document.getElementById('rngRange');
-        var val = document.getElementById('rngVal');
-        rng.oninput = function () {
-            evState.range = +rng.value;
-            val.textContent = rng.value;
-            renderStations();
-        };
-        document.getElementById('ckAlt').onchange = function (e) {
-            evState.alt = e.target.checked;
-            renderStations();
-        };
-        document.getElementById('btnEv').onclick = function () { setMode('ev'); };
-        document.getElementById('btnFuel').onclick = function () { setMode('fuel'); };
-        function setMode(m) {
-            evState.mode = m;
-            document.getElementById('btnEv').classList.toggle('on', m === 'ev');
-            document.getElementById('btnFuel').classList.toggle('on', m === 'fuel');
-            // 移动端标题条上的车型小开关跟随高亮（S16，节点可能不存在）
-            ['mobEv', 'mobFuel'].forEach(function (id, i) {
-                var b = document.getElementById(id);
-                if (b && b.classList) b.classList.toggle('on', (i === 0 ? 'ev' : 'fuel') === m);
-            });
-            document.getElementById('rngLabel').textContent = m === 'fuel' ? '满油续航' : '满电续航';
-            try { window.__evMode = m; } catch (e) {}   // S26：盲区标注按车型过滤
-            renderStations();
-            if (typeof renderWarnings === 'function') renderWarnings();
-        }
+        try {
+            window.__plannerSet = function (o) {
+                if (!o) return { mode: evState.mode, range: evState.range, alt: evState.alt };
+                if (o.mode === 'ev' || o.mode === 'fuel') evState.mode = o.mode;
+                if (o.range != null) evState.range = +o.range;
+                if (o.alt != null) evState.alt = !!o.alt;
+                renderStations();
+                if (typeof renderWarnings === 'function') renderWarnings();
+                return { mode: evState.mode, range: evState.range, alt: evState.alt };
+            };
+        } catch (e) {}
     }

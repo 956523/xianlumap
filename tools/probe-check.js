@@ -382,7 +382,7 @@ ok('导入编辑层恢复 departureDate', DS.Edit.importOverlay(depJson) === tru
 DS.Edit.setDeparture(null);
 const depLis2 = created.filter(el => el.id === 'dyn:li').slice(-5);
 ok('清除回纯序号态（无日期无星期）', !DS.ROUTE_META.departureDate &&
-    depLis2.every(el => /<span class="day-tag">D\d+<\/span>/.test(el.innerHTML) && !/周[一二三四五六日]/.test(el.innerHTML)),
+    depLis2.every(el => /<span class="ch-fromto">第\d+程/.test(el.innerHTML) && !/周[一二三四五六日]/.test(el.innerHTML)),
     depLis2[0] ? depLis2[0].innerHTML.slice(0, 30) : '无');
 
 /* ---------- 移动端底部抽屉（S14）：窄屏激活 + 三态档位 ---------- */
@@ -524,7 +524,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         /全程需充电 \d+ 次 · 最长无充电间隔 \d+ km/.test(elCache['planPeek'].textContent),
         elCache['planPeek'].textContent.slice(0, 60));
     ok('标题条/菜单/图层弹层/浮动钮全部接线（onclick 就绪）',
-        ['mobMenuBtn', 'mobMenuEdit', 'mobMenuSync', 'mobLayersBtn', 'mobLayersClose', 'mobFit', 'mobEv', 'mobFuel']
+        ['mobMenuBtn', 'mobMenuEdit', 'mobMenuSync', 'mobLayersBtn', 'mobLayersClose', 'mobFit']
             .every(function (id) { return typeof elCache[id].onclick === 'function'; }), '');
     ok('「全览」条件钮初始不亮（视野就在全览位）且偏离判定可手动触发',
         IA.window.__mobile.fitDeviated() === false && (function () {
@@ -646,9 +646,9 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var genOk = false;
     try { elCache['wpGen'].onclick(); genOk = !!elCache['wpJs'] && elCache['wpJs'].value.length > 10; } catch (e) {}
     ok('「保存我的版本」入口可达（点击出弹层 + 代码段就绪）', genOk, '');
-    ok('出发日期常驻侧栏头部 + 云同步/恢复/续航开关在 ⋯ 更多设置页',
+    ok('出发日期常驻侧栏头部 + 云同步/恢复在 ⋯ 更多设置页（续航开关 S35 已删）',
         !!elCache['depDate'] && typeof elCache['depDate'].onchange === 'function' &&
-        !!elCache['moreSync'] && !!elCache['msReset'] && !!elCache['msEvset'] &&
+        !!elCache['moreSync'] && !!elCache['msReset'] &&
         (R.Edit.showTab('more'), document.body.classList.contains('more-open') === true), '');
 
     /* ---------- S20 真机反馈：白屏护栏 + 途经点归天直改 ---------- */
@@ -750,14 +750,14 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var mark0 = 0;
     function dayTags(sb, since) {   // since=本次操作前 created.length：只取最新一代日卡
         return created.slice(since || 0).filter(function (el) { return el.id === 'dyn:li'; })
-            .map(function (el) { return (el.innerHTML.match(/<span class="day-tag">([^<]+)</) || [])[1]; });
+            .map(function (el) { var m2 = el.innerHTML.match(/<span class="ch-fromto">第(\d+)程( · 休整)?/); return m2 ? '第' + m2[1] + '程' + (m2[2] ? '·休整' : '') : ''; });
     }
     ok('切空一天 → 休整占位卡出现且编号连续（D1..D5 无跳号）',
         !s25.err && (function () {
             mark0 = created.length;
             S25.Edit.setSeg(3, 327.98, 328.3);   // D3 切成 0.32km → 休整
             var tags = dayTags(S25, mark0);
-            return tags.length >= 5 && tags.slice(-5).join('|') === 'D1|D2|D3 · 休整|D4|D5';
+            return tags.length >= 5 && tags.slice(-5).join('|') === '第1程|第2程|第3程·休整|第4程|第5程';
         })(), dayTags(S25).join('|'));
     ok('归点复活：往休整卡归一个点，它恢复为行程天',
         (function () {
@@ -765,7 +765,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             mark0 = created.length;
             S25.Edit.assignWpDay(danba, 2);
             var tags = dayTags(S25, mark0);
-            return tags.length >= 5 && tags.slice(-5).join('|').indexOf('休整') < 0;
+            return tags.length >= 5 && tags.slice(-5).join('|').indexOf('休整') < 0 && tags.slice(-5).every(function (t) { return /^第\d+程/.test(t); });
         })(), dayTags(S25).join('|'));
     ok('并入前一天：D3 消失（merged），编号仍连续 D1..D4；草稿 → 保存修改后落盘',
         (function () {
@@ -775,7 +775,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             var merged = S25.Edit._mergedIds();
             var dirtyOk = S25.Edit.isDirty() === true && !/"merged":\[3\]/.test(lsStore['xianlumap.overlay.chuanxi'] || '');
             var commitOk = S25.Edit.commit() === true && /"merged":\[3\]/.test(lsStore['xianlumap.overlay.chuanxi'] || '');
-            return okM && tags.length >= 4 && tags.slice(-4).join('|') === 'D1|D2|D3|D4' &&
+            return okM && tags.length >= 4 && tags.slice(-4).join('|') === '第1程|第2程|第3程|第4程' &&
                 merged.indexOf(3) >= 0 && dirtyOk && commitOk;
         })(), dayTags(S25).join('|'));
     ok('S32 恢复原始数据 = 放弃草稿回到已保存态（上次 commit 的 merged 态，不是出厂五天）',
@@ -785,7 +785,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             mark0 = created.length;
             var okR = S25.Edit.reset() === true;
             var tags = dayTags(S25, mark0);
-            return okR && tags.length >= 4 && tags.slice(-4).join('|') === 'D1|D2|D3|D4' && S25.Edit.isDirty() === false;
+            return okR && tags.length >= 4 && tags.slice(-4).join('|') === '第1程|第2程|第3程|第4程' && S25.Edit.isDirty() === false;
         })(), dayTags(S25).join('|'));
     ok('全览无条件执行：抽屉内按钮与浮动钮同入口，连点三次调三次 fitAll',
         (function () {
@@ -809,21 +809,15 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
             /* mock 监听不可触发，持久化走源码断言（saveLayerPrefs 绑定在各开关上） */
             return htmlOk && ls.ev === true && ls.fuel === true && ls.rest === true && /saveLayerPrefs/.test(mainScript);
         })(), JSON.stringify(S26.window.__layerState()));
-    ok('盲区标注按车型过滤：切油车后无加油段替换无快充段（318 双类型数据实证）',
+    ok('盲区标注双类型上图（S35 删号：车型过滤下线，ev/fuel 盲区全量显示）',
         (function () {
             var b318 = bootRoute('chengdu-lhasa-318');
             if (b318.err) return 'ERR ' + b318.err.message.slice(0, 80);
-            var warnTexts = function () {
-                return calls.labels.map(function (l) { return (l.opts && l.opts.text) || l.text || ''; })
-                    .filter(function (t) { return /无快充|无加油站/.test(t); });
-            };
-            var lbBefore = calls.labels.length;
-            var evBefore = warnTexts().filter(function (t) { return t.indexOf('无快充') >= 0; }).length;
-            elCache['btnFuel'].onclick();   // planner setMode('fuel') → __evMode + 重渲盲区
-            var after = calls.labels.slice(lbBefore).map(function (l) { return (l.opts && l.opts.text) || l.text || ''; });
-            var fuelAfter = after.filter(function (t) { return t.indexOf('无加油站') >= 0; }).length;
-            var evAfter = after.filter(function (t) { return t.indexOf('无快充') >= 0; }).length;
-            return b318.sandbox.window.__evMode === 'fuel' && evBefore > 0 && fuelAfter > 0 && evAfter === 0;
+            var warnTexts = calls.labels.map(function (l) { return (l.opts && l.opts.text) || l.text || ''; })
+                .filter(function (t) { return /无快充|无加油站/.test(t); });
+            var evN = warnTexts.filter(function (t) { return t.indexOf('无快充') >= 0; }).length;
+            var fuelN = warnTexts.filter(function (t) { return t.indexOf('无加油站') >= 0; }).length;
+            return evN > 0 && fuelN > 0;
         })(), '');
     ok('规划摘要行点开：mob-plan 面板展开 + 内容镜像 planBox（不截断）',
         !s26.err && (function () {
@@ -871,7 +865,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         dA.altKm[1] === newKm && dB.altKm[0] === newKm && S27b.Edit.isDirty() === true &&
         (S27b.Edit.commit(), (lsStore['xianlumap.overlay.chuanxi'] || '').indexOf(String(newKm)) >= 0),
         'D' + dA.id + ' [' + dA.altKm + '] / D' + dB.id + ' [' + dB.altKm + ']');
-    ok('拖动中预览「Dn | nkm」文案', /D\d+ \d+km｜D\d+ \d+km/.test(prevTxt), prevTxt);
+    ok('拖动中预览「第n程 | nkm」文案', /第\d+程 \d+km｜第\d+程 \d+km/.test(prevTxt), prevTxt);
     // ③ <1km 守卫：拖过头被钳到最短 1km（与终点下拉同一口径）
     var h0b = PSEG.handles()[0];
     PSEG.start(0);
@@ -942,7 +936,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         !s28.err && lis28.length === 5 &&
         lis28.every(function (el) {
             return /<div class="ch-card[ "]/.test(el.innerHTML) &&
-                /<span class="day-title">[^<]+ → [^<]+<\/span>/.test(el.innerHTML);
+                /<span class="ch-fromto">第\d+程[^<]* → [^<]+<\/span>/.test(el.innerHTML);
         }) && /class="ch-node"/.test(lis28[0].innerHTML) && /ch-seam-add/.test(lis28[0].innerHTML),
         lis28[0] ? lis28[0].innerHTML.slice(0, 80) : '无');
     // b) 就地编辑：点文字 → 原位输入框（捕获监听 + 输入框样式 + 提交走 setDayField）
@@ -1051,17 +1045,17 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     ok('休整点层渲染：住宿（天终点）+ rest 途经点',
         !s31.err && mkAfterStay === mkBefore + 1 && /测试住宿（住宿）/.test(s31.sandbox.restData.map(function (r) { return r.t; }).join('|')) && mkFinal === 1,
         'restData ' + mkBefore + '→' + mkAfterStay + '+' + mkFinal);
-    // c) 续航模块隐藏：planBox/peek 隐藏但计算保留，设置收进折叠区（默认收起）
+    // c) 续航模块（S35 删号）：设置 UI 零残留，planBox dormant 计算保留
+    var editSrc31 = fs.readFileSync(path.join(ROOT, 'engine', 'edit.js'), 'utf8');
     var planHtml0 = elCache['planBox'].innerHTML;
-    elCache['rngRange'].value = '300';
-    elCache['rngRange'].oninput && elCache['rngRange'].oninput();
-    ok('续航提示隐藏（display:none）但规划计算保留（planBox innerHTML 随滑杆更新）',
+    S31.window.__plannerSet({ range: 300 });
+    ok('续航设置 UI 零残留（evsetToggle/evsetBody/msEvset 全删）',
+        !/id="evsetToggle"/.test(html) && !/id="evsetBody"/.test(html) &&
+        !/msEvset/.test(editSrc31) && !/EVSET_KEY/.test(editSrc31), '');
+    ok('规划计算 dormant 保留（planBox display:none 但 innerHTML 随 __plannerSet 更新）',
         /id="planBox" style="display:none"/.test(html) &&
-        /#planPeek\s*\{[^}]*display:\s*none/.test(html) &&
-        /id="evsetBody" style="display:none"/.test(html) &&
+        typeof S31.window.__plannerSet === 'function' &&
         elCache['planBox'].innerHTML !== planHtml0 && /全程需/.test(elCache['planBox'].innerHTML), '');
-    ok('续航设置折叠区接线（evsetToggle 开合 + 车型切换保留）',
-        /evsetToggle/.test(mainScript) && typeof elCache['btnEv'].onclick === 'function', '');
     /* ---------- S32：统一行程视图 / 草稿-保存语义 / 设置大扫除 / 续航可选化 ---------- */
     console.log('\n【25】S32：草稿语义与统一视图');
     delete lsStore['xianlumap.overlay.chuanxi'];
@@ -1100,10 +1094,9 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     // f) 文案防混：「保存修改」（存浏览器）≠「保存我的版本」（重新生成线路）
     ok('文案防混：两个动作并列且区分（btnDraftSave vs wpGen）',
         /保存修改/.test(html) && /保存我的版本/.test(editSrc32) && !/保存我的版本/.test(html.replace(/[\s\S]*wpGen[\s\S]*/, '')) || true, '');
-    // g) 续航设置默认隐藏 + 开关在设置页（S32-B）
-    ok('续航设置默认隐藏（evsetToggle display:none）+ 设置页「显示续航设置」开关',
-        /id="evsetToggle" type="button" style="display:none"/.test(html) &&
-        /id="msEvset"/.test(editSrc32) && !/id="msEvset"[^>]*checked/.test(editSrc32), '');
+    // g) 续航设置（S35 删号）：evsetToggle/msEvset 断言改为「零残留」正向锁
+    ok('续航设置 UI 零残留正向锁（S32-B 设置项随删号下线）',
+        !/id="evsetToggle"/.test(html) && !/id="msEvset"/.test(editSrc32), '');
     /* ---------- S33：链式行程 / 拆分合并 / 天数均分 / 4259 修复 / 逆行 / 季节性 ---------- */
     console.log('\n【26】S33：链式行程正统化');
     delete lsStore['xianlumap.overlay.qinghai-gansu'];
@@ -1130,20 +1123,22 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var d5 = S33b.DAYS.filter(function (d) { return d.id === 5; })[0];
     var nid = S33b.Edit.splitDay(5, '大柴旦多住', +(d5.altKm[0] + 60).toFixed(1));
     var tags33 = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-11).map(function (el) {
-        return (el.innerHTML.match(/<span class="day-tag">([^<]+)</) || [])[1];
+        var m2 = el.innerHTML.match(/<span class="ch-fromto">第(\d+)程( · 休整)?/);
+        return m2 ? '第' + m2[1] + '程' + (m2[2] ? '·休整' : '') : '';
     });
     var cloneStay = S33b.DAYS.filter(function (d) { return d.id === nid; })[0];
     ok('拆分：天数 +1、编号连续 D1..D11、新段带夜宿名、overlay.split 草稿',
-        nid !== false && tags33.length === 11 && tags33[0].indexOf('D1') === 0 && tags33[10].indexOf('D11') === 0 &&
+        nid !== false && tags33.length === 11 && tags33[0].indexOf('第1程') === 0 && tags33[10].indexOf('第11程') === 0 &&
         cloneStay && cloneStay.stay === '大柴旦多住' && S33b.Edit.isDirty() === true &&
         (S33b.Edit.overlay.split || []).length === 1, tags33.join('|'));
     // d) 合并（节点删除口径）：删节点 = 后段（原天后半）并入前段（clone）→ mergeDay(原天 id)
     var okMerge33 = S33b.Edit.mergeDay(5) === true;
     var tags33c = created.filter(function (el) { return el.id === 'dyn:li'; }).slice(-10).map(function (el) {
-        return (el.innerHTML.match(/<span class="day-tag">([^<]+)</) || [])[1];
+        var m2 = el.innerHTML.match(/<span class="ch-fromto">第(\d+)程( · 休整)?/);
+        return m2 ? '第' + m2[1] + '程' + (m2[2] ? '·休整' : '') : '';
     });
     ok('合并（删节点）：后半并入前半 → 回到 10 段连续编号',
-        okMerge33 && tags33c.length === 10 && tags33c[0].indexOf('D1') === 0 && tags33c[9].indexOf('D10') === 0, tags33c.join('|'));
+        okMerge33 && tags33c.length === 10 && tags33c[0].indexOf('第1程') === 0 && tags33c[9].indexOf('第10程') === 0, tags33c.join('|'));
     // e) 天数均分：预览 4 行；应用后 4 段均分边界
     var prev4 = S33b.Edit.previewEvenSplit(4);
     var okEven = S33b.Edit.evenSplit(4);
@@ -1181,7 +1176,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         G.DAYS.map(function (d) { return d.id; }).reverse().join(',');
     G.setRouteDir(1);
     ok('逆行：天序反排 + altKm 镜像（km\'=T-km）+ overlay.meta.dir 随草稿 + dayTagOf 显示层编号',
-        mirrorOk && tagMir === 'D1' && orderMir, 'dayTagOf(末段)=' + tagMir);
+        mirrorOk && tagMir === '第1程' && orderMir, 'dayTagOf(末段)=' + tagMir);
     // g2) 点成员「改为打卡/休整」（设计稿第二节补做）：菜单接线 + API 行为 + 全链刷新
     var s33k = bootRoute('chuanxi');
     var K = s33k.sandbox;
@@ -1227,7 +1222,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var segI = EN._segIdx();
     var cardHtml = elCache['enrCard'].innerHTML || '';
     var projOk = segI >= 0 && EN.curKm === 400 &&
-        /距今晚休整点/.test(cardHtml) && /已走 /.test(cardHtml) && /全程 \d+\/\d+ 天/.test(cardHtml);
+        /距今晚休整点/.test(cardHtml) && /已走 /.test(cardHtml) && /全程 \d+\/\d+ 程/.test(cardHtml);
     ok('锚点投影：curKm=400 → 当前段 + 进度卡主任务/段内进度/全程条',
         projOk, 'seg=' + segI + ' km=' + EN.curKm);
     // c) 支线提醒态：锚到当前段内某未打卡点前方 1km
@@ -1249,14 +1244,14 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     EN.setAnchorKm(dd0.altKm[1] - 0.3);
     var arriveOk = EN._state === 'arrive' && /打卡/.test(elCache['enrCard'].innerHTML || '');
     EN.checkIn(1);
-    var doneOk = EN._state === 'done' && /今日完成/.test(elCache['enrCard'].innerHTML || '') &&
-        /明天|全程完成/.test(elCache['enrCard'].innerHTML || '');
+    var doneOk = EN._state === 'done' && /本程完成/.test(elCache['enrCard'].innerHTML || '') &&
+        /下一程|全程完成/.test(elCache['enrCard'].innerHTML || '');
     var prog = E.Edit.overlay.progress || {};
     var dataOk = prog.daysDone && prog.daysDone[E.origOf(dd0).id] && prog.daysDone[E.origOf(dd0).id].report === 1 &&
         E.Edit.isDirty() === true;
     E.Edit.commit();
     var persisted = /"daysDone"/.test(lsStore['xianlumap.overlay.qinghai-gansu'] || '') && /"progress"/.test(lsStore['xianlumap.overlay.qinghai-gansu'] || '');
-    ok('四态切换：到达打卡 → 三键上报(report=1) → 今日完成 + 明天预告',
+    ok('四态切换：到达打卡 → 三键上报(report=1) → 本程完成 + 下一程预告',
         arriveOk && doneOk && dataOk, 'state=' + EN._state);
     ok('打卡数据流：overlay.progress 草稿 → commit 落盘（云同步读 saved 自动覆盖）', persisted, '');
     // e) 支线自动点亮：定位到未打卡点 200m 内（路过即点亮，不强求）
@@ -1346,14 +1341,15 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         /#peekBox\s*\{[^}]*display:\s*none/.test(css34) &&
         /\.peek-rail\s*\{/.test(css34) && /\.peek-d\.done/.test(css34) &&
         /mob-peek/.test(mobSrc) &&
-        /function renderPeekBox[\s\S]{0,300}innerWidth > 768\s*\) return/.test(reSrc), '');
+        /function renderPeekBox[\s\S]{0,400}innerWidth > 768[\s\S]{0,160}return/.test(reSrc), '');
     // b) 窄屏 boot：peekBox 内容 = 一行概要（D1 · 标题 · km · 打卡/充电/加油）+ 天数轨
     var s34m = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
     var M = s34m.sandbox;
     var peekHtml = elCache['peekBox'] && elCache['peekBox'].innerHTML || '';
-    var peekOk = !s34m.err && peekHtml.indexOf('peek-sum') >= 0 &&
-        /^<div class="peek-sum">D\d+ · [^<]*· \d+km · 打卡 \d+ · 充电 \d+ · 加油 \d+<\/div><div class="peek-rail">[\s\S]*class="peek-d/.test(peekHtml);
-    ok('窄屏 peekBox：今日概要一行（Dn · 标题 · km · 打卡/充电/加油）+ 天数轨', peekOk,
+    var peekOk = !s34m.err && peekHtml.indexOf('peekcard') >= 0 &&
+        /<div class="pk-day"><b>\d+<\/b>(<span class="pk-d">[\d/]+<\/span>)?<\/div>[\s\S]*<span class="pk-t">[^<]+<\/span>[\s\S]*<span class="pk-meta">\d+km · 打卡 \d+ · 充电 \d+ · 加油 \d+<\/span>[\s\S]*<div class="peek-rail">[\s\S]*class="peek-d/.test(peekHtml) &&
+        !/第\d+程/.test(peekHtml);   // S35：程轨药丸只露数字（✓/N），不重复程标
+    ok('窄屏 peekBox：S35 今日任务卡（程号+日期方块/标题/km·打卡·充电·加油）+ 药丸程轨（无 D 前缀）', peekOk,
         peekHtml.replace(/<[^>]+>/g, ' ').slice(0, 80));
     ok('窄屏 peek 态 body 带 mob-peek（CSS 边界生效前提）',
         document.body.classList.contains('mob-peek'), '');
@@ -1397,11 +1393,44 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     } catch (e) {}
     ok('标题条模式开关：行中进入/退出（body.enroute 往返）',
         enrIn && enrOut, '');
-    ok('标题条一行化源码：mobMode 段在位 + mobStartSlot 撤出标题条 + mobCtl 收纳三控件',
+    ok('标题条一行化源码：mobMode 段在位 + mobStartSlot 撤出标题条 + mobCtl 收纳两控件（车型切换 S35 已下线）',
         /id="mobMode"|mobModePlan/.test(mobSrc) && mobSrc.indexOf('mobStartSlot') < 0 &&
         /mobMove\(document\.getElementById\('startSeg'\), _ctl\)/.test(mobSrc) &&
         /mobMove\(document\.getElementById\('dirSeg'\), _ctl\)/.test(mobSrc) &&
-        /_ctl\.appendChild\(evsw\)/.test(mobSrc), '');
+        !/_ctl\.appendChild\(evsw\)/.test(mobSrc) && !/getElementById\('mobEv'\)/.test(mobSrc) &&
+        !/getElementById\('mobFuel'\)/.test(mobSrc), '');
+    /* ---------- S35：无「天」UI 锁 ---------- */
+    console.log('\n【30】S35：「程」改名零残留锁');
+    (function () {
+        var files = ['route-engine.js', 'edit.js', 'enroute.js', 'mobile.js', 'profile.js', 'planner.js', 'ui.js', 'picker.js', 'sync.js', 'logo.js'].map(function (f) {
+            return { name: 'engine/' + f, src: fs.readFileSync(path.join(ROOT, 'engine', f), 'utf8') };
+        });
+        files.push({ name: 'index.html', src: html });
+        var blacklist = /第.{0,3}天|天数|今天|明天|归天|这一天|每一天|别天|天卡|天完成/;
+        var hits = [];
+        files.forEach(function (f) {
+            var inComment = false;
+            f.src.split('\n').forEach(function (line, i) {
+                /* 块注释状态机：先整条剥离注释段再扫黑名单（行注释同理） */
+                var code = '', rest = line, guard = 0;
+                while (rest && guard++ < 50) {
+                    if (inComment) {
+                        var end = rest.indexOf('*/');
+                        if (end < 0) { rest = ''; break; }
+                        rest = rest.slice(end + 2); inComment = false; continue;
+                    }
+                    var bs = rest.indexOf('/*'), ls = rest.indexOf('//');
+                    if (bs < 0 && ls < 0) { code += rest; break; }
+                    if (ls >= 0 && (bs < 0 || ls < bs)) { code += rest.slice(0, ls); break; }
+                    code += rest.slice(0, bs); rest = rest.slice(bs + 2); inComment = true;
+                }
+                var m = code.match(blacklist);
+                if (m) hits.push(f.name + ':' + (i + 1) + ' ' + code.trim().slice(0, 60));
+            });
+        });
+        ok('无「天」UI 锁（可见行黑名单：第N天/天数/今天/归天/天卡…；注释豁免）',
+            hits.length === 0, hits.slice(0, 5).join(' | ') || '零残留');
+    })();
     console.log('\n结果: ' + pass + ' pass / ' + fail + ' fail');
     process.exit(fail ? 1 : 0);
 });

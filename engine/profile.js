@@ -248,10 +248,10 @@
         if (segDrag.el && segDrag.el.setAttribute) segDrag.el.setAttribute('transform', 'translate(' + dx + ',0)');
         var ka = +(segDrag.km - h.dayA.altKm[0]).toFixed(1);
         var kb = +(h.dayB.altKm[1] - segDrag.km).toFixed(1);
-        segPrevText = 'D' + h.dayA.id + ' ' + Math.round(ka) + 'km｜D' + h.dayB.id + ' ' + Math.round(kb) + 'km';
+        segPrevText = '第' + h.dayA.id + '程 ' + Math.round(ka) + 'km｜第' + h.dayB.id + '程 ' + Math.round(kb) + 'km';
         try {
             tipEl.style.display = 'block';
-            tipEl.innerHTML = segPrevText + '<br><span style="color:#94a3b8;font-size:10px">松手重切这两天</span>';
+            tipEl.innerHTML = segPrevText + '<br><span style="color:#8b98a9;font-size:10px">松手重切这两程</span>';
             var scaleX = h.scaleX || 1;
             var px = h.rectLeft + (h.L + (segDrag.km - h.kmSeries0) * h.pxPerKm) * scaleX;
             tipEl.style.left = Math.min(Math.max(px - 46, 8), h.rectLeft + h.W * scaleX - 140) + 'px';
@@ -330,11 +330,11 @@
             bKm = d.altKm[1];
             var sl = altSlice(full, aKm, bKm);
             series = sl.pts;
-            focusTitle = 'D' + d.id + ' ' + d.title + ' · <tspan fill="#dc2626">↑' + sl.up + 'm</tspan> <tspan fill="#0284c7">↓' + sl.down + 'm</tspan> · 再点该天返回全程';
+            focusTitle = '第' + d.id + '程 ' + d.title + ' · <tspan fill="#dc2626">↑' + sl.up + 'm</tspan> <tspan fill="#0284c7">↓' + sl.down + 'm</tspan> · 再点该程返回全程';
         } else {
             series = full;
         }
-        titleEl.textContent = focus ? '再点该天返回全程' : '点侧栏任一天，看该天海拔细节';
+        titleEl.textContent = focus ? '再点该程返回全程' : '点侧栏任一程，看该程海拔细节';
         var totalKm = series[series.length - 1].km - series[0].km || 1;
         function xF(km) { return L + (km - series[0].km) / totalKm * (W - L - R); }
         // y 轴：全程/聚焦都由数据自适应（不再硬切 4000，避免 4000m 以上被削平）
@@ -365,15 +365,15 @@
         // 网格与刻度
         var grid = '';
         yTicks.forEach(function (a) {
-            grid += '<line x1="' + L + '" y1="' + yF(a) + '" x2="' + (W - R) + '" y2="' + yF(a) + '" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>' +
-                '<text x="' + (L - 6) + '" y="' + (yF(a) + 4) + '" font-size="10" fill="#94a3b8" text-anchor="end">' + a + '</text>';
+            grid += '<line x1="' + L + '" y1="' + yF(a) + '" x2="' + (W - R) + '" y2="' + yF(a) + '" stroke="#edf0f4" stroke-width="1" stroke-dasharray="4 4"/>' +
+                '<text x="' + (L - 6) + '" y="' + (yF(a) + 4) + '" font-size="10" fill="#8b98a9" text-anchor="end">' + a + '</text>';
         });
         // 点与垭口标记
         // 全程模式：文字密集（几十个地名摊在 ~1000px 上），只保留"垭口/最高点"标注，其余靠 hover
         // 聚焦模式：点少、空间宽裕，全部标名
         var dots = '', labels = '', marks = [], occupied = -1e9;
         var LINE_C = focus ? '#ea580c' : '#0d9488';   // 曲线主色
-        var DOT_C = focus ? '#ea580c' : '#0f766e';   // 普通站点色（跟随主题）
+        var DOT_C = focus ? '#ea580c' : '#0d9488';   // 普通站点色（跟随主题）
         series.forEach(function (p) {
             var x = xF(p.km), y = yF(p.alt);
             if (p.pass) {
@@ -395,18 +395,18 @@
                 labels += '<path d="M' + m.x + ' ' + (m.y - 16) + ' l5 8 h-10 z" fill="#7c3aed"/>' +
                     '<text x="' + tx + '" y="' + (m.y - 20) + '" font-size="10" fill="#6d28d9" text-anchor="middle" font-weight="600">' + m.n + ' ' + m.alt + '</text>';
             } else {
-                labels += '<text x="' + tx + '" y="' + (m.y + 14) + '" font-size="9.5" fill="#64748b" text-anchor="middle">' + m.n + '</text>';
+                labels += '<text x="' + tx + '" y="' + (m.y + 14) + '" font-size="9.5" fill="#3d4a5c" text-anchor="middle">' + m.n + '</text>';
             }
             occupied = m.x + tw / 2;
         });
         // 起终点（若端点占位比自动命名，用"起点/终点"兜底，避免出现 undefined）
         var nameA = series[0].n || '起点';
         var nameZ = series[series.length - 1].n || '终点';
-        var ends = '<text x="' + pts[0][0] + '" y="' + (H - 8) + '" font-size="10" fill="#475569" text-anchor="start">' + nameA + '</text>' +
-            '<text x="' + pts[pts.length - 1][0] + '" y="' + (H - 8) + '" font-size="10" fill="#475569" text-anchor="end">' + nameZ + '</text>';
+        var ends = '<text x="' + pts[0][0] + '" y="' + (H - 8) + '" font-size="10" fill="#3d4a5c" text-anchor="start">' + nameA + '</text>' +
+            '<text x="' + pts[pts.length - 1][0] + '" y="' + (H - 8) + '" font-size="10" fill="#3d4a5c" text-anchor="end">' + nameZ + '</text>';
         ends += focus
-            ? '<text x="' + (W - R) + '" y="14" font-size="10" fill="#94a3b8" text-anchor="end">D' + d.id + ' 全天 ' + d.km + ' km</text>'
-            : '<text x="' + (W - R) + '" y="14" font-size="10" fill="#94a3b8" text-anchor="end">全程约 ' + totalKm + ' km</text>';
+            ? '<text x="' + (W - R) + '" y="14" font-size="10" fill="#8b98a9" text-anchor="end">第' + d.id + '程 · ' + d.km + ' km</text>'
+            : '<text x="' + (W - R) + '" y="14" font-size="10" fill="#8b98a9" text-anchor="end">全程约 ' + totalKm + ' km</text>';
         /* S27：编辑态天边界拖把手（两种模式都画：全程=全部内边界，聚焦=该天左右边界；
            命中区 16px 宽，线 + 顶部圆点示意可拖） */
         var boxRectLeft = 0;
@@ -416,8 +416,8 @@
         var segH = segHandles.map(function (h) {
             return '<g class="seg-handle" data-bi="' + h.bi + '">' +
                 '<rect x="' + (h.x - 8) + '" y="' + T + '" width="16" height="' + (H - B - T) + '" fill="transparent" style="cursor:ew-resize"/>' +
-                '<line x1="' + h.x + '" y1="' + (T + 4) + '" x2="' + h.x + '" y2="' + (H - B) + '" stroke="#0f766e" stroke-width="2" stroke-dasharray="3 3" opacity=".45"/>' +
-                '<circle cx="' + h.x + '" cy="' + (T + 10) + '" r="5.5" fill="#0f766e" stroke="#fff" stroke-width="1.6" style="cursor:ew-resize"/>' +
+                '<line x1="' + h.x + '" y1="' + (T + 4) + '" x2="' + h.x + '" y2="' + (H - B) + '" stroke="#0d9488" stroke-width="2" stroke-dasharray="3 3" opacity=".45"/>' +
+                '<circle cx="' + h.x + '" cy="' + (T + 10) + '" r="5.5" fill="#0d9488" stroke="#fff" stroke-width="1.6" style="cursor:ew-resize"/>' +
                 '</g>';
         }).join('');
         box.querySelector('svg') && box.querySelector('svg').remove();
@@ -463,7 +463,7 @@
             });
             if (best && bd < 60) {
                 tipEl.style.display = 'block';
-                var rel = focus ? '距当天起点 ' + Math.round(best.km - aKm) + ' km' : '距起点 ' + best.km + ' km';
+                var rel = focus ? '距该程起点 ' + Math.round(best.km - aKm) + ' km' : '距起点 ' + best.km + ' km';
                 tipEl.innerHTML = '<b>' + best.n + '</b> · ' + best.alt + ' m<br>' + rel;
                 var tx = xF(best.km), ty = yF(best.alt);
                 tipEl.style.left = Math.min(tx + 10, W - 130) + 'px';

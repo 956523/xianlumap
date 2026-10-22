@@ -2240,3 +2240,105 @@ slogan 头 + 「第 N 天完成 ✓」+ 当天链段（出发时刻 → **只画
 3. mobCtl 里的控件迁回桌面走 mobMove 登记（startSeg/dirSeg），evsw 是新建
    节点随 mobCtl 全局隐藏，不回迁。
 4. 未执行 git 提交。
+
+## 45. S35：移动端视觉重塑 + 「天」→「程」+ 删号清单（2026-10-22）
+
+按 `_design-s35.html`（8 节）对移动端做视觉重塑，同时全仓「天」改口「程」、
+执行用户拍板的删号清单。
+
+### 设计令牌（两端气质）
+
+`index.html :root` 新增 `--ink #0b1220 / --sub #3d4a5c / --weak #8b98a9 /
+--line #edf0f4 / --green #0d9488 / --green-deep #0b7a70 / --amber #b45309 /
+--amber-bg #fdf3e3 / --shadow / --r-lg 20 / --r-md 16 / --r-pill 999`。
+全仓 235 处旧色板值映射替换（`#0f172a→#0b1220`、`#475569/#64748b→#3d4a5c`、
+`#94a3b8→#8b98a9`、`#0f766e→#0d9488`、`#115e59/#134e4a→#0b7a70`、
+`#e2e8f0→#edf0f4`），覆盖 index.html / engine/*.js / manifest.json / sw.js /
+favicon.svg。
+
+### 「程」改名（可见面全量）
+
+- 链卡：`route-engine renderAll` 重构为
+  `<div class="ch-r1"><span class="ch-fromto">第N程[ ✓][ · 休整] · title</span>
+  <span class="ch-km">147<small>km</small></span></div><div class="ch-meta">…</div>`；
+  `dayTagOf` 复活返回「第N程」并挂 `window.__dispTagOf`（planner 信息窗复用）。
+- chips：`chipDaysLb` = 「程 · M 晚」；peek 任务卡 / 归程 toast / 拆分弹窗 /
+  enroute 行中文案 / profile 聚焦标题（第N程 ↑↓m）/ 剖面拖动预览（第n程 nkm｜…）/
+  海拔图角标（第N程 · km）/ 信息窗（第N程 · 住宿点）/ picker（建议 N 程）。
+- 探针锁：probe【30】无「天」UI 锁——块注释状态机剥离注释后扫可见代码黑名单
+  （第N天/天数/今天/明天/归天/这一天/天卡…），engine/*.js + index.html 零残留。
+
+### 脊柱版式 + peek 任务卡
+
+- 脊柱：`li.ch-item::before` 渐变脊柱（`linear-gradient(var(--green),#bfe3dd)`）；
+  `.ch-card` 白卡 `--r-md` + `--shadow`；`.ch-node` 琥珀方块 28px + `.ch-node-dot`
+  绿圆含「始/终」文本；`.ch-kuse` 住宿徽标；`.ch-seam-add` 中缝「＋」。
+- 行程点三类药丸化：`.day-pts` flex-wrap + `.pt-row` 药丸（打卡/补给/途经点）。
+- peek：`--sheet-peek 108→150px`，`mobile.js MOBILE_PEEK 150`（两者必须同值）；
+  peekBox 重构为 `.peekcard`（`.pk-day` 绿渐变日期方块 + 程号 / `.pk-tt` 标题 /
+  `.pk-meta` km·打卡·充电·加油）+ `.peek-rail` 药丸程轨（done=✓ cur=实心）。
+  `renderPeekBox` 宽屏早退改为**移除陈旧节点**（防 CDP 横竖翻转残留）。
+
+### 行中深色任务卡
+
+enroute move 态重构：`.enr-card` `#1e293b` 渐变底；`.enr-lab` 距今晚休整点 /
+`.enr-big` 30px 大数字 / `.enr-dst` 第N程已走 a/b / `.enr-bar` 进度条 /
+`.enr-tools` 药丸钮（锚点 / 偏离提醒 / 图层 ghost）。enrLayers 接线
+`document.body.classList.toggle('mob-layers')`。
+
+### 组件药丸化
+
+`.edit-mini` 主按钮药丸 + 同排次按钮描边药丸；`.switch` 46×28；`.seg` /
+`#mobMode` 药丸；目标 ≥44px 触控。`refreshDayControls` 住宿 chip 落位
+`.ch-meta`；`updateDayRow` 改走 renderAll() 重建（复合卡局部更新失效）。
+
+### 删号清单（用户拍板）
+
+- **电车/油车切换 + 续航设置 UI 整体下线**：index.html 删 `evsetToggle` /
+  `evsetBody`（btnEv/btnFuel/rngRange/rngVal/ckAlt 全块）+ `.evset-t` CSS +
+  `.mob-evsw` CSS；edit.js 删 `msEvset` 设置行 + `EVSET_KEY` 逻辑；ui.js 删
+  icEv/icFuel 图标注入；mobile.js 删 evsw/mobEv/mobFuel 创建与代理。
+- **planner dormant**：规划计算全保留（默认满电 500km + 高原 ×0.85，
+  planBox/mobPlanBody 照常输出），测试接缝 `window.__plannerSet({mode,range,alt})`
+  替代 UI 驱动（c4【2】【3】改走接缝）。
+- **盲区双类型上图**：route-engine `renderWarnings` 车型过滤删除，ev/fuel
+  盲区标注全量渲染（probe【20】改「双类型上图」断言）。
+
+### 休整点用途标签（stage 8）
+
+`Wp.add(name,lat,lng,kind,kuse)` 第 5 参（wp 对象挂 `kuse`，wpSave 整体持久）。
+停靠点弹窗 kind=rest 时显示用途行：住宿/餐饮/小憩药丸 + 自定义输入
+（`.wps-kuse`，输入即选中）。拆分弹窗加 `cdKuse` select（默认住宿），
+`splitDay(id,name,atKm,kuse)` → `overlay.split[].kuse` + `applySplit` 落
+`clone.kuse`；`applyDayFields` 白名单已含 `kuse`。节点徽标 `.ch-kuse`
+（住宿默认 / kuse 覆盖）。chips「M 晚」口径 = stay 夜宿数 + rest 途经点中
+kuse==='住宿' 数。
+
+### 顺手修的真 bug
+
+- **etDayPick/etToast 死路**：S32 模板退役后，归程弹层容器（etDayPick）与
+  toast（etToast）引用已消失但归程逻辑仍走旧容器，真机点了无反应。已自包含
+  重建为 `#egDayPick.chain-dlg`（含 egDayPickList）+ 自创建 #etToast。
+- **陈旧 peekBox**：CDP 横竖翻转后宽屏残留窄屏渲染（竖排标题 + 长药丸），
+  宽屏分支改为移除节点。
+
+### 测试
+
+- c4-test **288/288**（3 包 × 96；c4【2】【3】改 __plannerSet 驱动，【6】
+  聚焦正则改 第N程）。
+- probe-check **173/173**（【20】盲区双类型、【24】删号零残留 + dormant 计算、
+  【29】程轨无程标重复、新增【30】无「天」UI 锁；断言随删随改）。
+- 禁词回归：`grep -rn "青甘\|兰州\|西宁\|塔尔寺\|拉脊山" engine/` 干净。
+- CDP iPhone 390×844 实证 4 张 + 桌面 1440 新导航 1 张：
+  `/tmp/s35-peek.png`（peek 任务卡 + 药丸程轨）、`/tmp/s35-spine.png`
+  （脊柱全程）、`/tmp/s35-enroute.png`（行中深色卡）、`/tmp/s35-components.png`
+  （停靠点弹窗：类型分段 + 用途药丸）、`/tmp/s35-desktop.png`（桌面侧栏对照）。
+
+### 诚实清单
+
+1. 「M 晚」口径 = stay 夜宿 + rest 途经点 kuse==='住宿'，两类实体直接相加；
+   若同一物理位置重复登记会双计（数据上尚未出现）。
+2. 拆分弹窗 kuse 只有 4 选（select），自定义用途只能在停靠点弹窗里给
+   （拆分类目覆盖 95% 场景，自定义走添加）。
+3. 注释里的「天」未全部清理（锁只扫可见代码），历史章节文案留痕惯例不回改。
+4. 未执行 git 提交。

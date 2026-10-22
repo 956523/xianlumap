@@ -266,7 +266,7 @@
                 if (!od) return;
                 var done = self.dayDone(od.id);
                 var isCur = (curIdx != null && disp[curIdx] && origOf(disp[curIdx]).id === od.id);
-                var st = done ? { color: '#0f766e', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } }
+                var st = done ? { color: '#0d9488', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } }
                     : isCur ? { color: '#14b8a6', width: 2.5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } }
                         : { color: '#99f6e4', width: 2, borderWidth: 0, lineCap: 'round' };
                 try { pl.setStyles({ default: st }); } catch (e) {}
@@ -280,7 +280,7 @@
                 try { pl.setStyles({ default: NORMAL }); } catch (e) {}
                 /* S30.5：规划视图的完成态绿描边返场（行中退出不带走进度视觉） */
                 if (prog && prog.daysDone && DAYS[i] && prog.daysDone[DAYS[i].id]) {
-                    try { pl.setStyles({ default: { color: '#0f766e', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } } }); } catch (e) {}
+                    try { pl.setStyles({ default: { color: '#0d9488', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } } }); } catch (e) {}
                 }
             });
         },
@@ -361,12 +361,12 @@
             : '<circle cx="13" cy="13" r="12" fill="#fff" stroke="#b45309" stroke-width="1.6" stroke-dasharray="3 2"/><path d="M13 5 L5 20 h16 z" fill="none" stroke="#b45309" stroke-width="1.6"/>');
     }
     function icTentDone() {
-        return svgURI('<circle cx="13" cy="13" r="12" fill="#0f766e" stroke="#fff" stroke-width="1.6"/><path d="M13 5 L5 20 h16 z" fill="#fff"/><path d="M13 12 L9.5 20 h7 z" fill="#0f766e"/><path d="M17.5 3.5 l1.6 1.6 2.6-2.8" stroke="#16a34a" stroke-width="2" fill="none" stroke-linecap="round"/>');
+        return svgURI('<circle cx="13" cy="13" r="12" fill="#0d9488" stroke="#fff" stroke-width="1.6"/><path d="M13 5 L5 20 h16 z" fill="#fff"/><path d="M13 12 L9.5 20 h7 z" fill="#0d9488"/><path d="M17.5 3.5 l1.6 1.6 2.6-2.8" stroke="#16a34a" stroke-width="2" fill="none" stroke-linecap="round"/>');
     }
     function icFlag(done) {
         return svgURI(done
             ? '<circle cx="13" cy="13" r="11" fill="#16a34a" stroke="#fff" stroke-width="1.6"/><path d="M10 20 V7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M10 7 h9 l-2.4 3.5 L19 14 h-9" fill="#fff"/><path d="M6.5 4.5 l1.4 1.4 2.4-2.6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>'
-            : '<circle cx="13" cy="13" r="11" fill="#fff" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="3 2"/><path d="M10 20 V7" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M10 7 h9 l-2.4 3.5 L19 14 h-9" fill="none" stroke="#94a3b8" stroke-width="1.6"/>');
+            : '<circle cx="13" cy="13" r="11" fill="#fff" stroke="#8b98a9" stroke-width="1.6" stroke-dasharray="3 2"/><path d="M10 20 V7" stroke="#8b98a9" stroke-width="2" stroke-linecap="round"/><path d="M10 7 h9 l-2.4 3.5 L19 14 h-9" fill="none" stroke="#8b98a9" stroke-width="1.6"/>');
     }
     function distKm(lat1, lng1, lat2, lng2) {
         if (lat2 == null) return 1e9;
@@ -416,35 +416,39 @@
             var spots = Enroute._segSpots(segIdx);
             var checkedN = spots.filter(function (it) { return Enroute.checked(it.si != null ? 's' + it.si : 'w' + it.wi); }).length;
             var next = disp[segIdx + 1];
-            html = '<div class="enr-t">✅ 今日完成 · D' + (segIdx + 1) + ' ' + dd.title + '</div>' +
+            html = '<div class="enr-t">✅ 本程完成 · 第' + (segIdx + 1) + '程 ' + dd.title + '</div>' +
                 '<div class="enr-sub">' + (dd.km || 0) + 'km · 打卡 ' + checkedN + '/' + spots.length + ' · 用时 ' + dur + '</div>' +
                 '<div class="enr-chks">' + spots.map(function (it) {
                     var key = it.si != null ? 's' + it.si : 'w' + it.wi;
                     var nm = it.s ? it.s.n : it.wp.n;
                     return '<span class="enr-chk' + (Enroute.checked(key) ? ' on' : '') + '">' + (Enroute.checked(key) ? '✓ ' : '⚑ ') + escapeHtml2e(nm) + '</span>';
                 }).join('') + '</div>' +
-                (next ? '<div class="enr-sub">明天 D' + (segIdx + 2) + ' · ' + next.title + ' · ' + (next.km || 0) + 'km</div>' : '<div class="enr-sub">全程完成 🎉</div>') +
+                (next ? '<div class="enr-sub">下一程 · ' + next.title + ' · ' + (next.km || 0) + 'km</div>' : '<div class="enr-sub">全程完成 🎉</div>') +
                 '<div class="enr-row"><button class="enr-mini" id="enrShare">分享今日成绩 ↗</button>' +
-                '<button class="enr-mini" id="enrSleep">睡觉，明天见</button></div>';
+                '<button class="enr-mini" id="enrSleep">晚安，下一程见</button></div>';
         } else if (st === 'arrive' && dd) {
             html = '<div class="enr-t">🎉 到达「' + escapeHtml2e(origOf(dd).stay || (dd.title.split('→').pop() || '').trim() || ('D' + (segIdx + 1))) + '」</div>' +
-                '<div class="enr-sub">今天任务完成——打卡后点亮节点：</div>' +
+                '<div class="enr-sub">本程任务完成——打卡后点亮节点：</div>' +
                 '<div class="enr-row">' +
                 '<button class="enr-mini ok" id="enrOk1">✓ 打卡（这站可用）</button>' +
                 '<button class="enr-mini" id="enrOk0">⚠ 需注意</button>' +
                 '<button class="enr-mini" id="enrOk_1">✕ 不可用</button></div>';
         } else {
+            /* S35 深色任务卡：lab + 30px 大数字 + dst + 进度（车内强光可读） */
             var remain = dd && dd.altKm ? Math.max(0, dd.altKm[1] - Enroute.curKm) : 0;
             var nodeNm = dd ? (origOf(dd).stay || (dd.title.split('→').pop() || '').trim()) : '';
-            html = '<div class="enr-t">🚗 距今晚休整点「' + escapeHtml2e(nodeNm) + '」还有 ' + Math.round(remain) + ' km</div>';
-            if (dd && dd.altKm) {
-                var walked = Math.max(0, Enroute.curKm - dd.altKm[0]);
-                html += '<div class="enr-sub">当前段 D' + (segIdx + 1) + ' · ' + dd.title + ' · 已走 ' + Math.round(walked) + '/' + Math.round(dd.altKm[1] - dd.altKm[0]) + ' km</div>';
-            }
-            /* 全程进度条 */
+            var walked = (dd && dd.altKm) ? Math.max(0, Enroute.curKm - dd.altKm[0]) : 0;
+            var segLen = (dd && dd.altKm) ? Math.max(1, dd.altKm[1] - dd.altKm[0]) : 1;
             var doneN = disp.filter(function (d) { return Enroute.dayDone(origOf(d).id); }).length;
-            html += '<div class="enr-bar"><i style="width:' + Math.round((segIdx + (dd && dd.altKm ? (Enroute.curKm - dd.altKm[0]) / Math.max(1, dd.altKm[1] - dd.altKm[0]) : 0)) / Math.max(1, disp.length) * 100) + '%"></i></div>' +
-                '<div class="enr-sub">全程 ' + doneN + '/' + disp.length + ' 天' + (st === 'side' && Enroute._nextSpot ? '' : ' · <button class="enr-mini" id="enrAnchor">📍 锚点</button> <button class="enr-mini" id="enrDev">' + (Enroute._devOff ? '开启偏离提醒' : '关闭偏离提醒') + '</button>') + '</div>';
+            html = '<div class="enr-lab">距今晚休整点' + (nodeNm ? ' · ' + escapeHtml2e(nodeNm) : '') + '</div>' +
+                '<div class="enr-big">' + Math.round(remain) + '<small> km</small></div>' +
+                (dd ? '<div class="enr-dst">第' + (segIdx + 1) + '程 ' + escapeHtml2e(dd.title) + ' · 已走 ' + Math.round(walked) + ' / ' + Math.round(segLen) + ' km</div>' : '') +
+                '<div class="enr-bar"><i style="width:' + Math.round((segIdx + walked / segLen) / Math.max(1, disp.length) * 100) + '%"></i></div>' +
+                '<div class="enr-tools">全程 ' + doneN + '/' + disp.length + ' 程' +
+                (st === 'side' && Enroute._nextSpot ? '' :
+                    ' <button class="enr-mini ghost" id="enrAnchor">📍 锚点</button>' +
+                    ' <button class="enr-mini ghost" id="enrDev">' + (Enroute._devOff ? '偏离提醒·开' : '偏离提醒·关') + '</button>' +
+                    ' <button class="enr-mini ghost" id="enrLayers">图层</button>') + '</div>';
             if (st === 'side' && Enroute._nextSpot) {
                 var it = Enroute._nextSpot.it;
                 html += '<div class="enr-side">⚑ 支线 · 前方 ' + Math.round(Enroute._nextSpot.ahead) + ' km 有打卡点：' +
@@ -465,6 +469,8 @@
                 try { etToast('已打卡' + (rv === 1 ? '（这站可用）' : rv === 0 ? '（需注意）' : '（不可用）')); } catch (e) {}
             };
         });
+        b = document.getElementById('enrLayers');
+        if (b) b.onclick = function () { try { document.body.classList.toggle('mob-layers'); } catch (e) {} };
         b = document.getElementById('enrSleep');
         if (b) b.onclick = function () { Enroute.exit(); };
         b = document.getElementById('enrShare');
@@ -491,26 +497,26 @@
             var ctx = cv.getContext('2d');
             ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
             var y = 0;
-            ctx.fillStyle = '#0f172a'; ctx.font = '600 30px "PingFang SC", system-ui, sans-serif';
+            ctx.fillStyle = '#0b1220'; ctx.font = '600 30px "PingFang SC", system-ui, sans-serif';
             ctx.fillText('去旷野，见山海', pad, y += 50);
             ctx.font = '600 38px "PingFang SC", system-ui, sans-serif';
             ctx.fillText((typeof BRAND !== 'undefined' && BRAND.stripEmoji ? BRAND.stripEmoji(ROUTE_META.name) : ROUTE_META.name) +
-                ' · 第 ' + (segIdx + 1) + ' 天完成 ✓', pad, y += 56);
-            ctx.fillStyle = '#64748b'; ctx.font = '25px "PingFang SC", system-ui, sans-serif';
+                ' · 第 ' + (segIdx + 1) + ' 程完成 ✓', pad, y += 56);
+            ctx.fillStyle = '#3d4a5c'; ctx.font = '25px "PingFang SC", system-ui, sans-serif';
             var dur = pd.durMin ? Math.floor(pd.durMin / 60) + 'h' + (pd.durMin % 60) + 'm' : '';
             ctx.fillText(dd.title + ' · ' + (dd.km || 0) + 'km' + (dur ? ' · 用时 ' + dur : ''), pad, y += 40);
             /* 当天链：出发 → 去过的打卡（✓）→ 到达节点。没去的不画（诚实靠「不写」） */
             y += 36;
-            ctx.fillStyle = '#0f766e';
+            ctx.fillStyle = '#0d9488';
             ctx.beginPath(); ctx.arc(pad + 7, y - 7, 7, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#0f172a'; ctx.font = '600 25px "PingFang SC", system-ui, sans-serif';
+            ctx.fillStyle = '#0b1220'; ctx.font = '600 25px "PingFang SC", system-ui, sans-serif';
             ctx.fillText((dd.title.split('→')[0] || '').trim() + ' 出发' + (pd.t ? ' ' + pd.t.slice(11, 16) : ''), pad + 26, y);
             var spots = Enroute._segSpots(segIdx);
             spots.forEach(function (it) {
                 var key = it.si != null ? 's' + it.si : 'w' + it.wi;
                 if (!Enroute.checked(key)) return;   // 只展示去过的
                 y += rowH;
-                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 3;
+                ctx.strokeStyle = '#edf0f4'; ctx.lineWidth = 3;
                 ctx.beginPath(); ctx.moveTo(pad + 7, y - rowH + 6); ctx.lineTo(pad + 7, y + 6); ctx.stroke();
                 ctx.fillStyle = '#16a34a'; ctx.font = '24px "PingFang SC", system-ui, sans-serif';
                 ctx.fillText('⚑ ' + (it.s ? it.s.n : it.wp.n) + ' ✓', pad + 26, y - 14);
@@ -522,10 +528,10 @@
             /* 全程进度条 */
             y += 40;
             var doneN = disp.filter(function (d) { return Enroute.dayDone(origOf(d).id); }).length;
-            ctx.fillStyle = '#e2e8f0'; ctx.fillRect(pad, y, W - pad * 2, 14);
-            ctx.fillStyle = '#0f766e'; ctx.fillRect(pad, y, (W - pad * 2) * Math.min(1, doneN / Math.max(1, disp.length)), 14);
-            ctx.fillStyle = '#64748b'; ctx.font = '23px "PingFang SC", system-ui, sans-serif';
-            ctx.fillText('全程 ' + doneN + '/' + disp.length + ' 天', pad, y + 40);
+            ctx.fillStyle = '#edf0f4'; ctx.fillRect(pad, y, W - pad * 2, 14);
+            ctx.fillStyle = '#0d9488'; ctx.fillRect(pad, y, (W - pad * 2) * Math.min(1, doneN / Math.max(1, disp.length)), 14);
+            ctx.fillStyle = '#3d4a5c'; ctx.font = '23px "PingFang SC", system-ui, sans-serif';
+            ctx.fillText('全程 ' + doneN + '/' + disp.length + ' 程', pad, y + 40);
             var peak = (typeof peakAlt === 'function') ? peakAlt() : { alt: '-' };
             ctx.fillText('xianlumap.ok.kimi.link · 最高 ' + peak.alt + 'm', pad, H - 34);
             var a = document.createElement('a');

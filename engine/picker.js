@@ -18,8 +18,8 @@
     if (typeof CORE !== 'undefined') return;                     // 数据已加载：不做事（双保险）
     if (typeof ROUTE_MANIFEST === 'undefined' || !ROUTE_MANIFEST || !ROUTE_MANIFEST.length) return;
 
-    var INK = '#0f172a', SUB = '#475569', MUTED = '#94a3b8', LINE = '#cbd5e1';
-    var BRAND_C = '#0f766e';   // 品牌绿（S24：避免与 engine/logo.js 全局 BRAND 撞名）
+    var INK = '#0b1220', SUB = '#3d4a5c', MUTED = '#8b98a9', LINE = '#cbd5e1';
+    var BRAND_C = '#0d9488';   // 品牌绿（S24：避免与 engine/logo.js 全局 BRAND 撞名）
     var stripEmoji = function (s) { return String(s == null ? '' : s).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\uFE0F?|\u{1F000}-\u{1F0FF}/gu, '').trim(); };
 
     /* 归一化采样点 → Catmull-Rom 平滑线稿（过点插值，纯视觉） */
@@ -62,7 +62,7 @@
         '#pickerCards{display:grid;gap:20px;width:100%;max-width:960px;' +
         'grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}' +
         '.pick-card{display:block;background:#fff;border-radius:12px;padding:18px 20px 20px;text-decoration:none;' +
-        'color:inherit;border:1px solid #e2e8f0;' +
+        'color:inherit;border:1px solid #edf0f4;' +
         'transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;}' +
         '.pick-card:hover{transform:translateY(-2px);border-color:' + BRAND_C + ';box-shadow:0 6px 16px rgba(15,23,42,.06);}' +
         '.pick-hero{display:block;width:100%;height:88px;margin-bottom:14px;}' +
@@ -105,7 +105,7 @@
             heroSVG(r.id) +
             '<div class="pick-name">' + stripEmoji(r.name) + '</div>' +
             '<div class="pick-region">' + r.region + '</div>' +
-            '<div class="pick-meta">' + r.totalKm + ' km<i>·</i>建议 ' + r.days + ' 天' + seasonHtml(r) + '</div>' +
+            '<div class="pick-meta">' + r.totalKm + ' km<i>·</i>建议 ' + r.days + ' 程' + seasonHtml(r) + '</div>' +
             '</a>';
     }).join('');
     var mark = (typeof BRAND !== 'undefined' && BRAND && BRAND.mark) ? BRAND.mark : '';
@@ -123,7 +123,7 @@
 /* S33 季节性样式（注入） */
 (function () {
     var css = document.createElement('style');
-    css.textContent = '.pick-season{color:#0f766e;font-style:normal}' +
-        '.pick-season.off{color:#94a3b8;background:#f1f5f9;border-radius:6px;padding:0 6px;font-style:normal}';
+    css.textContent = '.pick-season{color:#0d9488;font-style:normal}' +
+        '.pick-season.off{color:#8b98a9;background:#f1f5f9;border-radius:6px;padding:0 6px;font-style:normal}';
     (document.head || document.documentElement).appendChild(css);
 })();

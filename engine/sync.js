@@ -215,7 +215,7 @@ var Sync = (function () {
             '<div class="wp-row">' +
             '<button class="edit-mini" id="syncUp">⬆️ 上传到云端</button>' +
             '<button class="edit-mini" id="syncDown">⬇️ 从云端恢复</button></div>' +
-            '<div class="wp-note" id="syncLog" style="color:#0f766e;"></div>';
+            '<div class="wp-note" id="syncLog" style="color:#0d9488;"></div>';
         if (bar.appendChild) bar.appendChild(sec);
 
         function refreshBadge() {

@@ -5,13 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f766e">
+    <meta name="theme-color" content="#0d9488">
 <title>自驾线路图</title>
 <style>
     /* ============ 层级体系（关键！） ============
        腾讯地图 GL JS 会在 #map 内部插入 z-index:1000 的覆盖层容器。
        所有浮在页面上的 UI 必须 > 1000，否则会被地图吃掉鼠标事件
        （表现：看得见、点不动 —— 曾导致剖面面板无法展开）。 */
+    /* ============ S35 设计令牌（设计稿第五节，三端统一，一次定义） ============
+       字阶：18/600 从→到 · 20/700 里程数字 · 15 正文 · 13 辅助 · 11 宽字距元信息
+       圆角：卡片 16-20(--r-lg) 抽屉顶 26 控件药丸(--r-pill)；阴影一级 0 10 30 rgba(11,18,32,.07)
+       色彩：墨 #0b1220 / 灰 #3d4a5c / 浅灰 #8b98a9 / 品牌绿 #0d9488 / 休整琥珀 #b45309 */
     :root {
         --z-map-overlay: 1000;   /* 腾讯地图内部覆盖层（外部值，勿改） */
         --z-panel:       1100;   /* 侧栏 */
@@ -19,8 +23,21 @@
         --z-collapse:    1250;   /* 侧栏收起按钮（要在抽屉之上） */
         --z-tip:         1300;   /* 悬浮提示 */
         --z-guide:       1400;   /* 编辑引导弹层（在提示之上） */
+        --ink:   #0b1220;   /* 墨 */
+        --sub:   #3d4a5c;   /* 灰 */
+        --weak:  #8b98a9;   /* 浅灰 */
+        --line:  #edf0f4;   /* 细线/描边 */
+        --green:      #0d9488;   /* 品牌绿 */
+        --green-deep: #0b7a70;   /* 深绿（数字/强调） */
+        --amber:      #b45309;   /* 休整琥珀 */
+        --amber-bg:   #fdf3e3;
+        --shadow:    0 10px 30px rgba(11,18,32,.07);   /* 一级浮起（全站唯一阴影级） */
+        --shadow-lg: 0 16px 44px rgba(11,18,32,.12);   /* 仅行中深色卡/弹层 */
+        --r-lg:  20px;   /* 大卡圆角 */
+        --r-md:  16px;   /* 中卡圆角 */
+        --r-pill: 999px;  /* 药丸 */
     }
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f1f5f9; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f4f6f8; }
     /* 地图容器高度 = 视口 − 底部抽屉占用高度（--elev-occupy）。
        这样地图的"中心"永远是真正可见区域的中心，路线不会被抽屉压住。
        这是地图软件处理「面板遮挡」的标准做法：改容器，不是改内容。 */
@@ -43,44 +60,45 @@
         display: flex; flex-direction: column;
     }
     /* S26：字标并入标题行（peek 头部去重）——记号 18px + 线路名同行 */
-    #panel h1 .bm-mark { width: 18px; height: 18px; display: inline-flex; color: #0f766e; flex: none; }
+    #panel h1 .bm-mark { width: 18px; height: 18px; display: inline-flex; color: #0d9488; flex: none; }
     #panel h1 .bm-mark svg { width: 100%; height: 100%; }
     /* 侧栏与底部抽屉是独立浮层，互不挤占（抽屉浮在侧栏之上，这是地图软件惯例） */
-    #panel h1 { margin: 0 0 2px; font-size: 19px; letter-spacing: .5px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    #panel h1 { margin: 0 0 2px; font-size: 19px; letter-spacing: .5px; display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: nowrap; }
+    #panel h1 #routeName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* 侧栏自带收起按钮（面板自己折叠，不依赖外部悬浮按钮） */
     #panelFold {
-        flex: none; border: none; background: #f1f5f9; color: #64748b;
+        flex: none; border: none; background: #f1f5f9; color: #3d4a5c;
         width: 22px; height: 22px; border-radius: 7px; cursor: pointer;
         font-size: 15px; line-height: 1; padding: 0; font-family: inherit;
     }
-    #panelFold:hover { background: #e2e8f0; color: #0f766e; }
+    #panelFold:hover { background: #edf0f4; color: #0d9488; }
     /* 收起态：整体滑出左侧，只留一个把手 */
     #panel.collapsed { transform: translateX(calc(-100% - 20px)); opacity: 0; pointer-events: none; }
     #panel { transition: transform .24s cubic-bezier(.32,.72,0,1), opacity .2s; }
     /* 侧栏收起后的把手 */
     #panelHandle {
         display: none; position: fixed; top: 14px; left: 14px; z-index: var(--z-collapse);
-        background: #fff; color: #0f766e; border: 1px solid #e2e8f0; border-radius: 10px;
+        background: #fff; color: #0d9488; border: 1px solid #edf0f4; border-radius: 10px;
         padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
         box-shadow: 0 6px 20px rgba(15,23,42,.16); font-family: inherit;
     }
     #panelHandle:hover { background: #f1f5f9; }
     #panelHandle.show { display: block; }
-    .seg { display: flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 2px; flex: none; }
-    .seg button { border: none; background: none; padding: 4px 9px; border-radius: 7px; font-size: 12px; cursor: pointer; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .seg { display: flex; background: #f1f5f9; border-radius: var(--r-pill); padding: 3px; gap: 2px; flex: none; }
+    .seg button { border: none; background: none; padding: 4px 9px; border-radius: 7px; font-size: 12px; cursor: pointer; color: #3d4a5c; font-weight: 600; display: flex; align-items: center; gap: 4px; }
     .ic { display: inline-flex; width: 14px; height: 14px; }
     .ic svg { width: 100%; height: 100%; }
-    .seg button.on { background: #0f766e; color: #fff; }
-    #panel .sub { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+    .seg button.on { background: #0d9488; color: #fff; }
+    #panel .sub { font-size: 12px; color: #3d4a5c; margin-bottom: 10px; }
     .chips { display: flex; gap: 6px; margin-bottom: 12px; }
     .chip {
         /* min-width:0 是关键：flex 子项默认 min-width:auto，长数字（如"最高海拔 3794"）
            会把卡片顶宽 → 三块一起溢出面板、被右侧裁掉。必须允许收缩。 */
         flex: 1; min-width: 0; text-align: center; background: #f1f5f9; border-radius: 9px;
-        padding: 6px 4px; font-size: 11px; color: #475569; line-height: 1.35;
+        padding: 6px 4px; font-size: 11px; color: #3d4a5c; line-height: 1.35;
         overflow: hidden;
     }
-    .chip b { display: block; font-size: 14px; color: #0f172a; font-weight: 600; }   /* S24：数字退回正文 */
+    .chip b { display: block; font-size: 14px; color: #0b1220; font-weight: 600; }   /* S24：数字退回正文 */
     .day-list { list-style: none; margin: 0; padding: 0; }
     .day-list li {
         display: flex; align-items: flex-start; gap: 8px;
@@ -89,50 +107,58 @@
         font-size: 12.5px; transition: background .15s;
     }
     .day-list li:hover { background: #f1f5f9; }
-    .day-list li.active { background: #fff; border-left: 3px solid #0f766e; }   /* S24：绿竖线，无色块 */
+    .day-list li.active { background: #fff; border-left: 3px solid #0d9488; }   /* S24：绿竖线，无色块 */
     .day-list li.rest { cursor: default; opacity: .75; }
-    .day-list li.rest .day-title { color: #94a3b8; }
+    .day-list li.rest .day-title { color: #8b98a9; }
     .day-tag {
         flex: none; min-width: 38px; text-align: center; font-weight: 700; font-size: 11px;
-        color: #475569; background: #f1f5f9; border-radius: 6px; padding: 3px 6px;
+        color: #3d4a5c; background: #f1f5f9; border-radius: 6px; padding: 3px 6px;
     }
-    li.active .day-tag { background: #f0fdfa; color: #0f766e; font-weight: 700; }
+    li.active .day-tag { background: #f0fdfa; color: #0d9488; font-weight: 700; }
     /* S28 行程卡新层级：第一行 = 起点 → 终点（主角）；日期/里程是小字次行；chips 再次。
        标题全名不截断（允许换行）——用户必须先认出「这是哪一天」，其次才是细节。 */
     .day-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
     .day-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .day-title {
-        font-size: 14.5px; font-weight: 600; color: #0f172a; line-height: 1.35;
+        font-size: 14.5px; font-weight: 600; color: #0b1220; line-height: 1.35;
         white-space: normal; overflow: visible;   /* 全名不截断（S28：名称优先于排版） */
         cursor: text; border-bottom: 1px dashed transparent;
     }
     .day-list li:hover .day-title { border-bottom-color: #99f6e4; }   /* 就地可编辑的弱提示（S28：无编辑模式） */
     .day-note {
-        color: #94a3b8; font-size: 12px; letter-spacing: .04em;
+        color: #8b98a9; font-size: 12px; letter-spacing: .04em;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         cursor: text; border-bottom: 1px dashed transparent;
     }
-    .day-list li:hover .day-note { border-bottom-color: #e2e8f0; }
+    .day-list li:hover .day-note { border-bottom-color: #edf0f4; }
     .day-list .et-chips { margin: 2px 0 0; }
     /* S29 三类点分组行（休整/打卡/补给）：线性图标 + 类型名 + 成员（· 分隔，超 4 收「等N处」） */
-    .day-pts { display: flex; flex-direction: column; gap: 2px; margin-top: 3px; padding-top: 3px; border-top: 1px dashed #f1f5f9; }
-    .pt-row { display: flex; align-items: baseline; gap: 5px; font-size: 11.5px; color: #475569; line-height: 1.5; }
-    .pt-ic { flex: none; width: 13px; height: 13px; color: #0f766e; transform: translateY(1.5px); }
+    /* S35：三类点收成圆角药丸标签（tagrow） */
+    .day-pts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .pt-row { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--sub); background: #f2f5f7; border-radius: var(--r-pill); padding: 5px 11px; line-height: 1.4; }
+    .pt-ic { flex: none; width: 13px; height: 13px; color: var(--green); }
     .pt-ic svg { display: block; width: 13px; height: 13px; }
-    .pt-lb { flex: none; font-weight: 600; color: #334155; }
-    .pt-ms { flex: 1; min-width: 0; }
-    .pt-m { cursor: pointer; border-bottom: 1px dashed transparent; }
-    .pt-m:hover { color: #0f766e; border-bottom-color: #99f6e4; }
+    .pt-lb { flex: none; font-weight: 600; color: var(--ink); }
+    .pt-ms { flex: none; min-width: 0; }
+    .pt-m { cursor: pointer; }
+    .pt-m:hover { color: var(--green); }
     .pt-sep { color: #cbd5e1; margin: 0 2px; }
-    .pt-cap { color: #94a3b8; }
-    .pt-sum { color: #64748b; }
+    .pt-cap { color: #8b98a9; }
+    .pt-sum { color: #3d4a5c; }
     /* S29 加点类型选择（途经点 Pane + 长按弹窗同款分段） */
     .wp-kindseg { display: flex; align-items: center; gap: 6px; margin: 6px 0 2px; font-size: 11px; color: #92400e; }
-    .wp-kindseg button { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 3px 12px; font-size: 11.5px; color: #64748b; cursor: pointer; font-family: inherit; }
-    .wp-kindseg button.on { background: #f0fdfa; border-color: #0f766e; color: #0f766e; font-weight: 600; }
+    .wp-kindseg button { border: 1px solid #edf0f4; background: #fff; border-radius: 999px; padding: 3px 12px; font-size: 11.5px; color: #3d4a5c; cursor: pointer; font-family: inherit; }
+    .wp-kindseg button.on { background: #f0fdfa; border-color: #0d9488; color: #0d9488; font-weight: 600; }
     .wps-kind { display: flex; gap: 6px; margin-bottom: 8px; }
-    .wps-kind button { flex: 1; min-height: 38px; border: 1px solid #e2e8f0; background: #fff; border-radius: 9px; font-size: 13px; color: #64748b; cursor: pointer; font-family: inherit; }
-    .wps-kind button.on { background: #f0fdfa; border-color: #0f766e; color: #0f766e; font-weight: 600; }
+    .wps-kind button { flex: 1; min-height: 38px; border: 1px solid #edf0f4; background: #fff; border-radius: 9px; font-size: 13px; color: #3d4a5c; cursor: pointer; font-family: inherit; }
+    .wps-kind button.on { background: #f0fdfa; border-color: #0d9488; color: #0d9488; font-weight: 600; }
+    /* S35 休整点用途选择：标签 + 三预设药丸 + 自定义输入 */
+    .wps-kuse { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .wps-kuse-l { flex: none; font-size: 12px; color: var(--weak); }
+    .wps-kuse button { flex: none; min-height: 32px; padding: 0 12px; border: 1px solid var(--line); background: #fff; border-radius: var(--r-pill); font-size: 12.5px; color: var(--sub); cursor: pointer; font-family: inherit; }
+    .wps-kuse button.on { background: var(--green); border-color: var(--green); color: #fff; font-weight: 600; }
+    .wps-kuse input { flex: 1; min-width: 84px; min-height: 32px; font-size: 12.5px; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 12px; font-family: inherit; box-sizing: border-box; }
+    .cd-kuse { width: 100%; box-sizing: border-box; min-height: 42px; font-size: 14px; border: 1px solid var(--line); border-radius: 9px; padding: 0 10px; margin-bottom: 8px; font-family: inherit; background: #fff; color: var(--ink); }
     .et-wp-kind { flex: none; color: #b45309; font-size: 12px; }
     .day-stay {
         align-self: flex-start; font-size: 10.5px; color: #b45309;
@@ -140,29 +166,29 @@
         cursor: text;
     }
     .day-inline {   /* S28 就地编辑输入框（点就地把标题/备注/住宿变成输入框） */
-        flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: #0f172a;
-        border: 1px solid #0f766e; border-radius: 6px; padding: 2px 6px;
+        flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: #0b1220;
+        border: 1px solid #0d9488; border-radius: 6px; padding: 2px 6px;
         font-family: inherit; outline: none; background: #f0fdfa;
     }
-    .day-km { flex: none; color: #94a3b8; font-size: 12px; letter-spacing: .04em; }
+    .day-km { flex: none; color: #8b98a9; font-size: 12px; letter-spacing: .04em; }
     /* S28：面板双 Tab（行程 / 途经点）+ 常驻出发日期 + ⋯ 更多设置 */
     .pt-tabs { display: flex; align-items: center; gap: 4px; margin: 6px 0 8px; background: #f1f5f9; border-radius: 9px; padding: 3px; }
-    .pt-tab { flex: 1; border: none; background: none; min-height: 36px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; font-family: inherit; position: relative; }
-    .pt-tab.on { background: #fff; color: #0f766e; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+    .pt-tab { flex: 1; border: none; background: none; min-height: 36px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #3d4a5c; cursor: pointer; font-family: inherit; position: relative; }
+    .pt-tab.on { background: #fff; color: #0d9488; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
     #wpTabBadge { display: none; font-size: 10px; font-weight: 700; color: #c2410c; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; padding: 0 5px; margin-left: 4px; vertical-align: 1px; }
-    .pt-more { width: 36px; min-height: 36px; border: none; background: none; border-radius: 7px; font-size: 16px; color: #64748b; cursor: pointer; font-family: inherit; }
+    .pt-more { width: 36px; min-height: 36px; border: none; background: none; border-radius: 7px; font-size: 16px; color: #3d4a5c; cursor: pointer; font-family: inherit; }
     .pt-dep { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; color: #92400e; }
-    .pt-dep input[type=date] { flex: 1; min-width: 0; min-height: 34px; font-size: 12.5px; border: 1px solid #e2e8f0; border-radius: 7px; padding: 0 8px; font-family: inherit; background: #fff; color: #334155; }
+    .pt-dep input[type=date] { flex: 1; min-width: 0; min-height: 34px; font-size: 12.5px; border: 1px solid #edf0f4; border-radius: 7px; padding: 0 8px; font-family: inherit; background: #fff; color: #334155; }
     .pt-dep .edit-mini { min-height: 34px; }
     /* S32：统一行程视图（无 Tab 显隐切换）；途经点区收进列表顶部 */
     .wp-sec-box { border: 1px dashed #fcd34d; background: #fffbeb; border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; }
-    .pt-title { flex: 1; font-size: 13.5px; font-weight: 600; color: #0f172a; padding-left: 8px; }
-    .pt-save { border: none; background: #0f766e; color: #fff; border-radius: 8px; min-height: 32px; padding: 0 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-right: 2px; box-shadow: 0 2px 8px rgba(15,118,110,.3); }
-    .pt-save:hover { background: #115e59; }
+    .pt-title { flex: 1; font-size: 13.5px; font-weight: 600; color: #0b1220; padding-left: 8px; }
+    .pt-save { border: none; background: #0d9488; color: #fff; border-radius: 8px; min-height: 32px; padding: 0 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-right: 2px; box-shadow: 0 2px 8px rgba(15,118,110,.3); }
+    .pt-save:hover { background: #0b7a70; }
     .et-chip[draggable] { cursor: grab; }
-    .et-chip.add { color: #0f766e; background: #f0fdfa; border-color: #99f6e4; cursor: pointer; }
+    .et-chip.add { color: #0d9488; background: #f0fdfa; border-color: #99f6e4; cursor: pointer; }
     /* S32 点成员长按菜单 */
-    .pt-menu { position: fixed; z-index: var(--z-guide,1400); background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.18); padding: 4px; display: flex; flex-direction: column; min-width: 132px; }
+    .pt-menu { position: fixed; z-index: var(--z-guide,1400); background: #fff; border: 1px solid #edf0f4; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.18); padding: 4px; display: flex; flex-direction: column; min-width: 132px; }
     .pt-menu button { border: none; background: none; text-align: left; min-height: 40px; padding: 0 12px; font-size: 13px; color: #1f2937; border-radius: 7px; cursor: pointer; font-family: inherit; }
     .pt-menu button:hover { background: #f0fdfa; }
     .pt-menu button.cur, .pt-menu button:disabled { color: #cbd5e1; cursor: default; background: none; }
@@ -171,152 +197,174 @@
     body.more-open #moreBk { display: block; }
     #moreSheet { position: fixed; right: 12px; top: 12px; bottom: 12px; width: min(360px, calc(100vw - 24px)); z-index: var(--z-guide,1400); background: #fff; border-radius: 14px; box-shadow: 0 16px 48px rgba(15,23,42,.25); padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; display: none; font-family: inherit; }
     body.more-open #moreSheet { display: block; }
-    #moreSheet .ms-head { display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; color: #0f172a; margin-bottom: 6px; }
+    #moreSheet .ms-head { display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; color: #0b1220; margin-bottom: 6px; }
     #moreSheet .ms-sec { font-size: 12.5px; font-weight: 600; color: #92400e; margin: 12px 0 4px; }
     #moreSheet .ms-row { display: flex; gap: 6px; flex-wrap: wrap; }
     #moreSheet .ms-row .edit-mini { flex: 1; margin-right: 0; }
-    #moreSheet .ms-help { font-size: 11.5px; color: #64748b; line-height: 1.7; }
+    #moreSheet .ms-help { font-size: 11.5px; color: #3d4a5c; line-height: 1.7; }
     #moreSheet .et-mark { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 2px 0; color: #334155; }
     #moreSheet .et-mark .mn { flex: 1; padding: 6px 0; }
-    #moreSheet .et-mark button { min-height: 34px; padding: 0 10px; border: 1px solid #e2e8f0; background: #fff; border-radius: 7px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    #moreSheet .et-mark button { min-height: 34px; padding: 0 10px; border: 1px solid #edf0f4; background: #fff; border-radius: 7px; font-size: 12px; cursor: pointer; font-family: inherit; }
     /* sparkline 是最低信息密度的一块：面板宽度不足时先把它收窄，
        而不是让标题先被截断（标题被截断用户根本不知道点的是哪一天）。 */
-    /* ============ S33 链式行程 + 配套 ============ */
-    .day-list li.ch-item { flex-direction: column; align-items: stretch; gap: 0; position: relative; padding-left: 20px; }
-    .day-list li.ch-item::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: #e2e8f0; }   /* 链竖线 */
-    .ch-card { display: flex; flex-direction: column; gap: 2px; }
-    /* 中缝「＋」= 多住一晚 */
-    .ch-seam-add { align-self: flex-start; margin: 2px 0 2px 6px; width: 22px; height: 22px; border-radius: 50%; border: 1px dashed #99f6e4; background: #f0fdfa; color: #0f766e; font-size: 14px; line-height: 1; cursor: pointer; font-family: inherit; }
-    .ch-seam-add:hover { background: #0f766e; color: #fff; }
-    /* 节点：⛺ 琥珀色块 */
-    .ch-node { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; padding: 6px 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 9px; }
-    .ch-node-ic { flex: none; width: 18px; height: 18px; color: #b45309; }
-    .ch-node-ic svg { display: block; width: 18px; height: 18px; }
-    .ch-node-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #0f766e; margin: 0 4px; }
-    .ch-node-tx { display: flex; flex-direction: column; min-width: 0; }
-    .ch-node-tx b { font-size: 12.5px; color: #92400e; }
-    .ch-node-tx span { font-size: 10.5px; color: #b45309; }
-    .ch-node.ch-start, .ch-node.ch-end { background: #f0fdfa; border-color: #99f6e4; }
-    /* S30.5 完成态返场：天卡绿边 + ✓；完成节点绿；全完成横幅 */
-    .day-list li.ch-item.done { border-left-color: #16a34a; background: #fbfefc; }
-    .day-list li.ch-item.done .day-tag { background: #f0fdf4; color: #15803d; }
-    .ch-node.done { background: #f0fdf4; border-color: #86efac; }
-    .ch-node.done .ch-node-ic { color: #16a34a; }
-    .ch-node.done .ch-node-tx b { color: #15803d; }
+    /* ============ S35 脊柱版式 + 程卡（设计稿第二/七节） ============
+       一条渐变竖脊柱贯穿：起点绿圆「始」→ 程卡（卡即链节）→ ⛺休整节点 → 程卡… */
+    .day-list li.ch-item { flex-direction: column; align-items: stretch; gap: 0; position: relative; padding-left: 26px; }
+    .day-list li.ch-item::before { content: ''; position: absolute; left: 11px; top: 10px; bottom: 10px; width: 2.5px; border-radius: 2px; background: linear-gradient(var(--green), #bfe3dd); }   /* 渐变脊柱 */
+    /* 程卡 = 链节：白卡一级阴影，r1 从→到 + 20px 绿粗体里程，meta 行，药丸标签行 */
+    .ch-card { display: flex; flex-direction: column; background: var(--card, #fff); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 12px 14px; margin: 8px 0; }
+    .ch-r1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .ch-fromto { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: .01em; }
+    .ch-km { flex: none; font-size: 20px; font-weight: 700; color: var(--green-deep); line-height: 1; }
+    .ch-km small { font-size: 10px; color: var(--weak); font-weight: 400; margin-left: 2px; }
+    .ch-meta { font-size: 12px; color: var(--weak); margin-top: 4px; line-height: 1.55; }
+    .ch-card.rest { opacity: .8; }
+    .ch-card.rest .ch-fromto { color: var(--weak); }
+    /* 中缝「＋」= 多住一晚（拆程）：绿虚线小圆 */
+    .ch-seam-add { align-self: flex-start; margin: 2px 0 2px 3px; width: 24px; height: 24px; border-radius: 50%; border: 1.5px dashed #99f6e4; background: #f0fdfa; color: var(--green); font-size: 14px; line-height: 1; cursor: pointer; font-family: inherit; }
+    .ch-seam-add:hover { background: var(--green); color: #fff; }
+    /* 节点：⛺ 琥珀方块（住宿用途带「住宿」小徽标）；起点 = 绿圆「始」，终点 = 绿框圆 */
+    .ch-node { position: relative; display: flex; align-items: center; gap: 9px; margin: 2px 0 8px; padding: 4px 2px; background: none; border: none; }
+    .ch-node-ic { flex: none; width: 28px; height: 28px; border-radius: 9px; background: var(--amber-bg); border: 1.5px solid #f0d9ac; color: var(--amber); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .ch-node-ic svg { display: block; width: 15px; height: 15px; }
+    .ch-node-dot { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin: 3px; }
+    .ch-node-tx { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex-wrap: wrap; }
+    .ch-node-tx b { font-size: 14px; font-weight: 600; color: var(--ink); }
+    .ch-node-tx span { font-size: 10.5px; color: var(--weak); }
+    .ch-kuse { font-size: 10px; font-weight: 600; color: var(--green-deep); border: 1px solid #bfe3dd; border-radius: 5px; padding: 1px 5px; }
+    /* S30.5 完成态返场：程卡绿边 + 完成节点绿；全完成横幅 */
+    .day-list li.ch-item.done .ch-card { border-left: 3px solid #16a34a; }
+    .day-list li.ch-item.done .ch-fromto { color: #15803d; }
+    .ch-node.done .ch-node-ic { background: #f0fdf4; border-color: #86efac; color: #16a34a; }
     .all-done { margin: 0 0 8px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 13px; font-weight: 600; color: #15803d; }
-    .ch-node.ch-start .ch-node-tx b, .ch-node.ch-end .ch-node-tx b { color: #0f766e; }
-    .ch-node.ch-start .ch-node-tx span, .ch-node.ch-end .ch-node-tx span { color: #0f766e; }
+    .ch-node.ch-end .ch-node-dot { background: none; border: 2px solid var(--green); color: var(--green); }
+    /* 桌面侧栏缩窄适配（S35：同版式，字号/里程收敛） */
+    @media (min-width: 769px) {
+        .ch-fromto { font-size: 13.5px; }
+        .ch-km { font-size: 16px; }
+        .ch-card { padding: 10px 12px; }
+        .day-pts { gap: 4px; margin-top: 8px; }
+        .pt-row { font-size: 10.5px; padding: 4px 9px; }
+    }
     /* 链对话框 */
-    .chain-dlg { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: var(--z-guide,1400); width: min(420px, calc(100vw - 40px)); background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 16px 48px rgba(15,23,42,.22); padding: 16px 18px; font-family: inherit; }
-    .chain-dlg .cd-t { font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
-    .chain-dlg .cd-sub { font-size: 11.5px; color: #64748b; line-height: 1.6; margin-bottom: 8px; }
-    .chain-dlg input[type=text], .chain-dlg input[type=number] { width: 100%; box-sizing: border-box; min-height: 42px; font-size: 14px; border: 1px solid #e2e8f0; border-radius: 9px; padding: 0 10px; margin-bottom: 8px; font-family: inherit; }
+    .chain-dlg { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: var(--z-guide,1400); width: min(420px, calc(100vw - 40px)); background: #fff; border: 1px solid #edf0f4; border-radius: 14px; box-shadow: 0 16px 48px rgba(15,23,42,.22); padding: 16px 18px; font-family: inherit; }
+    .chain-dlg .cd-t { font-size: 15px; font-weight: 600; color: #0b1220; margin-bottom: 4px; }
+    .chain-dlg .cd-sub { font-size: 11.5px; color: #3d4a5c; line-height: 1.6; margin-bottom: 8px; }
+    .chain-dlg input[type=text], .chain-dlg input[type=number] { width: 100%; box-sizing: border-box; min-height: 42px; font-size: 14px; border: 1px solid #edf0f4; border-radius: 9px; padding: 0 10px; margin-bottom: 8px; font-family: inherit; }
     .chain-dlg .cd-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .chain-dlg .cd-row .edit-mini { flex: 1; min-height: 42px; margin-right: 0; }
     .chain-dlg .cd-prev { max-height: 200px; overflow-y: auto; margin-bottom: 8px; }
     .chain-dlg .cd-prevrow { font-size: 12px; color: #334155; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; }
+    .eg-picklist { max-height: 300px; overflow-y: auto; margin-bottom: 8px; }
+    .eg-picklist button { display: block; width: 100%; text-align: left; border: none; background: none; min-height: 44px; padding: 0 10px; font-size: 13.5px; color: var(--ink); border-radius: 9px; cursor: pointer; font-family: inherit; }
+    .eg-picklist button:active { background: #f0faf7; }
+    .eg-picklist button.cur, .eg-picklist button:disabled { color: var(--weak); cursor: default; }
+    #etToast { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%) translateY(16px); z-index: var(--z-guide,1400); background: var(--ink); color: #fff; font-size: 13px; padding: 10px 18px; border-radius: var(--r-pill); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: calc(100vw - 48px); text-align: center; }
+    #etToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     /* 落针动画 */
     @keyframes pinDropKf { 0% { transform: translateY(-46px); opacity: 0; } 60% { transform: translateY(4px); opacity: 1; } 80% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
     .pin-drop { width: 26px; height: 34px; animation: pinDropKf .55s ease-out; }
-    .pin-drop-ic { width: 26px; height: 26px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); background: #0f766e; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(15,23,42,.35); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
+    .pin-drop-ic { width: 26px; height: 26px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); background: #0d9488; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(15,23,42,.35); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
     .pin-drop-ic { transform: rotate(-45deg); }
     .pin-drop-ic { } .pin-drop.rest .pin-drop-ic { background: #b45309; }
     .pin-drop-ic { line-height: 26px; text-align: center; }
     /* wpSec 瘦身（可折叠管理区） */
-    .wp-sec-box.slim { background: #fff; border-color: #e2e8f0; padding: 4px 8px; }
+    .wp-sec-box.slim { background: #fff; border-color: #edf0f4; padding: 4px 8px; }
     .wp-sec-t { display: flex; align-items: center; gap: 6px; width: 100%; border: none; background: none; min-height: 36px; font-size: 12.5px; font-weight: 600; color: #92400e; cursor: pointer; font-family: inherit; padding: 0 2px; }
-    .wp-sec-ar { color: #94a3b8; margin-left: auto; }
+    .wp-sec-ar { color: #8b98a9; margin-left: auto; }
     .wp-sec-body { padding-top: 6px; }
     /* 逆行切换 + pt-bar 新钮 */
     .dir-seg { display: none; margin-left: 4px; }
-    .dir-seg button { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 2px 9px; font-size: 11px; color: #64748b; cursor: pointer; font-family: inherit; }
-    .dir-seg button.on { background: #f0fdfa; border-color: #0f766e; color: #0f766e; font-weight: 600; }
-    .pt-add, .pt-share { border: none; background: #f1f5f9; color: #475569; border-radius: 8px; min-height: 32px; padding: 0 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-right: 2px; }
-    .pt-add:hover, .pt-share:hover { background: #e2e8f0; }
+    .dir-seg button { border: 1px solid #edf0f4; background: #fff; border-radius: 999px; padding: 2px 9px; font-size: 11px; color: #3d4a5c; cursor: pointer; font-family: inherit; }
+    .dir-seg button.on { background: #f0fdfa; border-color: #0d9488; color: #0d9488; font-weight: 600; }
+    .pt-add, .pt-share { border: none; background: #f1f5f9; color: #3d4a5c; border-radius: 8px; min-height: 32px; padding: 0 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-right: 2px; }
+    .pt-add:hover, .pt-share:hover { background: #edf0f4; }
     .chip-days { cursor: pointer; }
     /* ============ S30 行中模式 ============
        进入后地图全屏 + 底部进度卡；退出零残留（body.enroute 移除即复原） */
     body.enroute #panel, body.enroute #elev, body.enroute #panelHandle, body.enroute .mobBar { display: none !important; }
     body.enroute #map { height: 100vh !important; }
-    .enr-toggle { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 2px 10px; font-size: 11.5px; color: #64748b; cursor: pointer; font-family: inherit; margin-left: 4px; }
-    .enr-toggle.on { background: #0f766e; border-color: #0f766e; color: #fff; font-weight: 600; }
+    .enr-toggle { border: 1px solid #edf0f4; background: #fff; border-radius: 999px; padding: 2px 10px; font-size: 11.5px; color: #3d4a5c; cursor: pointer; font-family: inherit; margin-left: 4px; }
+    .enr-toggle.on { background: #0d9488; border-color: #0d9488; color: #fff; font-weight: 600; }
     /* S34：mobCtl（抽屉头部控制行）全局隐藏——只在窄屏媒体块内放行；桌面零影响 */
     #mobCtl { display: none; }
-    .enr-card { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 12px 36px rgba(15,23,42,.22); padding: 12px 16px; font-family: inherit; z-index: var(--z-guide,1400); }
-    .enr-t { font-size: 15px; font-weight: 600; color: #0f172a; }
-    .enr-sub { font-size: 12px; color: #64748b; margin-top: 3px; line-height: 1.6; }
-    .enr-row { display: flex; gap: 6px; margin-top: 8px; }
-    .enr-mini { flex: 1; border: none; background: #f1f5f9; color: #334155; border-radius: 9px; min-height: 40px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-    .enr-mini.ok { background: #0f766e; color: #fff; }
-    .enr-mini:hover { background: #e2e8f0; }
-    .enr-mini.ok:hover { background: #115e59; }
-    .enr-bar { height: 8px; background: #f1f5f9; border-radius: 999px; margin-top: 8px; overflow: hidden; }
-    .enr-bar i { display: block; height: 100%; background: linear-gradient(90deg, #14b8a6, #0f766e); border-radius: 999px; transition: width .3s; }
-    .enr-side { margin-top: 8px; padding: 8px 10px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 9px; font-size: 12.5px; color: #6d28d9; }
-    .enr-chks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-    .enr-chk { font-size: 11.5px; color: #94a3b8; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 999px; padding: 2px 9px; }
-    .enr-chk.on { color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; }
+    /* S35 行中深色任务卡（#0f172a→#1e293b 渐变；车内强光下最亮的那块屏） */
+    .enr-card { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(160deg, #0f172a, #1e293b); color: #fff; border: none; border-radius: var(--r-lg); box-shadow: var(--shadow-lg); padding: 16px 18px calc(14px + env(safe-area-inset-bottom)); font-family: inherit; z-index: var(--z-guide,1400); }
+    .enr-t { font-size: 15px; font-weight: 600; color: #fff; }
+    .enr-lab { font-size: 11px; color: #7dd3c8; letter-spacing: .14em; }
+    .enr-big { font-size: 30px; font-weight: 700; margin-top: 6px; line-height: 1.1; }
+    .enr-big small { font-size: 14px; font-weight: 500; color: #94a3b8; }
+    .enr-dst { font-size: 13px; color: #e2e8f0; margin-top: 4px; }
+    .enr-sub { font-size: 12px; color: #94a3b8; margin-top: 5px; line-height: 1.6; }
+    .enr-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11.5px; color: #7dd3c8; margin-top: 10px; }
+    .enr-row { display: flex; gap: 8px; margin-top: 10px; }
+    .enr-mini { flex: 1; border: none; background: #334155; color: #e2e8f0; border-radius: var(--r-pill); min-height: 44px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .enr-mini.ok { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #fff; }
+    .enr-mini.ghost { flex: none; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); min-height: 32px; padding: 0 12px; font-size: 11.5px; }
+    .enr-bar { height: 7px; background: #334155; border-radius: 4px; margin-top: 12px; overflow: hidden; }
+    .enr-bar i { display: block; height: 100%; background: linear-gradient(90deg, #14b8a6, #2dd4bf); border-radius: 4px; transition: width .3s; }
+    .enr-side { margin-top: 10px; padding: 8px 12px; background: rgba(124,58,237,.18); border: 1px solid rgba(167,139,250,.35); border-radius: 12px; font-size: 12.5px; color: #c4b5fd; }
+    .enr-chks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .enr-chk { font-size: 11.5px; color: #94a3b8; background: rgba(255,255,255,.06); border: 1px dashed rgba(255,255,255,.16); border-radius: var(--r-pill); padding: 3px 10px; }
+    .enr-chk.on { color: #5eead4; background: rgba(20,184,166,.14); border: 1px solid rgba(45,212,191,.4); }
     /* S32：sparkline 已移除（产品拍板），从→到占满行宽 */
     @media (max-width: 860px) {
         .day-list li { gap: 6px; padding: 6px 6px; }
         .day-tag { width: 32px; }
     }
-    .legend { border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; }
+    .legend { border-top: 1px solid #edf0f4; margin-top: 10px; padding-top: 10px; }
     .legend > summary { display: none; }              /* 桌面：summary 隐藏，图例行常显（details 保持 open） */
-    .legend .row { display: flex; align-items: center; justify-content: space-between; padding: 3px 2px; font-size: 12px; color: #475569; }
-    .legend > summary { cursor: pointer; font-size: 12px; color: #475569; padding: 4px 2px; font-weight: 600; list-style: none; }
-    .legend > summary::before { content: '▸ '; color: #94a3b8; }
+    .legend .row { display: flex; align-items: center; justify-content: space-between; padding: 3px 2px; font-size: 12px; color: #3d4a5c; }
+    .legend > summary { cursor: pointer; font-size: 12px; color: #3d4a5c; padding: 4px 2px; font-weight: 600; list-style: none; }
+    .legend > summary::before { content: '▸ '; color: #8b98a9; }
     .legend[open] > summary::before { content: '▾ '; }
     .legend .row .name { display: flex; align-items: center; gap: 7px; }
     /* S0 分级提示：远景时加油站被自动隐藏，得让用户知道"不是我关的，是放大了才出现"，
        否则会以为图层开关坏了。 */
-    .tierHint { font-size: 10px; color: #94a3b8; font-weight: 400; }
+    .tierHint { font-size: 10px; color: #8b98a9; font-weight: 400; }
     .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
     .dot.city { background: #1e3a5f; }
     .dot.spot { background: #7c3aed; }
     .dot.fuel { background: #dc2626; }
     .dot.ev { background: #16a34a; }
     .dot.cls { background: #c026d3; }
-    .dot.line { background: #0f766e; height: 4px; border-radius: 2px; }
-    .switch { position: relative; width: 32px; height: 18px; flex: none; }
+    .dot.line { background: #0d9488; height: 4px; border-radius: 2px; }
+    .switch { position: relative; width: 46px; height: 28px; flex: none; }
     .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 2; }
     .switch .track { position: absolute; inset: 0; background: #cbd5e1; border-radius: 9px; transition: background .15s; }
     .switch .knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
-    .switch input:checked ~ .track { background: #0f766e; }
+    .switch input:checked ~ .track { background: #0d9488; }
     .switch input:checked ~ .knob { left: 16px; }
     .btn-fit {
         display: block; width: 100%; margin-top: 10px; padding: 8px 0;
-        border: none; border-radius: 9px; background: #0f766e; color: #fff;
+        border: none; border-radius: 9px; background: #0d9488; color: #fff;
         font-size: 13px; font-weight: 600; cursor: pointer;
     }
-    .btn-fit:hover { background: #0f766e; }
-    .evcard { border-top: 1px solid #e2e8f0; margin-top: 10px; padding-top: 10px; }
+    .btn-fit:hover { background: #0d9488; }
+    .evcard { border-top: 1px solid #edf0f4; margin-top: 10px; padding-top: 10px; }
     /* S31 图层弹层三类分组：补给子开关缩进 / 组标题 / 更多折叠 / 续航设置折叠 */
     .legend .row-group { padding: 3px 0 0; }
     .legend .row-group .name { font-weight: 600; color: #334155; }
     .legend .row-sub { padding-left: 30px; padding-top: 2px; padding-bottom: 2px; }
-    .legend .row-sub .name.sub { color: #64748b; font-size: 11.5px; }
-    .legend .row-fixed { color: #94a3b8; }
+    .legend .row-sub .name.sub { color: #3d4a5c; font-size: 11.5px; }
+    .legend .row-fixed { color: #8b98a9; }
     .legend .lg-note { font-size: 10px; color: #cbd5e1; margin-left: 4px; }
     .dot.rest { background: #b45309; }
     .lg-more { text-align: center; padding: 2px 0 0; }
-    .lg-more-btn { border: none; background: none; color: #94a3b8; font-size: 11px; cursor: pointer; padding: 6px 12px; font-family: inherit; }
-    .lg-more-btn:hover { color: #0f766e; }
-    .evset-t { display: block; width: 100%; border: none; background: #f1f5f9; border-radius: 8px; min-height: 38px; font-size: 12.5px; font-weight: 600; color: #475569; cursor: pointer; font-family: inherit; }
-    .evset-t:hover { background: #e2e8f0; }
-    #evsetBody { padding-top: 8px; }
+    .lg-more-btn { border: none; background: none; color: #8b98a9; font-size: 11px; cursor: pointer; padding: 6px 12px; font-family: inherit; }
+    .lg-more-btn:hover { color: #0d9488; }
     /* S31 续航提示隐藏（显示层隐藏，计算保留）：peek 摘要行 + 桌面 planBox */
     #planPeek { display: none !important; }
     #planBox { display: none; }
-    .evrow { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #475569; margin-bottom: 6px; }
-    .evrow input[type="range"] { accent-color: #0f766e; }
-    .evplan { margin-top: 4px; max-height: 170px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; padding: 7px 9px; }
-    .psum { font-size: 11.5px; color: #0f766e; font-weight: 600; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0; margin-bottom: 3px; }
-    .prow { font-size: 11.5px; padding: 3px 0; border-bottom: 1px dashed #e2e8f0; line-height: 1.5; color: #334155; }
+    .evrow { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #3d4a5c; margin-bottom: 6px; }
+    .evrow input[type="range"] { accent-color: #0d9488; }
+    .evplan { margin-top: 4px; max-height: 170px; overflow-y: auto; background: #f8fafc; border: 1px solid #edf0f4; border-radius: 9px; padding: 7px 9px; }
+    .psum { font-size: 11.5px; color: #0d9488; font-weight: 600; padding-bottom: 4px; border-bottom: 1px solid #edf0f4; margin-bottom: 3px; }
+    .prow { font-size: 11.5px; padding: 3px 0; border-bottom: 1px dashed #edf0f4; line-height: 1.5; color: #334155; }
     .prow b { color: #ea580c; margin-right: 5px; }
     .prow span { color: #16a34a; float: right; }
     .warn { color: #b91c1c; font-size: 11.5px; padding: 3px 0; }
-    .tip { font-size: 11px; color: #94a3b8; margin-top: 8px; line-height: 1.5; }
+    .tip { font-size: 11px; color: #8b98a9; margin-top: 8px; line-height: 1.5; }
     @media (max-width: 720px) {
         /* 面板形态由下方 768 抽屉系统接管（bottom sheet）；此处只留字号/间距档位 */
         /* chip 三块在 390px 宽下必须能挤下：字号降一档 + 内边距收紧。
@@ -343,18 +391,18 @@
     #panel::-webkit-scrollbar { width: 8px; }
     #panel::-webkit-scrollbar-track { background: transparent; }
     #panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    #panel::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    #panel::-webkit-scrollbar-thumb:hover { background: #8b98a9; }
     /* 信息窗内容 */
     .iw { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; min-width: 180px; }
-    .iw h3 { margin: 0 0 4px; font-size: 14.5px; color: #0f172a; }
+    .iw h3 { margin: 0 0 4px; font-size: 14.5px; color: #0b1220; }
     .iw .tag { display: inline-block; font-size: 10.5px; padding: 1px 7px; border-radius: 8px; margin-bottom: 5px; margin-right: 4px; }
     .iw .tag.f { background: #fee2e2; color: #b91c1c; }
     .iw .tag.e { background: #dcfce7; color: #15803d; }
     .iw .tag.c { background: #e0f2fe; color: #0369a1; }
     .iw .tag.s { background: #ede9fe; color: #6d28d9; }
-    .iw p { margin: 3px 0 0; font-size: 12px; color: #475569; line-height: 1.55; }
+    .iw p { margin: 3px 0 0; font-size: 12px; color: #3d4a5c; line-height: 1.55; }
     /* S27 一键导航：信息窗与规划行共用的小链接（品牌绿，行间不抢布局） */
-    .iw .nav-go, .prow .nav-go { display: inline-block; font-size: 11.5px; font-weight: 600; color: #0f766e; text-decoration: none; }
+    .iw .nav-go, .prow .nav-go { display: inline-block; font-size: 11.5px; font-weight: 600; color: #0d9488; text-decoration: none; }
     .iw .nav-go { margin-top: 2px; padding: 2px 10px; border: 1px solid #99f6e4; border-radius: 999px; background: #f0fdfa; }
     .iw .nav-go::after { content: " ↗"; font-size: 10px; }
     .prow .nav-go { margin-left: 4px; }
@@ -389,23 +437,23 @@
         content: ''; width: 42px; height: 4px; border-radius: 2px; background: #cbd5e1;
         transition: background .15s, width .15s;
     }
-    #elevGrip:hover::before { background: #94a3b8; width: 56px; }
+    #elevGrip:hover::before { background: #8b98a9; width: 56px; }
     #elev.dragging #elevGrip { cursor: grabbing; }
 
     #elev .head {
         flex: none; display: flex; align-items: center; gap: 8px;
-        padding: 4px 0 6px; user-select: none; border-bottom: 1px solid #e2e8f0;
+        padding: 4px 0 6px; user-select: none; border-bottom: 1px solid #edf0f4;
     }
     #elev .head b { font-size: 14px; white-space: nowrap; cursor: pointer; }
-    #elev .head .fold { font-size: 12px; color: #94a3b8; }
+    #elev .head .fold { font-size: 12px; color: #8b98a9; }
     #elev .head .spacer { flex: 1; }
     #elev .foldbtn {
-        border: none; background: #f1f5f9; color: #475569; border-radius: 8px;
+        border: none; background: #f1f5f9; color: #3d4a5c; border-radius: 8px;
         padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer;
         font-family: inherit; line-height: 1.5;
     }
-    #elev .foldbtn:hover { background: #e2e8f0; }
-    #elev .closebtn { border: none; background: #f1f5f9; color: #475569; border-radius: 8px; padding: 3px 9px; font-size: 14px; cursor: pointer; }
+    #elev .foldbtn:hover { background: #edf0f4; }
+    #elev .closebtn { border: none; background: #f1f5f9; color: #3d4a5c; border-radius: 8px; padding: 3px 9px; font-size: 14px; cursor: pointer; }
 
     #elev .body { flex: 1; display: flex; gap: 14px; padding-top: 8px; min-height: 0; }
     #elev.folded .body, #elev.folded .head { display: none; }
@@ -424,26 +472,26 @@
         font-size: 12px; color: #b45309; padding: 0 2px; line-height: 1.3;
     }
     /* 能耗对照：两个可折叠小节，默认收起；展开时占用的高度由图表 170px 低保额度吸收 */
-    details.rules { flex: none; border: 1px solid #e2e8f0; border-radius: 9px; background: #f8fafc; }
+    details.rules { flex: none; border: 1px solid #edf0f4; border-radius: 9px; background: #f8fafc; }
     details.rules > summary {
         cursor: pointer; list-style: none; padding: 6px 9px; font-size: 11.5px;
-        color: #0f766e; font-weight: 600; user-select: none; display: flex; align-items: center; gap: 5px;
+        color: #0d9488; font-weight: 600; user-select: none; display: flex; align-items: center; gap: 5px;
     }
     details.rules > summary::-webkit-details-marker { display: none; }
     details.rules > summary::before { content: '▸'; font-size: 9px; transition: transform .15s; }
     details.rules[open] > summary::before { transform: rotate(90deg); }
     details.rules > summary:hover { background: #f1f5f9; border-radius: 9px; }
     details.rules .rbody {
-        padding: 2px 10px 8px; font-size: 11px; color: #64748b; line-height: 1.55;
-        max-height: 148px; overflow-y: auto; border-top: 1px solid #e2e8f0;
+        padding: 2px 10px 8px; font-size: 11px; color: #3d4a5c; line-height: 1.55;
+        max-height: 148px; overflow-y: auto; border-top: 1px solid #edf0f4;
     }
-    details.rules .rbody b { color: #0f766e; }
+    details.rules .rbody b { color: #0d9488; }
     /* 图表高度由抽屉拖拽动态设置（JS 写 element.style.height） */
     .elev-chart { flex: 1; position: relative; min-width: 0; min-height: 90px; }
     .elev-chart svg { display: block; width: 100%; height: 100%; }
     #elevTip {
         position: absolute; pointer-events: none; display: none; z-index: var(--z-tip);
-        background: #0f172a; color: #fff; border-radius: 8px; padding: 5px 9px;
+        background: #0b1220; color: #fff; border-radius: 8px; padding: 5px 9px;
         font-size: 11px; line-height: 1.5; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.3);
     }
     @media (max-width: 720px) {
@@ -460,7 +508,7 @@
        full 全高 / hidden 收起），剖面抽屉 #elev 是第二张表（打开时盖住行程单）。
        手势/互斥逻辑在 engine/mobile.js。 */
     @media (max-width: 768px) {
-        :root { --sheet-peek: 108px; }   /* S34：peek 瘦身（手柄+概要盒+天数轨） */
+        :root { --sheet-peek: 150px; }   /* S35：手柄 + 今日任务卡 + 药丸程轨 */
         #panel {
             left: 0; right: 0; top: auto; bottom: 0; width: 100%;
             max-height: none; height: auto;
@@ -476,11 +524,19 @@
         body.mob-peek #peekBox { display: block; }
         body.mob-peek #panel > :not(#sheetGrip):not(#peekBox) { display: none !important; }
         #peekBox { padding: 2px 2px 4px; }
-        .peek-sum { font-size: 13px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .peek-rail { display: flex; gap: 5px; overflow-x: auto; margin-top: 6px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
-        .peek-d { flex: none; font-size: 10.5px; border: 1px solid #e2e8f0; border-radius: 7px; padding: 3px 7px; color: #475569; cursor: pointer; }
-        .peek-d.done { border-color: #a7d7c9; color: #0f766e; }
-        .peek-d.cur { border-color: #0f766e; color: #0f766e; background: #f0fdfa; font-weight: 600; }
+        /* S35 今日任务卡：绿渐变日期方块 + 标题 + 元信息 */
+        .peekcard { display: flex; align-items: center; gap: 12px; background: var(--card, #fff); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 12px 14px; margin-top: 8px; }
+        .pk-day { flex: none; width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pk-day b { font-size: 16px; line-height: 1; font-weight: 700; }
+        .pk-day .pk-d { font-size: 8.5px; opacity: .9; margin-top: 2px; }
+        .pk-tt { flex: 1; min-width: 0; }
+        .pk-t { display: block; font-size: 16.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pk-meta { display: block; font-size: 12px; color: var(--weak); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* 药丸程轨：缩写数字；done 绿勾绿底 / cur 实心绿块 */
+        .peek-rail { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+        .peek-d { flex: none; min-width: 30px; text-align: center; font-size: 11.5px; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 6px 0; color: var(--sub); background: #fff; cursor: pointer; }
+        .peek-d.done { color: var(--green-deep); border-color: #bfe3dd; background: #f0faf7; font-weight: 600; }
+        .peek-d.cur { color: #fff; background: var(--green); border-color: var(--green); font-weight: 600; }
         /* S34 抽屉头部控制行（出发地/顺逆/车型；peek 态被上面的边界隐藏，full 态才见） */
         #mobCtl { display: flex; gap: 6px; align-items: center; padding: 2px 0 8px; border-bottom: 1px solid #f1f5f9; margin-bottom: 6px; overflow-x: auto; }
         /* S34 打卡行筛选：窄屏截断第 5 个起（.pt-m.extra），点「等N处 ▾」行展开（li.pts-open） */
@@ -516,7 +572,7 @@
         .switch input:checked ~ .knob { left: 23px; }
         #panelFold { width: 34px; height: 34px; }
         .btn-fit { padding: 12px 0; }
-        .brand-creed { margin-top: 10px; font-size: 12px; letter-spacing: .18em; color: #94a3b8; }   /* S24 */
+        .brand-creed { margin-top: 10px; font-size: 12px; letter-spacing: .18em; color: #8b98a9; }   /* S24 */
         /* 标题/chips：chips 保持一行紧凑（三块在 390 宽下本就能挤下，已由 720 块降字号保证；
            不做 overflow-x 横滑——滚动容器在列 flex 里会被 Chromium 算成 0 高） */
         #panel h1 { font-size: 16px; }
@@ -547,18 +603,15 @@
             padding: calc(4px + env(safe-area-inset-top)) 10px 4px;
             font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
         }
-        #mobBar b#mobRouteName { font-size: 15px; color: #0f172a; flex: none; max-width: 32vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #mobBrandMark { width: 20px; height: 20px; flex: none; display: inline-flex; color: #0f766e; }
+        #mobBar b#mobRouteName { font-size: 15px; color: #0b1220; flex: none; max-width: 32vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #mobBrandMark { width: 20px; height: 20px; flex: none; display: inline-flex; color: #0d9488; }
         #mobBrandMark svg { width: 100%; height: 100%; }
         /* S34 标题条一行化：模式开关（规划/行中）顶到右端，⋯ 紧随其后 */
-        #mobMode { margin-left: auto; flex: none; display: flex; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
-        #mobMode button { border: none; background: none; padding: 4px 11px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; font-family: inherit; }
-        #mobMode button.on { background: #0f766e; color: #fff; }
-        .mob-evsw button svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
-        .mob-evsw { display: flex; background: #f1f5f9; border-radius: 9px; padding: 3px; gap: 2px; flex: none; }
-        .mob-evsw button { border: none; background: none; min-width: 44px; min-height: 34px; border-radius: 7px; font-size: 12.5px; cursor: pointer; color: #64748b; font-weight: 600; font-family: inherit; }
-        .mob-evsw button.on { background: #0f766e; color: #fff; }
-        #mobMenuBtn { margin-left: 0; flex: none; width: 44px; min-height: 40px; border: none; background: #f1f5f9; border-radius: 9px; font-size: 20px; color: #475569; cursor: pointer; font-family: inherit; }
+        #mobMode { margin-left: auto; flex: none; display: flex; border: 1px solid var(--line); border-radius: var(--r-pill); overflow: hidden; }
+        #mobMode button { border: none; background: none; padding: 6px 13px; font-size: 11.5px; font-weight: 600; color: var(--sub); cursor: pointer; font-family: inherit; }
+        #mobMode button.on { background: var(--green); color: #fff; }
+        /* S35 删号：.mob-evsw（车型切换）已随 mobile.js 一起下线 */
+        #mobMenuBtn { margin-left: 0; flex: none; width: 44px; min-height: 40px; border: none; background: #f1f5f9; border-radius: 9px; font-size: 20px; color: #3d4a5c; cursor: pointer; font-family: inherit; }
         /* ⋯菜单（下拉）+ 遮罩（点外部关闭，S18） */
         #mobMenuBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
         body.mob-menu #mobMenuBk { display: block; }
@@ -571,15 +624,15 @@
         body.mob-layers #mobLayersBk { display: block; }
         #mobLayers { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-guide); background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(15,23,42,.25); max-height: 76vh; display: none; flex-direction: column; padding-bottom: calc(10px + env(safe-area-inset-bottom)); font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
         body.mob-layers #mobLayers { display: flex; }
-        #mobLayers .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; font-size: 14px; font-weight: 600; color: #0f172a; }
-        #mobLayers .ml-head button { width: 44px; height: 38px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 15px; cursor: pointer; color: #64748b; font-family: inherit; }
+        #mobLayers .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; font-size: 14px; font-weight: 600; color: #0b1220; }
+        #mobLayers .ml-head button { width: 44px; height: 38px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 15px; cursor: pointer; color: #3d4a5c; font-family: inherit; }
         #mobLayersBody { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 14px; }
         #mobLayers .legend { border-top: none; margin-top: 0; padding-top: 4px; }
         #mobLayers .evcard { margin-top: 10px; }
-        #mobLayers #rngRange { min-height: 44px; }
+        /* S35 删号：#rngRange 已下线（续航设置 UI 删除） */
         /* 地图右下浮动按钮组：图层 + 条件出现的「全览」 */
         #mobBtns { position: fixed; right: 10px; bottom: calc(var(--sheet-visible, 0px) + 64px + env(safe-area-inset-bottom)); z-index: var(--z-collapse); display: flex; flex-direction: column; gap: 10px; }
-        #mobBtns button { width: 48px; height: 48px; border-radius: 50%; border: none; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.22); font-size: 11.5px; font-weight: 600; color: #0f766e; cursor: pointer; font-family: inherit; line-height: 1.25; }
+        #mobBtns button { width: 48px; height: 48px; border-radius: 50%; border: none; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.22); font-size: 11.5px; font-weight: 600; color: #0d9488; cursor: pointer; font-family: inherit; line-height: 1.25; }
         #mobBtns button { touch-action: manipulation; }   /* S23：去双击缩放延迟，老 iOS 点击更跟手 */
         #mobBtns button.hit { transform: scale(.92); }      /* S23：按下即时反馈（感知响应） */
         /* S23：全展态也保留浮动钮（z 1250 > 抽屉 1100，浮在抽屉之上）——全览三态可达 */
@@ -592,12 +645,12 @@
         body.mob-plan #mobPlanBk { display: block; }
         #mobPlan { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-guide); background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(15,23,42,.25); max-height: 72vh; display: none; flex-direction: column; padding-bottom: calc(10px + env(safe-area-inset-bottom)); font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
         body.mob-plan #mobPlan { display: flex; }
-        #mobPlan .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; font-size: 14px; font-weight: 600; color: #0f172a; }
-        #mobPlan .ml-head button { width: 44px; height: 38px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 15px; cursor: pointer; color: #64748b; font-family: inherit; }
+        #mobPlan .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; font-size: 14px; font-weight: 600; color: #0b1220; }
+        #mobPlan .ml-head button { width: 44px; height: 38px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 15px; cursor: pointer; color: #3d4a5c; font-family: inherit; }
         #mobPlanBody { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 16px 8px; font-size: 13px; color: #334155; }
-        #mobPlanBody .psum { border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px; }
+        #mobPlanBody .psum { border-bottom: 1px solid #edf0f4; padding-bottom: 6px; margin-bottom: 6px; }
         #mobPlanBody .prow, #mobPlanBody .warn { padding: 6px 0; border-bottom: 1px dashed #f1f5f9; line-height: 1.6; }
-        #mobPlanBody .note { padding: 8px 0 4px; font-size: 11px; color: #94a3b8; line-height: 1.7; }
+        #mobPlanBody .note { padding: 8px 0 4px; font-size: 11px; color: #8b98a9; line-height: 1.7; }
         .day-list li { min-height: 56px; }
         /* S28：编辑模式退役——行程卡默认就地可编辑，移动端无需编辑面板全屏化 */
     }
@@ -606,23 +659,24 @@
     }
 
     /* ============ 就地编辑（S28）：无编辑模式，行程卡默认可点改 ============ */
-    .edit-mini { border: none; background: #0f766e; color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 11px; cursor: pointer; margin-right: 6px; font-family: inherit; }
-    .edit-mini:hover { background: #0f766e; }
+    .edit-mini { border: none; background: var(--green); color: #fff; border-radius: var(--r-pill); padding: 6px 14px; font-size: 11.5px; font-weight: 600; min-height: 30px; cursor: pointer; margin-right: 6px; font-family: inherit; }
+    .edit-mini + .edit-mini, .cd-row .edit-mini:not(:first-child) { background: #fff; color: var(--sub); border: 1px solid #dbe1e7; }   /* 同排次按钮 = 描边药丸 */
+    .edit-mini:hover { background: #0d9488; }
     .day-seg { display: block; margin-top: 2px; }
-    .day-seg-sel { font-size: 10.5px; max-width: 96px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; color: #475569; }
-    .day-seg-hint { display: block; margin-top: 2px; font-size: 10px; color: #94a3b8; }
+    .day-seg-sel { font-size: 10.5px; max-width: 96px; border: 1px solid #edf0f4; border-radius: 5px; background: #fff; color: #3d4a5c; }
+    .day-seg-hint { display: block; margin-top: 2px; font-size: 10px; color: #8b98a9; }
     /* 途经点增删引导（体验修复 2） */
     #wpGuide {
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
         z-index: var(--z-guide); width: min(560px, calc(100vw - 40px));
-        background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+        background: #fff; border: 1px solid #edf0f4; border-radius: 14px;
         box-shadow: 0 16px 48px rgba(15,23,42,.22); padding: 18px 20px;
         font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     }
-    #wpGuide .wp-title { display: block; font-size: 15px; color: #0f172a; margin-bottom: 10px; }
+    #wpGuide .wp-title { display: block; font-size: 15px; color: #0b1220; margin-bottom: 10px; }
     #wpGuide .wp-body {
         margin: 0 0 12px; padding: 10px 12px; background: #f8fafc; border-radius: 8px;
-        font-size: 11.5px; line-height: 1.7; color: #475569; white-space: pre-wrap;
+        font-size: 11.5px; line-height: 1.7; color: #3d4a5c; white-space: pre-wrap;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 220px; overflow: auto;
     }
     #wpGuide .wp-row { display: flex; gap: 8px; }
@@ -680,16 +734,16 @@
                 'padding:24px;box-sizing:border-box;overflow:auto;');
             var items = problems.map(function (p) {
                 return '<li style="margin:0 0 14px;"><b style="color:#b91c1c;font-size:14px;">' + p.t + '</b>' +
-                       '<div style="margin-top:6px;color:#475569;font-size:13px;line-height:1.7;">' + p.d + '</div></li>';
+                       '<div style="margin-top:6px;color:#3d4a5c;font-size:13px;line-height:1.7;">' + p.d + '</div></li>';
             }).join('');
             box.innerHTML =
                 '<div style="max-width:560px;background:#fff;border-radius:16px;padding:28px 30px;' +
-                'box-shadow:0 12px 40px rgba(15,23,42,.18);border:1px solid #e2e8f0;">' +
-                '<h2 style="margin:0 0 6px;font-size:19px;color:#0f172a;">地图没能加载出来</h2>' +
-                '<p style="margin:0 0 20px;color:#64748b;font-size:13px;">' +
+                'box-shadow:0 12px 40px rgba(15,23,42,.18);border:1px solid #edf0f4;">' +
+                '<h2 style="margin:0 0 6px;font-size:19px;color:#0b1220;">地图没能加载出来</h2>' +
+                '<p style="margin:0 0 20px;color:#3d4a5c;font-size:13px;">' +
                 '页面数据本身是完整的（路线、海拔、补能点都已内联），差的只是底图。按下面修一下就好：</p>' +
                 '<ol style="margin:0;padding-left:22px;">' + items + '</ol>' +
-                '<p style="margin:20px 0 0;padding-top:16px;border-top:1px solid #f1f5f9;color:#94a3b8;font-size:12px;">' +
+                '<p style="margin:20px 0 0;padding-top:16px;border-top:1px solid #f1f5f9;color:#8b98a9;font-size:12px;">' +
                 '详见仓库 README 的「配置地图 Key」一节。</p>' +
                 '</div>';
             document.body.appendChild(box);
@@ -725,7 +779,7 @@
     </div>
     <div class="chips">
         <div class="chip"><b id="chipKm">—</b>总里程 km</div>
-        <div class="chip chip-days"><b id="chipDays">—</b><span id="chipDaysLb">建议天数</span></div>
+        <div class="chip chip-days"><b id="chipDays">—</b><span id="chipDaysLb">建议程数</span></div>
         <div class="chip"><b id="chipMaxAlt">—</b>最高海拔 m</div>
     </div>
     <ul class="day-list" id="dayList"></ul>
@@ -743,28 +797,10 @@
             <div class="row" id="classicRow"><span class="name"><span class="dot cls"></span><span id="classicLabel">支线</span></span><label class="switch"><input type="checkbox" id="tgClassic"><span class="track"></span><span class="knob"></span></label></div>
         </div>
     </details>
-        <div class="evcard">
-        <button class="evset-t" id="evsetToggle" type="button" style="display:none">🔋 续航设置 ▾</button>
-        <div id="evsetBody" style="display:none">
-        <div class="evrow">
-            <span class="seg">
-                <button id="btnEv" class="on"><i class="ic" id="icEv"></i>电车</button>
-                <button id="btnFuel"><i class="ic" id="icFuel"></i>油车</button>
-            </span>
-            <span id="rngLabel">满电续航</span>
-        </div>
-        <div class="evrow">
-            <input type="range" id="rngRange" min="300" max="1000" step="10" value="500" style="flex:1">
-            <b id="rngVal" style="color:#0f766e;min-width:58px;text-align:right">500 km</b>
-        </div>
-        <div class="evrow">
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="ckAlt" checked> 高原折算 ×0.85（低温/风阻/爬升）</label>
-        </div>
-        </div>
         <div class="evplan" id="planBox" style="display:none"></div><!-- S31：显示层隐藏，规划计算保留（innerHTML 照常更新） -->
     </div>
     <button class="btn-fit" id="btnFit">回到全览</button>
-    <div class="tip">点击图标看详情 · 点击某天地图飞行 + 剖面高亮 · 底部可展开海拔剖面。<span id="dataCaveat">加油站/充电站为公开资料整理，出发前请复核营业状态。</span>
+    <div class="tip">点击图标看详情 · 点击某程地图飞行 + 剖面高亮 · 底部可展开海拔剖面。<span id="dataCaveat">加油站/充电站为公开资料整理，出发前请复核营业状态。</span>
         <div class="brand-creed">一张有观点的地图。</div></div>
 </div>
 
@@ -784,7 +820,7 @@
             <div id="elevTip"></div>
         </div>
         <div class="elev-info">
-            <div class="cur" id="curEnergy">点选上方任意一天，看这段的海拔与能耗提示。</div>
+            <div class="cur" id="curEnergy">点选上方任意一程，看这段的海拔与能耗提示。</div>
             <div class="notice" id="evNotice">
                 <span></span>
                 <button title="关闭" onclick="document.getElementById('evNotice').remove()">✕</button>

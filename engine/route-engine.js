@@ -18,7 +18,7 @@
     var IC_REST = icon('<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11.5" fill="#b45309" stroke="#fff" stroke-width="2.2"/><path d="M17.6 15.4A4.9 4.9 0 0 1 11.1 8.7 4.9 4.9 0 1 0 17.6 15.4z" fill="#fff"/></svg>');
     var IC = {
         city: pin('#1e3a5f'),
-        citySmall: pin('#64748b'),   // S26：城镇钉减重——灰阶身（白描边在 pin() 里），60% 尺寸
+        citySmall: pin('#3d4a5c'),   // S26：城镇钉减重——灰阶身（白描边在 pin() 里），60% 尺寸
         spot: pin('#7c3aed'),
         fuel: icon('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="#dc2626" stroke="#fff" stroke-width="2.2"/><rect x="9.5" y="8" width="7" height="13" rx="1.4" fill="#fff"/><rect x="11.2" y="10" width="3.6" height="3.4" rx="0.6" fill="#dc2626"/><path d="M17.5 11h2.2c.7 0 1.3.6 1.3 1.3v5.2c0 .9.6 1.5 1.3 1.5s1.3-.6 1.3-1.5v-5.4l-1.8-1.8" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/><rect x="9.5" y="19.4" width="10" height="1.8" rx="0.9" fill="#fff"/></svg>'),
         ev:   icon('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="#16a34a" stroke="#fff" stroke-width="2.2"/><path d="M16.6 6.5L10 16.8h4.2l-1.2 6.7 6.8-10.5h-4.4l1.2-6.5z" fill="#fff"/></svg>')
@@ -372,7 +372,7 @@
     (typeof EXTRA_LINES !== 'undefined' ? EXTRA_LINES : []).forEach(function (br) {
         createPolylineLayer({
             map: map,
-            styles: { default: ({ color: br.color || '#94a3b8', width: br.width || 3, dashArray: br.dash || [10, 8], lineCap: 'round' }) },
+            styles: { default: ({ color: br.color || '#8b98a9', width: br.width || 3, dashArray: br.dash || [10, 8], lineCap: 'round' }) },
             geometries: [{
                 id: br.id || 'branch', styleId: 'default',
                 paths: br.pts.map(function (p) { return LL(p[0], p[1]); })
@@ -643,19 +643,24 @@
             return '夜宿 · ' + f(a) + ' 晚抵达 · ' + f(b) + ' 出发';
         } catch (e) { return '夜宿点'; }
     }
-    /* 站点/规划的按天标注 → 显示层编号（逆行时天序反排） */
+    /* 站点/规划的按程标注 → 显示层编号（S35：「第N程」；逆行时程序反排） */
     function dayTagOf(km) {
         var id = dayOf(km);
         var disp = currentDisp();
-        for (var i = 0; i < disp.length; i++) if (origOf(disp[i]).id === id) return 'D' + (i + 1);
-        return 'D' + id;
+        for (var i = 0; i < disp.length; i++) if (origOf(disp[i]).id === id) return '第' + (i + 1) + '程';
+        return '第' + id + '程';
     }
+    try { window.__dispTagOf = dayTagOf; } catch (e) {}
     /* S34 peek 概要盒：移动端 peek 态的唯一内容——一行概要（今日从→到/km/打卡/充电/加油）
        + 天数轨（Dn✓ 完成态）；标题/日期/行程头/chips/管理区全部只在 full 态（CSS 边界）。
        「今日」= 首个未完成天（全完成取最后一天）。桌面不显示（body.mob-peek 才出现）。 */
     function renderPeekBox(disp, dayDoneP) {
-        /* 桌面零变化：peek 盒只服务窄屏（CSS 显隐规则也在窄屏媒体块内），宽屏不建不渲染 */
-        if (window.innerWidth > 768) return;
+        /* 桌面零变化：peek 盒只服务窄屏（CSS 显隐规则也在窄屏媒体块内）；宽屏移除残留（防 CDP 横竖翻转后的陈旧节点） */
+        if (window.innerWidth > 768) {
+            var stale = document.getElementById('peekBox');
+            if (stale && stale.remove) stale.remove();
+            return;
+        }
         var box = document.getElementById('peekBox');
         if (!box) {
             box = document.createElement('div');
@@ -699,11 +704,24 @@
                 stationsAll('fuel').forEach(function (s) { if (oday.altKm && s.km >= oday.altKm[0] && s.km <= oday.altKm[1]) nFuel++; });
             }
         } catch (e) {}
+        /* S35：药丸程轨（缩写数字；done 绿勾 / cur 实心绿块） */
         var rail = disp.map(function (d2, i2) {
             var done = dayDoneP(origOf(d2).id);
-            return '<span class="peek-d' + (done ? ' done' : '') + (i2 === todayI ? ' cur' : '') + '" data-pday="' + i2 + '">D' + (i2 + 1) + (done ? '✓' : '') + '</span>';
+            return '<span class="peek-d' + (done ? ' done' : '') + (i2 === todayI ? ' cur' : '') + '" data-pday="' + i2 + '">' + (done ? '✓' : (i2 + 1)) + '</span>';
         }).join('');
-        box.innerHTML = '<div class="peek-sum">D' + (todayI + 1) + ' · ' + dd.title + ' · ' + (dd.km || 0) + 'km · 打卡 ' + nCk + ' · 充电 ' + nEv + ' · 加油 ' + nFuel + '</div>' +
+        /* 日期方块：绿渐变 + 程号 + 月/日（推算标注，按出发日期顺延） */
+        var dateSq = '';
+        try {
+            if (ROUTE_META.departureDate) {
+                var a0 = new Date(ROUTE_META.departureDate + 'T00:00:00');
+                a0.setDate(a0.getDate() + todayI);
+                dateSq = '<span class="pk-d">' + (a0.getMonth() + 1) + '/' + a0.getDate() + '</span>';
+            }
+        } catch (e) {}
+        box.innerHTML = '<div class="peekcard">' +
+            '<div class="pk-day"><b>' + (todayI + 1) + '</b>' + dateSq + '</div>' +
+            '<div class="pk-tt"><span class="pk-t">' + escapeHtml2(dd.title) + '</span>' +
+            '<span class="pk-meta">' + (dd.km || 0) + 'km · 打卡 ' + nCk + ' · 充电 ' + nEv + ' · 加油 ' + nFuel + '</span></div></div>' +
             '<div class="peek-rail">' + rail + '</div>';
         if (!box.__wired) {
             box.__wired = true;
@@ -791,46 +809,49 @@
             var doneDay = dayDoneP(d.id);
             if (doneDay) li.classList.add('done');
             li.title = dd.energy;
-            var tag = 'D' + (vi + 1);   // 连续编号（显示层序；逆行自动反排）
+            /* S35：日期是推算标注（按出发日期顺延），并入 meta 行前缀 */
+            var dateStr = '';
             if (ROUTE_META.departureDate) {
                 var dep = new Date(ROUTE_META.departureDate + 'T00:00:00');
                 dep.setDate(dep.getDate() + vi);
-                tag += ' · ' + (dep.getMonth() + 1) + '月' + dep.getDate() + '日 周' +
-                    '日一二三四五六'.charAt(dep.getDay());
+                dateStr = (dep.getMonth() + 1) + '月' + dep.getDate() + '日 周' +
+                    '日一二三四五六'.charAt(dep.getDay()) + ' · ';
             }
-            if (rest) tag += ' · 休整';
-            if (doneDay) tag += ' ✓';   // S30.5 完成角标
             /* 起点节点（列表最顶） */
             var pre = '';
             if (vi === 0) {
                 pre = '<div class="ch-node ch-start" data-node="start">' +
-                    '<span class="ch-node-dot"></span>' +
+                    '<span class="ch-node-dot">始</span>' +
                     '<div class="ch-node-tx"><b>' + escapeHtml2(startNodeName) + '</b>' +
                     '<span>起点' + (ROUTE_META.departureDate ? ' · ' + (function () { var a0 = new Date(ROUTE_META.departureDate + 'T00:00:00'); return (a0.getMonth() + 1) + '月' + a0.getDate() + '日'; })() + ' 出发' : '') + '</span></div></div>';
             }
-            var noteTxt = rest ? '休整占位 · 链上点「＋」拆分，或并回前后段'
+            var noteTxt = rest ? '休整占位 · 链上点「＋」拆分，或并回前后程'
                 : dd.note + (dd.stay ? ' · 住' + dd.stay : '');
-            var card = '<div class="ch-card' + (rest ? ' rest' : '') + '">' +
-                '<span class="day-top"><span class="day-tag">' + tag + '</span>' +
-                '<span class="day-km">' + (rest ? '—' : (dd.km ? dd.km + 'km' : '—')) + '</span></span>' +
-                '<span class="day-title">' + dd.title + '</span>' +
-                '<span class="day-note">' + noteTxt + '</span>' +
+            var kmTxt = rest ? '—' : (dd.km ? dd.km : '—');
+            var card = '<div class="ch-card' + (rest ? ' rest' : '') + (doneDay ? ' done' : '') + '">' +
+                '<div class="ch-r1"><span class="ch-fromto">第' + (vi + 1) + '程' + (doneDay ? ' ✓' : '') + (rest ? ' · 休整' : '') + ' · ' + dd.title + '</span>' +
+                '<span class="ch-km">' + kmTxt + (rest ? '' : '<small>km</small>') + '</span></div>' +
+                '<div class="ch-meta">' + dateStr + noteTxt + '</div>' +
                 dayPtsHTML(dd, DAYS.indexOf(d), supEv, supFuel) +
                 '<span class="et-chips">' + ((typeof wpChips === 'function') ? wpChips(d, true) : '') + '</span>' +
                 '</div>';
             /* 中缝「＋」= 多住一晚（拆分该链段）；节点 = 夜宿关节 */
-            var seam = rest ? '' : '<button class="ch-seam-add" data-seam="' + d.id + '" title="在此多住一晚（拆分）">＋</button>';
+            var seam = rest ? '' : '<button class="ch-seam-add" data-seam="' + d.id + '" title="在此多住一晚（拆程）">＋</button>';
             var isLast = vi === disp.length - 1;
             var node = '';
             if (!isLast) {
+                /* S35：住宿用途徽标（夜宿节点默认住宿；kuse 覆盖见 edit.js setDayField） */
+                var kuseBadge = '';
+                if (dd.stay && (!dd.kuse || dd.kuse === '住宿')) kuseBadge = '<span class="ch-kuse">住宿</span>';
+                else if (dd.kuse) kuseBadge = '<span class="ch-kuse">' + escapeHtml2(dd.kuse) + '</span>';
                 node = '<div class="ch-node' + (doneDay ? ' done' : '') + '" data-node-day="' + d.id + '">' +
                     '<span class="ch-node-ic">' + ((typeof BRAND !== 'undefined' && BRAND.moon) || '⛺') + '</span>' +
-                    '<div class="ch-node-tx"><b>' + escapeHtml2(nodeName(dd)) + '</b><span>' + nodeDates(vi) + '</span></div></div>';
+                    '<div class="ch-node-tx"><b>' + escapeHtml2(nodeName(dd)) + '</b>' + kuseBadge + '<span>' + nodeDates(vi) + '</span></div></div>';
             } else {
                 node = loopRt
-                    ? '<div class="ch-node ch-end" data-node="end"><span class="ch-node-dot"></span>' +
+                    ? '<div class="ch-node ch-end" data-node="end"><span class="ch-node-dot">终</span>' +
                       '<div class="ch-node-tx"><b>' + escapeHtml2(startNodeName) + '</b><span>终点 · 环线闭合</span></div></div>'
-                    : '<div class="ch-node ch-end" data-node="end"><span class="ch-node-dot"></span>' +
+                    : '<div class="ch-node ch-end" data-node="end"><span class="ch-node-dot">终</span>' +
                       '<div class="ch-node-tx"><b>' + escapeHtml2(dayDest(dd)) + '</b><span>终点</span></div></div>';
             }
             li.innerHTML = pre + card + seam + node;
@@ -848,7 +869,7 @@
             dayLines.forEach(function (pl, i) {
                 if (!pl || !DAYS[i] || !prog.daysDone[DAYS[i].id]) return;
                 try {
-                    pl.setStyles({ default: { color: '#0f766e', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } } });
+                    pl.setStyles({ default: { color: '#0d9488', width: 5, borderWidth: 1, borderColor: '#ffffff', lineCap: 'round', arrowOptions: { width: 8 } } });
                 } catch (e) {}
             });
         }
@@ -862,7 +883,7 @@
             var b = document.createElement('div');
             b.id = 'allDoneBanner';
             b.className = 'all-done';
-            b.textContent = '🎉 全程 ' + disp.length + ' 天全部完成';
+            b.textContent = '🎉 全程 ' + disp.length + ' 程全部完成';
             if (listEl.firstChild && listEl.insertBefore) listEl.insertBefore(b, listEl.firstChild);
             else listEl.appendChild(b);
         })();
@@ -878,8 +899,17 @@
         document.getElementById('chipKm').textContent = totalKm;
         var chipDaysEl = document.getElementById('chipDays');
         chipDaysEl.textContent = disp.length;
+        /* S35：「N 程 · M 晚」——M = 住宿口径：夜宿节点（stay）+ 休整途经点里用途为「住宿」的 */
         var chipDaysLb = document.getElementById('chipDaysLb');
-        if (chipDaysLb) chipDaysLb.textContent = '天 · ' + (disp.length - 1 + (loopRt ? 0 : 1)) + ' 休整点';
+        var nights = 0;
+        disp.forEach(function (d2) { if (origOf(d2).stay) nights++; });
+        try {
+            if (typeof Wp !== 'undefined' && Wp.list) Wp.list.forEach(function (w) {
+                if (w.kind === 'rest' && w.kuse === '住宿') nights++;
+            });
+        } catch (e) {}
+        if (chipDaysLb) chipDaysLb.textContent = '程' + (nights ? ' · ' + nights + ' 晚' : '');
+        try { window.__nightsCount = nights; } catch (e) {}
         var altPeak = peakAlt();
         document.getElementById('chipMaxAlt').textContent = altPeak.alt;
         document.getElementById('chipMaxAlt').title = '最高点：' + altPeak.n + '（' + altPeak.alt + 'm）';
@@ -912,11 +942,7 @@
         clearWarnings();
         var ws = (typeof STATION_DATA !== 'undefined' && STATION_DATA && STATION_DATA.warnings) || [];
         if (!ws.length || !DAYS.length) return;
-        /* S26：按车型过滤——电车模式只看无充电段，油车模式只看无加油段 */
-        var mode = 'ev';
-        try { mode = window.__evMode || 'ev'; } catch (e) {}
-        ws = ws.filter(function (w) { return (w.type || 'ev') === (mode === 'fuel' ? 'fuel' : 'ev'); });
-        if (!ws.length) return;
+        /* S35 删号（车型切换下线）：ev/fuel 盲区全部上图（补给点分类覆盖，数据有就显示） */
         // km → 经纬度表：每天 path 按 altKm 线性插值（画盲区带足够，精度 ~天/240 点）
         var table = [];
         DAYS.forEach(function (d) {
@@ -972,7 +998,7 @@
             vi++;
             if (d.stay && d.path && d.path.length) {
                 var p = d.path[d.path.length - 1];   // 住宿 = 当天到达端
-                restData.push({ lat: p[0], lng: p[1], t: d.stay + '（住宿）', sub: 'D' + vi + ' · 住宿点' });
+                restData.push({ lat: p[0], lng: p[1], t: d.stay + '（住宿）', sub: '第' + vi + '程 · 住宿点' });
             }
         });
         if (typeof Wp !== 'undefined' && Wp && Wp.list) {
@@ -1026,7 +1052,7 @@
         // 高德 setZoomAndCenter(zoom, [lng,lat])：对应原 easeTo({center, zoom}) 语义，
         // 动画时长由地图全局动画设置接管
         map.setZoomAndCenter(zoom, [center[1], center[0]]);
-        document.getElementById('curEnergy').innerHTML = '<b>D' + d.id + ' ' + d.title + '（' + (d.km || 0) + 'km）：</b>' + d.energy;
+        document.getElementById('curEnergy').innerHTML = '<b>第' + d.id + '程 ' + d.title + '（' + (d.km || 0) + 'km）：</b>' + d.energy;
         // 点了某天却看不到剖面是反直觉的 → 抽屉收起时自动展开
         if (!isOpen()) openDrawer(300);
         else drawProfile();
@@ -1153,7 +1179,7 @@
 
         // cx=纬度 cy=经度（引擎内部口径）；高德 center=[lng,lat]
         map.setZoomAndCenter(z, [cy, cx]);
-        document.getElementById('curEnergy').textContent = '点选上方任意一天，看这段的海拔与能耗提示。';
+        document.getElementById('curEnergy').textContent = '点选上方任意一程，看这段的海拔与能耗提示。';
         if (redraw !== false) drawProfile();
         // 全览落点记录：S16 移动端「全览」条件按钮的偏离判定基准（window 属性，桌面无副作用）
         try { window.__fitDebug = { z: z, c: [cx, cy], box: box, bbox: bbox, mh: _fitInfo ? _fitInfo.mh : 0, midY: _fitInfo ? _fitInfo.midY : 0, visMid: _fitInfo ? _fitInfo.visMid : 0 }; } catch (e) {}

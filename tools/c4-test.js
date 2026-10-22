@@ -161,12 +161,10 @@ function runRoute(routeId) {
 
     console.log('\n【2】续航单调性（拉低续航 → ' + evLabel + '次数不减）');
     const nDefault = m1 ? +m1[1] : -1;
-    elCache['rngRange'].value = '1000';
-    elCache['rngRange'].oninput && elCache['rngRange'].oninput();
+    sandbox.window.__plannerSet({ range: 1000 });   // S35 删号：续航设置 UI 下线，改驱动测试接缝
     const mHi = (planBox.innerHTML.match(/全程需\S+ <b>(\d+)<\/b>/) || [])[1];
     ok('1000km 续航' + evLabel + '次数 ≤ 默认 500km', mHi !== undefined && +mHi <= nDefault, mHi + ' 次 vs ' + nDefault + ' 次');
-    elCache['rngRange'].value = '300';
-    elCache['rngRange'].oninput && elCache['rngRange'].oninput();
+    sandbox.window.__plannerSet({ range: 300 });
     const mLo = (planBox.innerHTML.match(/全程需\S+ <b>(\d+)<\/b>/) || [])[1];
     const hasWarn = planBox.innerHTML.includes('无可达');
     // 续航变低 → 次数不减。但若某段真实站距已超车可达范围，规划如实报「无可达」并停止数站
@@ -176,10 +174,10 @@ function runRoute(routeId) {
     console.log((hasWarn ? '  ⚠️ 300km 续航出现不可达警告（该线存在 >210km 级站距段）' : '  ℹ️ 300km 续航无不可达警告'));
 
     console.log('\n【3】油车模式');
-    elCache['btnFuel'].onclick && elCache['btnFuel'].onclick();
+    sandbox.window.__plannerSet({ mode: 'fuel' });
     const mFuel = (planBox.innerHTML.match(/全程需加油 <b>(\d+)<\/b>/) || [])[1];
     ok('加油规划输出', stationsOn ? mFuel !== undefined : planBox.innerHTML.includes('未接入'), mFuel !== undefined ? mFuel + ' 次' : '');
-    elCache['btnEv'].onclick && elCache['btnEv'].onclick();
+    sandbox.window.__plannerSet({ mode: 'ev' });
 
     console.log('\n【4】出发地切换' + (secondStart ? '（第二出发地：' + secondStart.name + '）' : '（单出发地）'));
     const sumDayKm = () => sandbox.DAYS.reduce((a, d) => a + (d.km || 0), 0);
@@ -215,20 +213,20 @@ function runRoute(routeId) {
     const lis = created.filter(el => el.id === 'dyn:li');
     ok('每日列表项生成', lis.length >= totalDays, lis.length + ' 项（包内 ' + totalDays + ' 天）');
     ok('S32：天卡无 sparkline（产品拍板移除）', lis.every(el => !el.innerHTML.includes('day-spark')), lis.length + ' 张卡');
-    const withTitle = lis.filter(el => /<span class="day-title">[^<]* → [^<]*<\/span>/.test(el.innerHTML));
-    const restCards = lis.filter(el => /休整日|· 休整/.test(el.innerHTML));   // 休整日卡标题无 →（豁免）
-    ok('天卡主标题 from→to 完整（无 spark 占位挤压；休整日豁免）', withTitle.length + restCards.length >= lis.length, withTitle.length + '+' + restCards.length + '/' + lis.length);
+    const withTitle = lis.filter(el => /<span class="ch-fromto">[^<]* → [^<]*<\/span>/.test(el.innerHTML));
+    const restCards = lis.filter(el => /休整/.test(el.innerHTML));   // S35：休整程卡（含标题自带「休整日」）无 →（豁免）
+    ok('程卡主标题 from→to 完整（第N程前缀；休整程豁免）', withTitle.length + restCards.length >= lis.length, withTitle.length + '+' + restCards.length + '/' + lis.length);
     elCache['chartBox'].appendChild = function (c) { this.children.push(c); };
     lis[0].onclick();
     const svgEl = elCache['chartBox'].children[elCache['chartBox'].children.length - 1];
     const t1 = svgEl ? svgEl.innerHTML : '';
-    ok('聚焦剖面 SVG 带爬升/下降', /↑\d+/.test(t1) && /↓\d+/.test(t1), (t1.match(/D\d+[^<]*↑\d+m[^<]*↓\d+m/) || [''])[0]);
+    ok('聚焦剖面 SVG 带爬升/下降', /↑\d+/.test(t1) && /↓\d+/.test(t1), (t1.match(/第\d+程[^<]*↑\d+m[^<]*↓\d+m/) || [''])[0]);
     ok('聚焦提示文案', elCache['elevTitle'].textContent.includes('返回全程'), elCache['elevTitle'].textContent);
     lis[0].onclick();
     const svgAll = elCache['chartBox'].children;
     const t2 = svgAll[svgAll.length - 1].innerHTML;
     ok('再点同一天恢复全程（新 SVG 无聚焦标题）', !/↑\d+m/.test(t2) && !/↓\d+m/.test(t2), '');
-    ok('恢复全程提示文案', elCache['elevTitle'].textContent.includes('点侧栏任一天'), elCache['elevTitle'].textContent);
+    ok('恢复全程提示文案', elCache['elevTitle'].textContent.includes('点侧栏任一程'), elCache['elevTitle'].textContent);
     if (secondStart) {
         const sBtn2 = created.filter(el => el.id === 'dyn:button' && el.onclick && el.textContent === secondStart.name)[0];
         sBtn2 && sBtn2.onclick();
@@ -237,13 +235,13 @@ function runRoute(routeId) {
         lis2[lis2.length - 1].onclick();
         const svgLz = elCache['chartBox'].children[elCache['chartBox'].children.length - 1];
         const t3 = svgLz.innerHTML;
-        ok('第二出发地末天聚焦正常（D' + lastDay.id + '）', new RegExp('D' + lastDay.id).test(t3) && /↑\d+/.test(t3), (t3.match(/D\d+[^<]*↑\d+m[^<]*↓\d+m/) || [''])[0]);
+        ok('第二出发地末程聚焦正常（第' + lastDay.id + '程）', new RegExp('第' + lastDay.id + '程').test(t3) && /↑\d+/.test(t3), (t3.match(/第\d+程[^<]*↑\d+m[^<]*↓\d+m/) || [''])[0]);
     } else {
         const lastDay = sandbox.DAYS[sandbox.DAYS.length - 1];
         lis[lis.length - 1].onclick();
         const svgLast = elCache['chartBox'].children[elCache['chartBox'].children.length - 1];
         const t3b = svgLast.innerHTML;
-        ok('单出发地末天聚焦正常（D' + lastDay.id + '）', new RegExp('D' + lastDay.id).test(t3b) && /↑\d+/.test(t3b), (t3b.match(/D\d+[^<]*↑\d+m[^<]*↓\d+m/) || [''])[0]);
+        ok('单出发地末程聚焦正常（第' + lastDay.id + '程）', new RegExp('第' + lastDay.id + '程').test(t3b) && /↑\d+/.test(t3b), (t3b.match(/第\d+程[^<]*↑\d+m[^<]*↓\d+m/) || [''])[0]);
     }
 
     console.log('\n【7】剖面底部抽屉（v8 拖拽交互）');
