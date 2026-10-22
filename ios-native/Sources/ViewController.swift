@@ -32,8 +32,11 @@ class ViewController: UIViewController, WKNavigationDelegate, CLLocationManagerD
     }
 
     // routeId 为 nil 时进选线器首页
+    // 开发期指向 Mac 本地服务（模拟器/同 WiFi 真机可用）；发版切回托管站点
+    static let baseURL = "http://192.168.1.108:8000/index.html"
+
     func loadRoute(_ routeId: String?) {
-        var comp = URLComponents(string: "https://xianlumap-dev.ok.kimi.link/")!
+        var comp = URLComponents(string: ViewController.baseURL)!
         if let r = routeId, !r.isEmpty {
             comp.queryItems = [URLQueryItem(name: "route", value: r)]
         }
