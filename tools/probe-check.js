@@ -144,7 +144,7 @@ let srcNote = '';
 try { srcNote = qh.sandbox.stationSourceNote(); } catch (e) { srcNote = 'ERR ' + e.message; }
 ok('站点来源日期透出（来源+快照日期）', /POI · \d{4}-\d{2}-\d{2}/.test(srcNote), srcNote);
 ok('标题来自 ROUTE_META', !!qh.sandbox.ROUTE_META && document.title === qh.sandbox.ROUTE_META.title && document.title.length > 0, document.title);
-ok('纯电提示来自 ROUTE_META（青甘文案）', elCache['evNotice'].querySelector('span').innerHTML.includes('大柴旦'), '');
+ok('S35.5 纯电提示已下线（车型体系清退）', !elCache['evNotice'] || !elCache['evNotice'].querySelector('span') || !elCache['evNotice'].querySelector('span').innerHTML.includes('大柴旦'), '');
 ok('出发地切换按钮保留（青甘）', !elCache['startSeg'] || elCache['startSeg'].style.display !== 'none', '');
 
 /* ---------- 川西（探针） ---------- */
@@ -161,7 +161,7 @@ ok('续航规划输出真实结果 + 快照声明（截断提示按数据实有�
     elCache['dataCaveat'].textContent.slice(0, 60));
 ok('标题来自 ROUTE_META', !!cx.sandbox.ROUTE_META && document.title === cx.sandbox.ROUTE_META.title && document.title.length > 0, document.title);
 ok('副标题如实描述真实数据口径（不再是探针包）', elCache['routeSub'].textContent.includes('真实数据') && !elCache['routeSub'].textContent.includes('探针包'), elCache['routeSub'].textContent);
-ok('纯电提示标注山区盲区', elCache['evNotice'].querySelector('span').innerHTML.includes('无快充'), '');
+ok('S35.5 能耗标注零残留', !elCache['evNotice'] || !elCache['evNotice'].querySelector('span') || !elCache['evNotice'].querySelector('span').innerHTML.includes('无快充'), '');
 ok('单出发地按钮与经典支线行均隐藏', elCache['startSeg'].style.display === 'none' && elCache['classicRow'].style.display === 'none', '');
 // 交互冒烟：点第 1 天 → focusDay + 剖面重画不崩
 let focusErr = null;

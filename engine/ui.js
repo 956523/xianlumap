@@ -25,7 +25,7 @@
         if (ntEl) {
             if (ROUTE_META.evNotice) {
                 var ntSp = ntEl.querySelector('span');
-                if (ntSp) ntSp.innerHTML = '⚡ <b>纯电提示：</b>' + ROUTE_META.evNotice;
+                
             } else {
                 ntEl.remove(); // 数据包未给提示时不展示旧线路的提示
             }

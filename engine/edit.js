@@ -565,7 +565,7 @@
             if (field === 'evNotice') {
                 var nt = document.getElementById('evNotice');
                 var sp = nt && nt.querySelector('span');
-                if (sp) sp.innerHTML = '⚡ <b>纯电提示：</b>' + ROUTE_META.evNotice;
+                
             }
         },
         reset: function () {
@@ -758,7 +758,7 @@
         if (subEl && ROUTE_META.sub) subEl.textContent = ROUTE_META.sub;
         var nt = document.getElementById('evNotice');
         var sp = nt && nt.querySelector('span');
-        if (sp && ROUTE_META.evNotice) sp.innerHTML = '⚡ <b>纯电提示：</b>' + ROUTE_META.evNotice;
+        
         var dd = document.getElementById('depDate');
         if (dd) dd.value = ROUTE_META.departureDate || '';
     }

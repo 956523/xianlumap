@@ -403,15 +403,12 @@
             openInfo(p.st.lat, p.st.lng, [[isFuel ? '⛽ 必加站' : '⚡ 必充站', isFuel ? 'f' : 'e']], p.st.t,
                 p.st.a + (p.st.tel ? '<br>☎ ' + p.st.tel : '') +
                 '<br>' + navLinkHTML(p.st.lat, p.st.lng, p.st.t) + stationSourceNote() +
-                '<br><b style="color:#ea580c">D' + dayOf(p.st.km) + ' · 到达剩 ' + Math.round(p.arrive * 100) + '% · ' + (isFuel ? '建议加满' : '建议充至 ' + Math.round(p.target * 100) + '%') + '</b>');
+                '');
         });
         planLb = createLabelLayer({
             map: hidePlanFar ? null : map,
             styles: { p: ({ color: '#c2410c', size: 11, offset: { x: 0, y: -26 } }) },
-            geometries: planData.map(function (p, i) {
-                var isF = evState.mode === 'fuel';
-                return { id: 'pl' + i, position: LL(p.st.lat, p.st.lng), content: '▲ ' + (isF ? '加满' : '充至 ' + Math.round(p.target * 100) + '%') };
-            })
+            geometries: []  // S35.5：车型体系下线，规划标注（充至/加满）停渲染；planData 计算保留 dormant
         });
 
         /* 标签层级（体验修复 3）第三级：站点图标是主表达，站名文字只在近景出现。
@@ -503,7 +500,7 @@
             /* S27：每条补能建议给一键导航（移动端 mobPlanBody 镜像本面板，链接随之带走） */
             return '<div class="prow"><b>D' + dayOf(p.st.km) + '</b>' + p.st.t + ' ' +
                 navLinkHTML(p.st.lat, p.st.lng, p.st.t, '导航') +
-                '<span>到达剩 ' + Math.round(p.arrive * 100) + '% → ' + (isFuel ? '加满' : '充至 ' + Math.round(p.target * 100) + '%') + '</span></div>';
+                '</div>';
         }).join('');
         if (!plan.length) html += '<div class="prow">满电即可跑完全程，中途无需' + lb + '。</div>';
         box.innerHTML = html;
