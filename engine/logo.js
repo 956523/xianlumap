@@ -34,6 +34,19 @@ var BRAND = {
         '<path d="M5 21 V4"/>' +
         '<path d="M5 4 h13 l-2.6 4 L18 12 H5"/>' +
         '</svg>',
+    /* 补给（S36 定稿）：油泵 + 闪电合体，currentColor 线性 */
+    supply: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M4.5 21 V9 a2 2 0 0 1 2-2 h5 a2 2 0 0 1 2 2 v12"/>' +
+        '<path d="M3 21 h11"/>' +
+        '<path d="M6.5 7 V5 A1.5 1.5 0 0 1 8 3.5 h2 A1.5 1.5 0 0 1 11.5 5 V7"/>' +
+        '<path d="m10 10.5-2.6 4 h2.8 l-2.6 4"/>' +
+        '<path d="M13.5 11 h1 a3 3 0 0 1 3 3 v2.5 a2 2 0 0 1-4 0 V15"/>' +
+        '</svg>',
+    /* 出发（S36 行中）：圆内三角=开始 */
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle cx="12" cy="12" r="9"/>' +
+        '<path d="M9.6 8.6 15.4 12l-5.8 3.4z" fill="currentColor" stroke="none"/>' +
+        '</svg>',
     /* 渲染层 emoji 剥离（不动数据：manifest/包一致性断言不受影响） */
     stripEmoji: function (s) {
         return String(s == null ? '' : s).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\uFE0F?|\u{1F000}-\u{1F0FF}/gu, '').trim();

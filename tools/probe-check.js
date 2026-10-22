@@ -524,7 +524,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         /全程需充电 \d+ 次 · 最长无充电间隔 \d+ km/.test(elCache['planPeek'].textContent),
         elCache['planPeek'].textContent.slice(0, 60));
     ok('标题条/菜单/图层弹层/浮动钮全部接线（onclick 就绪）',
-        ['mobMenuBtn', 'mobMenuEdit', 'mobMenuSync', 'mobLayersBtn', 'mobLayersClose', 'mobFit']
+        ['mobMenuBtn', 'mobMenuEdit', 'mobMenuSync', 'mobLayersBtn', 'mobLayersClose', 'mobFit', 'mobSup']
             .every(function (id) { return typeof elCache[id].onclick === 'function'; }), '');
     ok('「全览」条件钮初始不亮（视野就在全览位）且偏离判定可手动触发',
         IA.window.__mobile.fitDeviated() === false && (function () {
@@ -538,9 +538,12 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     /* ---------- S17 真机反馈三修：远景降密 / 剖面把手状态机 / 曲线平滑 ---------- */
     console.log('\n【12】S17：移动远景降密 + 剖面把手 + 平滑曲线');
     // 胶囊识别：badge 样式（白底 rgba(255,255,255,.88)）= 景点胶囊；每次 boot 末段批量出现
+    // S36 远景聚合药丸（「⚡ N」「⛽ N」「⛺ N」补给/休整计数，同为白底胶囊）不计入景点胶囊统计
     function capsuleCount(before) {
         return calls.labels.slice(before).filter(function (l) {
             var o = l.opts || l;
+            var t = (o.text != null) ? String(o.text) : '';
+            if (/^[⛽⚡⛺]/.test(t)) return false;
             return o.style && o.style['background-color'] === 'rgba(255,255,255,.88)';
         }).length;
     }
@@ -1217,15 +1220,28 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var clsOut = !document.body.classList.contains('enroute');
     ok('行中模式进出：body.enroute + 进度卡创建/移除',
         !s30.err && EN && cardIn && clsIn && clsOut, 'in=' + clsIn + ' out=' + clsOut);
-    // b) 锚点定位投影：km 中段 → 当前段 + 距休整点 + 已走里程 + 全程条
+    // b) 锚点定位投影：km 中段 → 当前段 + 待出发态（S36 屏二：距下一休整点/第N程·待出发/出发大药钮）
     EN.setAnchorKm(400);
     var segI = EN._segIdx();
     var cardHtml = elCache['enrCard'].innerHTML || '';
     var projOk = segI >= 0 && EN.curKm === 400 &&
-        /距今晚休整点/.test(cardHtml) && /已走 /.test(cardHtml) && /全程 \d+\/\d+ 程/.test(cardHtml);
-    ok('锚点投影：curKm=400 → 当前段 + 进度卡主任务/段内进度/全程条',
+        /距下一休整点/.test(cardHtml) && /待出发/.test(cardHtml) &&
+        /出发 · 开始第\d+程/.test(cardHtml) && /id="enrGoBtn"/.test(cardHtml);
+    ok('锚点投影：curKm=400 → 待出发态（距下一休整点/第N程·待出发/出发大药钮）',
         projOk, 'seg=' + segI + ' km=' + EN.curKm);
-    // c) 支线提醒态：锚到当前段内某未打卡点前方 1km
+    // b2) 出发（S36 屏四态核心）：legStart 写 legs.startTs 落盘 + 卡切进行中（计时 mm:ss）
+    ok('出发 legStart：legs.startTs 落盘 + 卡切「第 N 程进行中」+ 计时 mm:ss',
+        (function () {
+            try {
+                var okStart = EN.legStart() === true;
+                var h2 = elCache['enrCard'].innerHTML || '';
+                var ddNow = E.currentDisp()[EN._segIdx()];
+                var leg = ddNow && EN.progress().legs && EN.progress().legs[E.origOf(ddNow).id];
+                return okStart && leg && leg.startTs > 0 &&
+                    /第\d+程进行中/.test(h2) && /计时 <span id="enrClock">\d{2}:\d{2}/.test(h2);
+            } catch (e) { return false; }
+        })(), '');
+    // c) 支线提醒：锚到当前段内某未打卡点前方 1km → erfoot「⚑ 前方 Nkm · 名（顺路打卡）」
     var dd0 = E.currentDisp()[segI];
     var spots = EN._segSpots(segI);
     var sideOk = false, sideTxt = '';
@@ -1236,23 +1252,58 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         if (sideSpot) {
             EN.setAnchorKm(+(sideSpot.km - 1).toFixed(1));
             sideTxt = elCache['enrCard'].innerHTML || '';
-            sideOk = EN._state === 'side' && /支线 · 前方 /.test(sideTxt);
+            sideOk = EN._state === 'side' && /前方 \d+km · .*（顺路打卡）/.test(sideTxt);
         }
     }
-    ok('支线提醒态：前方未打卡点 15km 内 → 「支线 · 前方 N km」横幅', spots.length === 0 || sideOk, sideTxt.slice(0, 60));
-    // d) 到达打卡态 → 三键打卡 → 今日完成态 + 数据落草稿
+    ok('支线提醒态：前方未打卡点 15km 内 → erfoot「⚑ 前方 Nkm · 名（顺路打卡）」', spots.length === 0 || sideOk, sideTxt.slice(0, 60));
+    // c2) 补给细行（S36 第 6 幕）：N=0「未指定补给点 · 跟随行程中」→ 指定后「我的补给点 N 站 · 管理 ›」
+    ok('补给细行降级显示：N=0 跟随行程文案 / 指定后「我的补给点 1 站 · 管理 ›」（点击开 __sup）',
+        (function () {
+            try {
+                var h0 = elCache['enrCard'].innerHTML || '';
+                var ok0 = /未指定补给点 · 跟随行程中/.test(h0) && /id="enrSupLine"/.test(h0);
+                s30.sandbox.window.__sup.designate('ev', 0);
+                EN.setAnchorKm(EN.curKm);   // 触发 _afterMove → renderCard
+                var h1 = elCache['enrCard'].innerHTML || '';
+                var ok1 = /我的补给点 1 站/.test(h1) && /管理 ›/.test(h1);
+                s30.sandbox.window.__sup.clear();
+                EN.setAnchorKm(EN.curKm);
+                return ok0 && ok1;
+            } catch (e) { return 'THROW ' + e.message; }
+        })(), '');
+    // c3) 行中补给入口常驻：body.enroute 不藏 #mobBtns/#mobSup（媒体块仅改位避开大卡）
+    ok('行中补给入口常驻：无 body.enroute 隐藏 mobBtns/mobSup 的规则（仅改位规则在位）',
+        (function () {
+            var cssAll = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/) || ['', ''])[1];
+            var hiddenBtns = /body\.enroute\s+#mobBtns\s*\{[^}]*display:\s*none/.test(cssAll);
+            var hiddenSup = /body\.enroute[^}]*#mobSup\s*\{[^}]*display:\s*none/.test(cssAll);
+            var reposition = /body\.enroute\s+#mobBtns\s*\{[^}]*top:/.test(cssAll);
+            return !hiddenBtns && !hiddenSup && reposition;
+        })(), '');
+    // d) 到达打卡：卡不改态 + 浮动 toast（到达『名』/第N程完成/打卡✓）→ 单键打卡 → 卡推进下一程待出发
     EN.setAnchorKm(dd0.altKm[1] - 0.3);
-    var arriveOk = EN._state === 'arrive' && /打卡/.test(elCache['enrCard'].innerHTML || '');
-    EN.checkIn(1);
-    var doneOk = EN._state === 'done' && /本程完成/.test(elCache['enrCard'].innerHTML || '') &&
-        /下一程|全程完成/.test(elCache['enrCard'].innerHTML || '');
+    var arriveOk = EN._state === 'arrive';
+    var toastEl = created.filter(function (el) { return el.id === 'enrToast'; })[0];
+    var toastHtml = toastEl ? (toastEl.innerHTML || '') : '';
+    var toastOk = /到达『/.test(toastHtml) && /休整点/.test(toastHtml) &&
+        /第\d+程完成 · \d+km · 用时 /.test(toastHtml) && /打卡 ✓/.test(toastHtml);
+    var cardNotArrive = !/enrOk1|需注意/.test(elCache['enrCard'].innerHTML || '');
+    ok('到达打卡：卡不改到达按钮态 + 浮动 toast（到达『名』休整点/第N程完成/打卡✓）',
+        arriveOk && toastOk && cardNotArrive, toastHtml.replace(/<[^>]+>/g, ' ').slice(0, 60));
+    elCache['enrGo'].onclick();   // toast 单键打卡 = 事实确认（report=1）
+    var doneOk = EN._state === 'done';
+    var card2 = elCache['enrCard'].innerHTML || '';
+    var advanced = /出发 · 开始第\d+程/.test(card2) && /待出发/.test(card2);
+    EN.setAnchorKm((dd0.altKm[0] + dd0.altKm[1]) / 2);   // 回看已完成程 → 完成态对账卡
+    var card3 = elCache['enrCard'].innerHTML || '';
+    var doneCardOk = /本程完成/.test(card3) && /下一程|全程完成/.test(card3);
     var prog = E.Edit.overlay.progress || {};
     var dataOk = prog.daysDone && prog.daysDone[E.origOf(dd0).id] && prog.daysDone[E.origOf(dd0).id].report === 1 &&
         E.Edit.isDirty() === true;
     E.Edit.commit();
     var persisted = /"daysDone"/.test(lsStore['xianlumap.overlay.qinghai-gansu'] || '') && /"progress"/.test(lsStore['xianlumap.overlay.qinghai-gansu'] || '');
-    ok('四态切换：到达打卡 → 三键上报(report=1) → 本程完成 + 下一程预告',
-        arriveOk && doneOk && dataOk, 'state=' + EN._state);
+    ok('打卡闭环：toast 打卡 → 卡自然推进下一程待出发；回看完成程出对账卡（本程完成/下一程）',
+        doneOk && advanced && doneCardOk && dataOk, 'state=' + EN._state);
     ok('打卡数据流：overlay.progress 草稿 → commit 落盘（云同步读 saved 自动覆盖）', persisted, '');
     // e) 支线自动点亮：定位到未打卡点 200m 内（路过即点亮，不强求）
     var E2s = bootRoute('qinghai-gansu').sandbox;
@@ -1342,14 +1393,18 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         /\.peek-rail\s*\{/.test(css34) && /\.peek-d\.done/.test(css34) &&
         /mob-peek/.test(mobSrc) &&
         /function renderPeekBox[\s\S]{0,400}innerWidth > 768[\s\S]{0,160}return/.test(reSrc), '');
-    // b) 窄屏 boot：peekBox 内容 = 一行概要（D1 · 标题 · km · 打卡/充电/加油）+ 天数轨
+    // b) 窄屏 boot：peekBox 内容 = S36 hero 大卡（eyebrow/起讫+里程/chips/程轨+刻度）
     var s34m = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
     var M = s34m.sandbox;
     var peekHtml = elCache['peekBox'] && elCache['peekBox'].innerHTML || '';
     var peekOk = !s34m.err && peekHtml.indexOf('peekcard') >= 0 &&
-        /<div class="pk-day"><b>\d+<\/b>(<span class="pk-d">[\d/]+<\/span>)?<\/div>[\s\S]*<span class="pk-t">[^<]+<\/span>[\s\S]*<span class="pk-meta">\d+km · 打卡 \d+ · 充电 \d+ · 加油 \d+<\/span>[\s\S]*<div class="peek-rail">[\s\S]*class="peek-d/.test(peekHtml) &&
-        !/第\d+程/.test(peekHtml);   // S35：程轨药丸只露数字（✓/N），不重复程标
-    ok('窄屏 peekBox：S35 今日任务卡（程号+日期方块/标题/km·打卡·充电·加油）+ 药丸程轨（无 D 前缀）', peekOk,
+        /<div class="pk-eyebrow">第 \d+ 程 · 共 \d+ 程<\/div>/.test(peekHtml) &&
+        /<div class="pk-hero"><span class="pk-ft">[^<]+ → [^<]+<\/span><span class="pk-km">\d+<small>km<\/small><\/span><\/div>/.test(peekHtml) &&
+        /<span class="pk-chip amber">⛺ 休整点 · [^<]+<\/span>[\s\S]*<span class="pk-chip" data-pfull="1">⚑ 打卡 \d+ 处<\/span>/.test(peekHtml) &&
+        /<div class="peek-rail">[\s\S]*class="peek-d/.test(peekHtml) &&
+        /<div class="pk-ticks">(<span>[^<]*<\/span>){5}<\/div>/.test(peekHtml) &&
+        !/第\d+程/.test(peekHtml);   // S36：程标带空格（「第 N 程」），程轨药丸只露数字（✓/N），不重复程标
+    ok('窄屏 peekBox：S36 hero 大卡（第 N 程·共 M 程 / 起讫+品牌绿里程 / 休整·打卡 chips / 程轨+5 地名刻度）', peekOk,
         peekHtml.replace(/<[^>]+>/g, ' ').slice(0, 80));
     ok('窄屏 peek 态 body 带 mob-peek（CSS 边界生效前提）',
         document.body.classList.contains('mob-peek'), '');
@@ -1399,6 +1454,138 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         /mobMove\(document\.getElementById\('dirSeg'\), _ctl\)/.test(mobSrc) &&
         !/_ctl\.appendChild\(evsw\)/.test(mobSrc) && !/getElementById\('mobEv'\)/.test(mobSrc) &&
         !/getElementById\('mobFuel'\)/.test(mobSrc), '');
+    /* ---------- S36：视觉底座（毛玻璃胶囊顶栏 / 补给悬浮钮 / 远景聚合药丸 / peek hero 大卡 216px） ---------- */
+    console.log('\n【31】S36：视觉底座 + peek hero 大卡');
+    var css36 = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/) || ['', ''])[1];
+    // a) 胶囊顶栏：position:fixed 不动（c4 同口径）+ 毛玻璃 + 圆角；标题条占位口径 titleH=48 不动
+    ok('S36 胶囊顶栏：mobBar 浮动毛玻璃胶囊（fixed/backdrop-filter/圆角 22px；titleH=48 占位口径不变）',
+        /#mobBar\s*\{[^}]*position:\s*fixed[^}]*backdrop-filter:\s*blur\(18px\)[^}]*border-radius:\s*22px/.test(css36) &&
+        /titleH = 48/.test(reSrc) && /var visTop = \(_fitBox\.titleH \|\| 0\) \+ 6/.test(reSrc), '');
+    // b) 补给悬浮钮：BRAND.supply 定稿图标 + 空壳 toggle（__supOpen 不存在时静默）
+    var logoSrc36 = fs.readFileSync(path.join(ROOT, 'engine', 'logo.js'), 'utf8');
+    ok('S36 补给钮：BRAND.supply 图标（24 盒/油泵+闪电合体）+ mobSup 接线 + 空壳 toggle mob-sup 静默',
+        /supply:\s*'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"/.test(logoSrc36) &&
+        /M13\.5 11 h1 a3 3 0 0 1 3 3 v2\.5 a2 2 0 0 1-4 0 V15/.test(logoSrc36) &&
+        /mobEl\('button', 'mobSup'/.test(mobSrc) && /toggleClass\('mob-sup'\)/.test(mobSrc) &&
+        /__supOpen/.test(mobSrc) &&
+        (function () {
+            try {
+                elCache['mobSup'].onclick();
+                var on = document.body.classList.contains('mob-sup');
+                elCache['mobSup'].onclick();
+                return on && !document.body.classList.contains('mob-sup');
+            } catch (e) { return false; }
+        })(), '');
+    // c) 远景聚合药丸：far 档（z<7）「⚡ N」「⛽ N」「⛺ N」白底胶囊上图；近景（z=7.3）不画
+    //    （数据包 stock 无 stay 字段，注入住宿点触发休整层药丸分支）
+    MOCK_ZOOM = 6.0;
+    var lblBefore36 = calls.labels.length;
+    var s36far = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+    try { s36far.sandbox.Edit.setDayField(1, 'stay', 'S36测试住宿'); s36far.sandbox.renderAll(); } catch (e) {}
+    var farTexts = calls.labels.slice(lblBefore36).map(function (l) { return (l.opts && l.opts.text) || l.text || ''; })
+        .filter(function (t) { return /^[⚡⛽⛺] \d+$/.test(t); });
+    MOCK_ZOOM = 7.3;
+    var lblBefore36b = calls.labels.length;
+    var s36near = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+    var nearTexts = calls.labels.slice(lblBefore36b).map(function (l) { return (l.opts && l.opts.text) || l.text || ''; })
+        .filter(function (t) { return /^[⚡⛽⛺] \d+$/.test(t); });
+    ok('S36 远景聚合药丸：z=6 出「⚡ N」「⛽ N」「⛺ N」计数胶囊，z=7.3 近景收敛不画',
+        !s36far.err && !s36near.err &&
+        farTexts.some(function (t) { return /^⚡ \d+$/.test(t); }) &&
+        farTexts.some(function (t) { return /^⛽ \d+$/.test(t); }) &&
+        farTexts.some(function (t) { return /^⛺ \d+$/.test(t); }) &&
+        nearTexts.length === 0,
+        'far=' + farTexts.slice(0, 6).join('|') + '（×' + farTexts.length + '） near=' + nearTexts.length);
+    // d) peek 露出高度 216：JS 常量与 CSS 变量同值（S36 hero 大卡）
+    ok('S36 peek 高度 216px：MOBILE_PEEK=216 与 CSS --sheet-peek:216px 同值',
+        /MOBILE_PEEK = 216/.test(mobSrc) && /--sheet-peek:\s*216px/.test(css36), '');
+    /* ---------- S36 屏四：沿线补给（跟随行程 / 我的指定） ---------- */
+    console.log('\n【32】S36 屏四：补给抽屉 + 我的指定');
+    delete lsStore['xlm.stations.chuanxi'];
+    var s36sup = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+    var SUP = s36sup.sandbox.window.__sup;
+    ok('__sup 接口在位（open/close/isOpen/list/count）且初始 0 条=跟随行程',
+        !s36sup.err && SUP && typeof SUP.open === 'function' && typeof SUP.close === 'function' &&
+        typeof SUP.isOpen === 'function' && Array.isArray(SUP.list()) && SUP.count() === 0, '');
+    ok('open/close 驱动 body.mob-sup；open 时互斥关 mob-layers/mob-menu/mob-plan',
+        (function () {
+            try {
+                document.body.classList.add('mob-layers');
+                document.body.classList.add('mob-menu');
+                SUP.open();
+                var onOpen = document.body.classList.contains('mob-sup') &&
+                    !document.body.classList.contains('mob-layers') &&
+                    !document.body.classList.contains('mob-menu');
+                var openFlag = SUP.isOpen() === true;
+                SUP.close();
+                return onOpen && openFlag && !document.body.classList.contains('mob-sup') && SUP.isOpen() === false;
+            } catch (e) { return false; }
+        })(), '');
+    var supSt = s36sup.sandbox.STATION_DATA;
+    ok('指定 2 站（STATION_DATA 下标）：xlm.stations.chuanxi 落盘（v:1 + designated 2 条含 c/i/t）',
+        (function () {
+            try {
+                SUP.designate('ev', 0);
+                SUP.designate('fuel', 0);
+                var raw = JSON.parse(lsStore['xlm.stations.chuanxi'] || '{}');
+                return raw.v === 1 && Array.isArray(raw.designated) && raw.designated.length === 2 &&
+                    raw.designated[0].c === 'ev' && raw.designated[0].i === 0 &&
+                    raw.designated[0].t === supSt.ev[0].t && raw.designated[1].c === 'fuel';
+            } catch (e) { return false; }
+        })(), '');
+    ok('designated ≥1：横幅「已指定 2 站 · 其他补给点已隐藏」+ seg 角标 2 + 自动切「我的指定」',
+        (function () {
+            try {
+                SUP.open();
+                var banT = document.getElementById('supBanT');
+                var badge = document.getElementById('supBadge');
+                var segMine = document.getElementById('supSegMine');
+                var segFol = document.getElementById('supSegFollow');
+                var banOk = banT && /已指定 2 站 · 其他补给点已隐藏/.test(banT.textContent);
+                var badgeOk = badge && String(badge.textContent) === '2' && badge.style.display !== 'none';
+                var segOk = segMine && segMine.classList.contains('on') && segFol && !segFol.classList.contains('on');
+                SUP.close();
+                return banOk && badgeOk && segOk;
+            } catch (e) { return false; }
+        })(), '');
+    ok('指定模式下 renderStations 不抛错且地图只画指定站（橙环钉=2、小圆点=0）',
+        (function () {
+            try {
+                var before = calls.markers.length;
+                s36sup.sandbox.renderStations();
+                var pins = 0, dots = 0;
+                calls.markers.slice(before).forEach(function (m) {
+                    var o = m.opts || m;
+                    var ox = o.offset ? o.offset.x : null;
+                    if (ox === -19) pins++;          // planM 橙环钉 anchor 19
+                    else if (ox === -12) dots++;     // dim 小圆点 anchor 12
+                });
+                return pins === 2 && dots === 0;
+            } catch (e) { return 'THROW ' + e.message; }
+        })(), '');
+    ok('取消到 0 自动回跟随行程（角标隐藏、落盘清空、renderStations 回到现状链路不抛错）',
+        (function () {
+            try {
+                SUP.clear();
+                var raw = JSON.parse(lsStore['xlm.stations.chuanxi'] || '{}');
+                SUP.open();
+                var segFol = document.getElementById('supSegFollow');
+                var badge = document.getElementById('supBadge');
+                var followBack = segFol && segFol.classList.contains('on') &&
+                    badge && badge.style.display === 'none';
+                SUP.close();
+                s36sup.sandbox.renderStations();
+                return SUP.count() === 0 && raw.designated.length === 0 && followBack;
+            } catch (e) { return false; }
+        })(), '');
+    ok('数据重建容错：t 不匹配的记录加载时丢弃',
+        (function () {
+            try {
+                lsStore['xlm.stations.chuanxi'] = JSON.stringify({ v: 1, designated: [{ c: 'ev', i: 0, t: '已经不存在的站名' }] });
+                var b2 = bootRoute('chuanxi', { innerWidth: 390, innerHeight: 844 });
+                return !b2.err && b2.sandbox.window.__sup.count() === 0;
+            } catch (e) { return false; }
+        })(), '');
     /* ---------- S35：无「天」UI 锁 ---------- */
     console.log('\n【30】S35：「程」改名零残留锁');
     (function () {

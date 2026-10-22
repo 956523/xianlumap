@@ -651,9 +651,13 @@
         return '第' + id + '程';
     }
     try { window.__dispTagOf = dayTagOf; } catch (e) {}
-    /* S34 peek 概要盒：移动端 peek 态的唯一内容——一行概要（今日从→到/km/打卡/充电/加油）
-       + 天数轨（Dn✓ 完成态）；标题/日期/行程头/chips/管理区全部只在 full 态（CSS 边界）。
-       「今日」= 首个未完成天（全完成取最后一天）。桌面不显示（body.mob-peek 才出现）。 */
+    /* S36 peek hero 大卡：移动端 peek 态的唯一内容——
+       ① eyebrow「第 N 程 · 共 M 程」（当前程 = 首个未完成程）
+       ② hero：左 21px 粗体起讫 + 右 30px 品牌绿里程
+       ③ chips：⛺ 休整点 · 地名 ／ ⚑ 打卡 n 处（点开 full）／ 补给图标 途中 xxkm 无补给（与盲区段
+          重叠才出现；能耗文案零回流）
+       ④ 药丸程轨（done ✓ / cur 实心）+ 5 个地名刻度（起点/四分点/中点/终点近似）
+       桌面不显示（body.mob-peek 才出现）。 */
     function renderPeekBox(disp, dayDoneP) {
         /* 桌面零变化：peek 盒只服务窄屏（CSS 显隐规则也在窄屏媒体块内）；宽屏移除残留（防 CDP 横竖翻转后的陈旧节点） */
         if (window.innerWidth > 768) {
@@ -681,7 +685,7 @@
         var dd = disp[todayI];
         if (!dd) return;
         var oday = origOf(dd);
-        var nCk = 0, nEv = 0, nFuel = 0;
+        var nCk = 0;
         try {
             var bex = branchExclSet();
             var bexWp = branchExclWpSet();
@@ -699,35 +703,64 @@
                     if (oday.altKm && k >= oday.altKm[0] - 0.5 && k <= oday.altKm[1] + 0.5) nCk++;
                 });
             }
-            if (typeof stationsAll === 'function') {
-                stationsAll('ev').forEach(function (s) { if (oday.altKm && s.km >= oday.altKm[0] && s.km <= oday.altKm[1]) nEv++; });
-                stationsAll('fuel').forEach(function (s) { if (oday.altKm && s.km >= oday.altKm[0] && s.km <= oday.altKm[1]) nFuel++; });
+        } catch (e) {}
+        /* chips 数据：休整点地名（住宿优先，退回程目的地）；盲区 chip = 与当前程里程区间
+           重叠的盲区段（数据口径与地图红虚线一致），取最大的一段，无重叠不显示 */
+        var stayName = nodeName(dd).slice(0, 20);
+        var blindKm = 0;
+        try {
+            if (oday.altKm && typeof STATION_DATA !== 'undefined' && STATION_DATA && STATION_DATA.warnings) {
+                var offB = curStart().stationKm0 || 0;
+                STATION_DATA.warnings.forEach(function (w) {
+                    var a = w.from - offB, b = w.to - offB;
+                    if (b >= oday.altKm[0] - 0.5 && a <= oday.altKm[1] + 0.5 && +w.km > blindKm) blindKm = Math.round(w.km);
+                });
             }
         } catch (e) {}
-        /* S35：药丸程轨（缩写数字；done 绿勾 / cur 实心绿块） */
+        /* S35 药丸程轨（缩写数字；done 绿勾 / cur 实心绿块） */
         var rail = disp.map(function (d2, i2) {
             var done = dayDoneP(origOf(d2).id);
             return '<span class="peek-d' + (done ? ' done' : '') + (i2 === todayI ? ' cur' : '') + '" data-pday="' + i2 + '">' + (done ? '✓' : (i2 + 1)) + '</span>';
         }).join('');
-        /* 日期方块：绿渐变 + 程号 + 月/日（推算标注，按出发日期顺延） */
-        var dateSq = '';
+        /* 地名刻度：起点 + 四分位 + 终点（显示层现成数据近似；重名/空名用 · 占空防串位） */
+        var tickSpans = '';
         try {
-            if (ROUTE_META.departureDate) {
-                var a0 = new Date(ROUTE_META.departureDate + 'T00:00:00');
-                a0.setDate(a0.getDate() + todayI);
-                dateSq = '<span class="pk-d">' + (a0.getMonth() + 1) + '/' + a0.getDate() + '</span>';
-            }
+            var lastI = disp.length - 1;
+            var idxs = [0, Math.round(lastI / 4), Math.round(lastI / 2), Math.round(lastI * 3 / 4), lastI];
+            var seenNm = {};
+            tickSpans = idxs.map(function (ii) {
+                var nm = ii === 0
+                    ? (String(origOf(disp[0]).title || '').split('→')[0] || '').trim().slice(0, 4)
+                    : dayDest(origOf(disp[ii])).slice(0, 4);
+                if (!nm || seenNm[nm]) nm = '·';
+                seenNm[nm] = 1;
+                return '<span>' + escapeHtml2(nm) + '</span>';
+            }).join('');
         } catch (e) {}
         box.innerHTML = '<div class="peekcard">' +
-            '<div class="pk-day"><b>' + (todayI + 1) + '</b>' + dateSq + '</div>' +
-            '<div class="pk-tt"><span class="pk-t">' + escapeHtml2(dd.title) + '</span>' +
-            '<span class="pk-meta">' + (dd.km || 0) + 'km · 打卡 ' + nCk + ' · 充电 ' + nEv + ' · 加油 ' + nFuel + '</span></div></div>' +
-            '<div class="peek-rail">' + rail + '</div>';
+            '<div class="pk-eyebrow">第 ' + (todayI + 1) + ' 程 · 共 ' + disp.length + ' 程</div>' +
+            '<div class="pk-hero"><span class="pk-ft">' + escapeHtml2(dd.title) + '</span>' +
+            '<span class="pk-km">' + (dd.km || 0) + '<small>km</small></span></div>' +
+            '<div class="pk-chips">' +
+            '<span class="pk-chip amber">⛺ 休整点 · ' + escapeHtml2(stayName) + '</span>' +
+            '<span class="pk-chip" data-pfull="1">⚑ 打卡 ' + nCk + ' 处</span>' +
+            (blindKm ? '<span class="pk-chip green"><span class="pk-supi">' +
+                ((typeof BRAND !== 'undefined' && BRAND.supply) ? BRAND.supply : '') +
+                '</span>途中 ' + blindKm + 'km 无补给</span>' : '') +
+            '</div>' +
+            '<div class="peek-rail">' + rail + '</div>' +
+            '<div class="pk-ticks">' + tickSpans + '</div>' +
+            '</div>';
         if (!box.__wired) {
             box.__wired = true;
             if (box.addEventListener) box.addEventListener('click', function (e) {
                 var t = e.target;
                 if (!t || !t.getAttribute) return;
+                /* S36：打卡 chip 点开 full（不切天） */
+                if (t.getAttribute('data-pfull') != null) {
+                    try { if (typeof setSheet === 'function') setSheet('full'); } catch (er) {}
+                    return;
+                }
                 var pi = t.getAttribute('data-pday');
                 if (pi == null) return;
                 try { if (typeof setSheet === 'function') setSheet('full'); } catch (er) {}
@@ -986,9 +1019,11 @@
        成员 = 每天的住宿点（位置 = 天轨迹终点，名字 = stay 文本）+ kind=rest 的手动途经点。
        状态位重建模式（S0 教训）；归属/编号口径与行程卡三类行一致（merged 隐藏、可见序编号）。 */
     var restMarkers = null;
+    var restPillLb = null;   // S36 远景聚合药丸层（「⛺ N」白底胶囊）
     var restData = [];
     function renderRestMarkers() {
         if (restMarkers) { restMarkers.setMap(null); restMarkers = null; }
+        if (restPillLb) { restPillLb.setMap(null); restPillLb = null; }
         if (!restLayerOn) return;
         restData = [];
         var merged = (typeof Edit !== 'undefined' && Edit._mergedIds) ? Edit._mergedIds() : [];
@@ -1006,6 +1041,24 @@
                 if (w.kind !== 'rest') return;
                 restData.push({ lat: w.p[0], lng: w.p[1], t: w.n, sub: '☾ 休整点 · 途经点（待保存生效）' });
             });
+        }
+        /* S36 远景聚合：far 档（z<7）不画圆点，收敛成一枚「⛺ N」计数药丸（纯展示）；
+           近景（z≥7）恢复圆点。归属休整图层开关（restLayerOn 关时上面已 return）。 */
+        var rz = 7.3;
+        try { if (typeof map.getZoom === 'function') rz = map.getZoom(); } catch (e) {}
+        if (rz < 7 && restData.length) {
+            var cLa = 0, cLn = 0;
+            restData.forEach(function (r) { cLa += r.lat; cLn += r.lng; });
+            restPillLb = createLabelLayer({
+                map: map,
+                zIndex: 115,
+                styles: { r: ({ color: '#b45309', size: 12, bold: true, badge: true, badgeBorder: '#f0d9ac' }) },
+                geometries: [{
+                    id: 'rp0', styleId: 'r', position: LL(cLa / restData.length, cLn / restData.length),
+                    content: '⛺ ' + restData.length
+                }]
+            });
+            return;
         }
         restMarkers = createMarkerLayer({
             map: map,

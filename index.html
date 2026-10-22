@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d9488">
@@ -280,32 +280,51 @@
     .pt-add, .pt-share { border: none; background: #f1f5f9; color: #3d4a5c; border-radius: 8px; min-height: 32px; padding: 0 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; margin-right: 2px; }
     .pt-add:hover, .pt-share:hover { background: #edf0f4; }
     .chip-days { cursor: pointer; }
-    /* ============ S30 行中模式 ============
-       进入后地图全屏 + 底部进度卡；退出零残留（body.enroute 移除即复原） */
+    /* ============ S30/S36 行中模式 ============
+       进入后地图全屏 + 底部沉浸式大卡；退出零残留（body.enroute 移除即复原）。
+       S36 屏二：#mobSup 补给钮与 #mobBtns 行中常驻（媒体块内改定位，避开大卡）。 */
     body.enroute #panel, body.enroute #elev, body.enroute #panelHandle, body.enroute .mobBar { display: none !important; }
     body.enroute #map { height: 100vh !important; }
     .enr-toggle { border: 1px solid #edf0f4; background: #fff; border-radius: 999px; padding: 2px 10px; font-size: 11.5px; color: #3d4a5c; cursor: pointer; font-family: inherit; margin-left: 4px; }
     .enr-toggle.on { background: #0d9488; border-color: #0d9488; color: #fff; font-weight: 600; }
     /* S34：mobCtl（抽屉头部控制行）全局隐藏——只在窄屏媒体块内放行；桌面零影响 */
     #mobCtl { display: none; }
-    /* S35 行中深色任务卡（#0f172a→#1e293b 渐变；车内强光下最亮的那块屏） */
-    .enr-card { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(160deg, #0f172a, #1e293b); color: #fff; border: none; border-radius: var(--r-lg); box-shadow: var(--shadow-lg); padding: 16px 18px calc(14px + env(safe-area-inset-bottom)); font-family: inherit; z-index: var(--z-guide,1400); }
+    /* S36 屏二行中深色沉浸式大卡：圆角 22 + 山海底渐变（车内强光下最亮的那块屏） */
+    .enr-card { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(150deg, #111c2e 0%, #0d9488 140%); color: #fff; border: none; border-radius: 22px; box-shadow: var(--shadow-lg); padding: 18px 20px calc(14px + env(safe-area-inset-bottom)); font-family: inherit; z-index: var(--z-guide,1400); }
+    .enr-lab { font-size: 11px; font-weight: 700; letter-spacing: .2em; color: #5eead4; }
+    .enr-big { font-size: 46px; font-weight: 800; line-height: 1.1; margin-top: 8px; }
+    .enr-big small { font-size: 16px; font-weight: 600; color: rgba(255,255,255,.6); }
+    .enr-dst { font-size: 14.5px; color: rgba(255,255,255,.92); margin-top: 4px; }
+    .enr-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.16); margin-top: 16px; overflow: hidden; }
+    .enr-bar i { display: block; height: 100%; background: linear-gradient(90deg, #2dd4bf, #5eead4); border-radius: 4px; transition: width .3s; }
+    .erfoot { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: rgba(255,255,255,.65); margin-top: 7px; }
+    /* 补给细行（S36 第 6 幕规则：辅助信息降级——细分隔线、无卡片） */
+    .sup-line { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.14); font-size: 12px; color: rgba(255,255,255,.55); cursor: pointer; }
+    .sup-line .mgt { color: #5eead4; font-weight: 700; }
+    /* 出发大药钮 / 工具行（ctab / ctab2，屏二定稿） */
+    .ctab { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin-top: 14px; border: none; background: var(--green); color: #fff; font-size: 15.5px; font-weight: 800; border-radius: 999px; padding: 15px; cursor: pointer; font-family: inherit; box-shadow: 0 10px 26px rgba(13,148,136,.4); }
+    .ctab svg { width: 18px; height: 18px; flex: none; }
+    .ctab2 { display: flex; justify-content: center; gap: 18px; margin-top: 12px; font-size: 12.5px; color: rgba(255,255,255,.85); font-weight: 600; }
+    .ctab2 span { cursor: pointer; padding: 4px 6px; }
+    /* 到达打卡 toast（S36 屏二：深色浮动卡 + 青绿对勾圆标，不改进度卡；30s 自动隐藏） */
+    .enr-toast { position: fixed; left: 16px; right: 16px; bottom: 330px; z-index: var(--z-guide,1400); background: rgba(10,15,26,.92); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-radius: 20px; padding: 16px 18px; color: #fff; box-shadow: var(--shadow-lg); display: none; align-items: center; gap: 12px; font-family: inherit; }
+    .enr-toast.show { display: flex; }
+    .enr-toast .tk { width: 30px; height: 30px; border-radius: 50%; background: #2dd4bf; color: #06302b; display: flex; align-items: center; justify-content: center; flex: none; }
+    .enr-toast .tk svg { width: 17px; height: 17px; }
+    .enr-toast .ttx { flex: 1; min-width: 0; }
+    .enr-toast .tt { font-size: 15px; font-weight: 800; }
+    .enr-toast .tm { font-size: 11.5px; color: rgba(255,255,255,.65); margin-top: 2px; }
+    .enr-toast .go { margin-left: auto; flex: none; background: #2dd4bf; color: #06302b; font-weight: 800; font-size: 13px; border-radius: 999px; padding: 9px 16px; cursor: pointer; }
+    /* 完成态/未定位 + 次级 ghost 行 */
     .enr-t { font-size: 15px; font-weight: 600; color: #fff; }
-    .enr-lab { font-size: 11px; color: #7dd3c8; letter-spacing: .14em; }
-    .enr-big { font-size: 30px; font-weight: 700; margin-top: 6px; line-height: 1.1; }
-    .enr-big small { font-size: 14px; font-weight: 500; color: #94a3b8; }
-    .enr-dst { font-size: 13px; color: #e2e8f0; margin-top: 4px; }
-    .enr-sub { font-size: 12px; color: #94a3b8; margin-top: 5px; line-height: 1.6; }
-    .enr-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11.5px; color: #7dd3c8; margin-top: 10px; }
+    .enr-sub { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 5px; line-height: 1.6; }
+    .enr-sub2 { display: flex; gap: 8px; margin-top: 10px; }
     .enr-row { display: flex; gap: 8px; margin-top: 10px; }
-    .enr-mini { flex: 1; border: none; background: #334155; color: #e2e8f0; border-radius: var(--r-pill); min-height: 44px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .enr-mini { flex: 1; border: none; background: rgba(255,255,255,.12); color: #e2e8f0; border-radius: var(--r-pill); min-height: 44px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
     .enr-mini.ok { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #fff; }
     .enr-mini.ghost { flex: none; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); min-height: 32px; padding: 0 12px; font-size: 11.5px; }
-    .enr-bar { height: 7px; background: #334155; border-radius: 4px; margin-top: 12px; overflow: hidden; }
-    .enr-bar i { display: block; height: 100%; background: linear-gradient(90deg, #14b8a6, #2dd4bf); border-radius: 4px; transition: width .3s; }
-    .enr-side { margin-top: 10px; padding: 8px 12px; background: rgba(124,58,237,.18); border: 1px solid rgba(167,139,250,.35); border-radius: 12px; font-size: 12.5px; color: #c4b5fd; }
     .enr-chks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-    .enr-chk { font-size: 11.5px; color: #94a3b8; background: rgba(255,255,255,.06); border: 1px dashed rgba(255,255,255,.16); border-radius: var(--r-pill); padding: 3px 10px; }
+    .enr-chk { font-size: 11.5px; color: rgba(255,255,255,.55); background: rgba(255,255,255,.06); border: 1px dashed rgba(255,255,255,.16); border-radius: var(--r-pill); padding: 3px 10px; }
     .enr-chk.on { color: #5eead4; background: rgba(20,184,166,.14); border: 1px solid rgba(45,212,191,.4); }
     /* S32：sparkline 已移除（产品拍板），从→到占满行宽 */
     @media (max-width: 860px) {
@@ -508,7 +527,7 @@
        full 全高 / hidden 收起），剖面抽屉 #elev 是第二张表（打开时盖住行程单）。
        手势/互斥逻辑在 engine/mobile.js。 */
     @media (max-width: 768px) {
-        :root { --sheet-peek: 150px; }   /* S35：手柄 + 今日任务卡 + 药丸程轨 */
+        :root { --sheet-peek: 216px; }   /* S36：手柄 + peek hero 大卡（eyebrow/hero/chips/程轨/刻度） */
         #panel {
             left: 0; right: 0; top: auto; bottom: 0; width: 100%;
             max-height: none; height: auto;
@@ -524,19 +543,27 @@
         body.mob-peek #peekBox { display: block; }
         body.mob-peek #panel > :not(#sheetGrip):not(#peekBox) { display: none !important; }
         #peekBox { padding: 2px 2px 4px; }
-        /* S35 今日任务卡：绿渐变日期方块 + 标题 + 元信息 */
-        .peekcard { display: flex; align-items: center; gap: 12px; background: var(--card, #fff); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 12px 14px; margin-top: 8px; }
-        .pk-day { flex: none; width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .pk-day b { font-size: 16px; line-height: 1; font-weight: 700; }
-        .pk-day .pk-d { font-size: 8.5px; opacity: .9; margin-top: 2px; }
-        .pk-tt { flex: 1; min-width: 0; }
-        .pk-t { display: block; font-size: 16.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pk-meta { display: block; font-size: 12px; color: var(--weak); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* S36 peek hero 大卡：eyebrow + hero + chips + 程轨 + 地名刻度（毛玻璃质感，同抽屉一族） */
+        .peekcard { background: rgba(255,255,255,.96); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); border-radius: 20px; box-shadow: var(--shadow); padding: 12px 14px 10px; margin-top: 6px; }
+        .pk-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--green-deep); }
+        .pk-hero { display: flex; align-items: baseline; gap: 10px; margin-top: 5px; }
+        .pk-ft { flex: 1; min-width: 0; font-size: 21px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pk-km { flex: none; margin-left: auto; font-size: 30px; font-weight: 800; color: var(--green); }
+        .pk-km small { font-size: 12px; font-weight: 600; color: var(--weak); margin-left: 2px; }
+        .pk-chips { display: flex; gap: 6px; margin-top: 9px; overflow: hidden; }
+        .pk-chip { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: #f1f4f7; color: var(--sub); white-space: nowrap; }
+        .pk-chip.amber { background: #fdf2e2; color: var(--amber); }
+        .pk-chip.green { background: #e5f6f3; color: var(--green-deep); }
+        .pk-chip[data-pfull] { cursor: pointer; }
+        .pk-chip .pk-supi { width: 11px; height: 11px; display: inline-flex; flex: none; }
+        .pk-chip .pk-supi svg { width: 100%; height: 100%; }
         /* 药丸程轨：缩写数字；done 绿勾绿底 / cur 实心绿块 */
-        .peek-rail { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+        .peek-rail { display: flex; gap: 6px; overflow-x: auto; margin-top: 9px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
         .peek-d { flex: none; min-width: 30px; text-align: center; font-size: 11.5px; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 6px 0; color: var(--sub); background: #fff; cursor: pointer; }
         .peek-d.done { color: var(--green-deep); border-color: #bfe3dd; background: #f0faf7; font-weight: 600; }
         .peek-d.cur { color: #fff; background: var(--green); border-color: var(--green); font-weight: 600; }
+        /* 程轨下方地名刻度（起点/四分位/终点近似，与药丸对位） */
+        .pk-ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--weak); margin-top: 6px; padding: 0 2px; }
         /* S34 抽屉头部控制行（出发地/顺逆/车型；peek 态被上面的边界隐藏，full 态才见） */
         #mobCtl { display: flex; gap: 6px; align-items: center; padding: 2px 0 8px; border-bottom: 1px solid #f1f5f9; margin-bottom: 6px; overflow-x: auto; }
         /* S34 打卡行筛选：窄屏截断第 5 个起（.pt-m.extra），点「等N处 ▾」行展开（li.pts-open） */
@@ -594,13 +621,18 @@
         /* ============ S16 移动端信息架构：标题条 / ⋯菜单 / 图层弹层 / 浮动按钮 ============
            全部只在 ≤768px 出现；桌面侧栏维持现状（图层开关/续航卡仍在侧栏）。 */
         #mobRoot { display: none; }
-        /* 常驻标题条：线路名 + 出发地切换 + 车型开关 + ⋯菜单 */
+        /* S36 毛玻璃胶囊：全宽实底白条 → 浮动玻璃胶囊。
+           占位口径不变：视觉高 ≈ 46px，JS 侧 titleH=48 的取景口径不动 */
         #mobBar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-collapse);
-            background: #fff; box-shadow: 0 1px 10px rgba(15,23,42,.14);
+            position: fixed; top: 10px; left: 12px; right: 12px; z-index: var(--z-collapse);
+            background: rgba(255,255,255,.82);
+            -webkit-backdrop-filter: blur(18px);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 4px 18px rgba(15,23,42,.12);
+            border-radius: 22px;
             display: flex; align-items: center; gap: 6px;
             min-height: 48px; box-sizing: border-box;
-            padding: calc(4px + env(safe-area-inset-top)) 10px 4px;
+            padding: calc(4px + env(safe-area-inset-top)) 12px 4px;
             font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
         }
         #mobBar b#mobRouteName { font-size: 15px; color: #0b1220; flex: none; max-width: 32vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -615,7 +647,7 @@
         /* ⋯菜单（下拉）+ 遮罩（点外部关闭，S18） */
         #mobMenuBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
         body.mob-menu #mobMenuBk { display: block; }
-        #mobMenu { position: fixed; top: calc(52px + env(safe-area-inset-top)); right: 8px; z-index: var(--z-guide); background: #fff; border-radius: 12px; box-shadow: 0 10px 32px rgba(15,23,42,.22); padding: 6px; display: none; min-width: 190px; }
+        #mobMenu { position: fixed; top: calc(60px + env(safe-area-inset-top)); right: 8px; z-index: var(--z-guide); background: #fff; border-radius: 12px; box-shadow: 0 10px 32px rgba(15,23,42,.22); padding: 6px; display: none; min-width: 190px; }
         body.mob-menu #mobMenu { display: block; }
         #mobMenu button { display: block; width: 100%; text-align: left; border: none; background: none; min-height: 44px; padding: 0 12px; font-size: 14px; color: #1f2937; border-radius: 8px; cursor: pointer; font-family: inherit; }
         #mobMenu button:active { background: #f1f5f9; }
@@ -638,6 +670,66 @@
         /* S23：全展态也保留浮动钮（z 1250 > 抽屉 1100，浮在抽屉之上）——全览三态可达 */
         #mobFit { display: none; }
         #mobFit.show { display: block; }
+        /* S36 补给悬浮钮：图层/全览之后的第三枚常驻圆钮（唯一补给入口）。
+           图标 16px（BRAND.supply）；激活态（body.mob-sup）绿底白图 */
+        #mobSup { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+        #mobSup .msup-ic { width: 16px; height: 16px; display: inline-flex; pointer-events: none; }
+        #mobSup .msup-ic svg { width: 100%; height: 100%; }
+        body.mob-sup #mobSup { background: var(--green); color: #fff; }
+        /* S36 屏二：行中沉浸式大卡贴底——浮动钮组上移到胶囊下沿（补给钮行中常驻入口） */
+        body.enroute #mobBtns { bottom: auto; top: calc(66px + env(safe-area-inset-top)); }
+        /* ============ S36 屏四：沿线补给抽屉（跟随行程 / 我的指定） ============
+           body.mob-sup 驱动；遮罩 + 半屏毛玻璃抽屉；z 全走 --z-* 变量。
+           与 mobLayers/mobMenu 同族：✕ / 点遮罩 / 点抓手关闭。 */
+        #supBk { position: fixed; inset: 0; z-index: var(--z-tip); background: rgba(15,23,42,.35); display: none; }
+        body.mob-sup #supBk { display: block; }
+        #supSheet {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-guide);
+            background: rgba(255,255,255,.97);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 28px 28px 0 0;
+            box-shadow: 0 -8px 30px rgba(15,23,42,.25);
+            max-height: 78vh; display: none; flex-direction: column;
+            padding: 0 14px calc(12px + env(safe-area-inset-bottom));
+            font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        }
+        body.mob-sup #supSheet { display: flex; }
+        #supSheet .sup-grip { display: flex; align-items: center; justify-content: center; height: 26px; cursor: pointer; touch-action: manipulation; }
+        #supSheet .sup-grip::before { content: ''; width: 44px; height: 5px; border-radius: 3px; background: #cbd5e1; }
+        #supSheet .sup-head { display: flex; align-items: center; gap: 8px; padding: 2px 2px 10px; }
+        #supSheet .sup-head b { font-size: 16px; color: var(--ink); }
+        #supSheet .sup-head #supClose { flex: none; width: 36px; height: 34px; border: none; background: #f1f5f9; border-radius: 9px; font-size: 14px; color: #3d4a5c; cursor: pointer; font-family: inherit; }
+        /* 分段：跟随行程 | 我的指定（N≥1 琥珀角标） */
+        #supSheet .sup-seg2 { display: flex; background: rgba(10,15,26,.07); border-radius: 14px; padding: 2px; margin-left: auto; flex: none; }
+        #supSheet .sup-seg2 span { font-size: 11px; padding: 5px 12px; border-radius: 12px; color: var(--sub); display: flex; align-items: center; cursor: pointer; }
+        #supSheet .sup-seg2 span.on { background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.10); }
+        #supSheet .sup-seg2 em { font-style: normal; font-size: 9.5px; background: var(--amber); color: #fff; border-radius: 8px; padding: 0 5px; margin-left: 5px; }
+        /* 顶部横幅：已指定 N 站（深色渐变，.ban 定稿） */
+        #supSheet .sup-ban { align-items: center; gap: 10px; background: linear-gradient(135deg, #111c2e, #0f766e); color: #fff; border-radius: 16px; padding: 12px 14px; margin-bottom: 4px; box-shadow: var(--shadow-lg); }
+        #supSheet .sup-ban .t { font-size: 12px; font-weight: 700; }
+        #supSheet .sup-ban .m { font-size: 10.5px; opacity: .72; margin-top: 2px; }
+        #supSheet .sup-ban .u { margin-left: auto; flex: none; font-size: 11px; font-weight: 700; background: rgba(255,255,255,.16); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+        /* 筛选行：全部 | ⚡充电（内嵌 仅快充） | ⛽加油 */
+        #supSheet .sup-flt { display: flex; gap: 6px; margin-top: 10px; align-items: center; }
+        #supSheet .sup-flt .f { font-size: 11px; font-weight: 600; padding: 6px 11px; border-radius: 999px; background: #f1f4f7; color: var(--sub); white-space: nowrap; display: inline-flex; align-items: center; cursor: pointer; }
+        #supSheet .sup-flt .f.on { background: var(--green); color: #fff; }
+        #supSheet .sup-flt .qf { font-style: normal; border-left: 1px solid rgba(120,135,155,.4); margin-left: 7px; padding-left: 7px; opacity: .6; font-weight: 700; }
+        #supSheet .sup-flt .f.on .qf { opacity: 1; border-color: rgba(255,255,255,.5); }
+        #supSheet .sup-note { font-size: 10.5px; color: var(--weak); margin-top: 8px; }
+        #supSheet .sup-list { overflow-y: auto; -webkit-overflow-scrolling: touch; margin-top: 4px; padding-bottom: 2px; }
+        #supSheet .sup-empty { font-size: 12px; color: var(--weak); text-align: center; padding: 22px 0 14px; }
+        /* 站点行（白卡） */
+        #supSheet .grp { font-size: 10.5px; font-weight: 800; letter-spacing: .14em; color: var(--weak); margin-top: 14px; }
+        #supSheet .stn { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 12px 14px; margin-top: 9px; }
+        #supSheet .stn .ic { width: 34px; height: 34px; border-radius: 12px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+        #supSheet .stn .ic.c { background: #e5f6f3; color: var(--green-deep); }
+        #supSheet .stn .ic.g { background: #fdf2e2; color: var(--amber); }
+        #supSheet .stn .tx { flex: 1; min-width: 0; }
+        #supSheet .stn .nm { font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        #supSheet .stn .mt { font-size: 10.5px; color: var(--weak); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #supSheet .stn .act { margin-left: auto; flex: none; font-size: 11px; font-weight: 700; color: var(--green-deep); border: 1.5px solid #bfe3dd; border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+        #supSheet .stn .act.done { color: var(--amber); border-color: #f0d9ac; background: #fdf6ea; }
         /* peek 规划概要行（planner 喂数据：建议充电 N 次 · 最长无桩间隔） */
         /* S31：#planPeek 已隐藏（主样式区 display:none !important），定义移除 */
         /* S26 移动端规划详情面板（摘要行点开，数据源同侧栏 planBox） */
@@ -798,7 +890,6 @@
         </div>
     </details>
         <div class="evplan" id="planBox" style="display:none"></div><!-- S31：显示层隐藏，规划计算保留（innerHTML 照常更新） -->
-    </div>
     <button class="btn-fit" id="btnFit">回到全览</button>
     <div class="tip">点击图标看详情 · 点击某程地图飞行 + 剖面高亮 · 底部可展开海拔剖面。<span id="dataCaveat">加油站/充电站为公开资料整理，出发前请复核营业状态。</span>
         <div class="brand-creed">一张有观点的地图。</div></div>

@@ -12,7 +12,7 @@
  * edit.js / ui.js 后加载；窄屏点日卡由 route-engine focusDay 调 setSheet('peek')。
  * ========================================================================== */
 
-var MOBILE_PEEK = 150;       // S34：peek 露出高度（手柄28 + 概要行 + 天数轨），与 CSS --sheet-peek 同值
+var MOBILE_PEEK = 216;       // S36：peek 露出高度（手柄28 + peek hero 大卡），与 CSS --sheet-peek 同值
 var MOBILE_BREAK = 768;
 var sheetState = 'peek';     // 'peek' | 'full' | 'hidden'
 var mobActive = false;       // 当前是否处于移动断点
@@ -302,6 +302,9 @@ function buildIA() {
     var btns = mobEl('div', 'mobBtns');
     btns.appendChild(mobEl('button', 'mobLayersBtn', null, '🗺<br>图层'));
     btns.appendChild(mobEl('button', 'mobFit', null, '⛶<br>全览'));
+    /* S36 补给悬浮钮（唯一补给入口）：BRAND.supply 图标 + 「补给」，排在 图层/全览 之后 */
+    var supIc = (typeof BRAND !== 'undefined' && BRAND.supply) ? BRAND.supply : '';
+    btns.appendChild(mobEl('button', 'mobSup', null, '<span class="msup-ic">' + supIc + '</span>补给'));
     iaRoot.appendChild(btns);
 
     if (document.body && typeof document.body.appendChild === 'function') document.body.appendChild(iaRoot);
@@ -335,7 +338,10 @@ function buildIA() {
     var menuBtn = document.getElementById('mobMenuBtn');
     if (menuBtn) menuBtn.onclick = function () {
         toggleClass('mob-menu');
-        if (document.body.classList.contains('mob-menu')) toggleClass('mob-layers', false);   // S22：两弹层互斥
+        if (document.body.classList.contains('mob-menu')) {
+            toggleClass('mob-layers', false);   // S22：两弹层互斥
+            try { if (window.__sup && window.__sup.close) window.__sup.close(); } catch (e) {}   // S36：补给抽屉同互斥
+        }
     };
     /* S34 模式开关：规划 ↔ 行中（Enroute 挂在 window 上，enroute.js 导出方式） */
     var mPlan = document.getElementById('mobModePlan');
@@ -386,7 +392,10 @@ function buildIA() {
     var layersBtn = document.getElementById('mobLayersBtn');
     if (layersBtn) layersBtn.onclick = function () {
         openBk();
-        if (document.body.classList.contains('mob-layers')) toggleClass('mob-menu', false);   // S22：两弹层互斥
+        if (document.body.classList.contains('mob-layers')) {
+            toggleClass('mob-menu', false);   // S22：两弹层互斥
+            try { if (window.__sup && window.__sup.close) window.__sup.close(); } catch (e) {}   // S36：补给抽屉同互斥
+        }
     };
     var layersClose = document.getElementById('mobLayersClose');
     if (layersClose) layersClose.onclick = function () { toggleClass('mob-layers', false); };
@@ -401,6 +410,7 @@ function buildIA() {
                 '<div class="note">口径与侧栏一致：按当前车型/续航/高原折算实时计算；' +
                 '路线轨迹与站点分级以已保存版本的数据为准，出行前请复核营业状态。</div>';
         }
+        try { if (window.__sup && window.__sup.close) window.__sup.close(); } catch (e) {}   // S36：补给抽屉同互斥
         toggleClass('mob-plan', true);
     }
     var planPeekEl = document.getElementById('planPeek');
@@ -416,7 +426,26 @@ function buildIA() {
         setTimeout(function () { if (fitBtn.classList) fitFitRemove(); }, 220);
         goFit();
     };
-    function fitFitRemove() { if (fitBtn.classList) fitBtn.classList.remove('hit'); }
+    function fitFitRemove() { if (fitBtn && fitBtn.classList) fitBtn.classList.remove('hit'); }
+
+    /* S36 补给钮（屏四）：开/关沿线补给抽屉（window.__sup，engine/supply.js）。
+       __sup 不在（极端环境）退回 AB 阶段空壳语义：toggle mob-sup + 尝试 __supOpen */
+    var supBtn = document.getElementById('mobSup');
+    if (supBtn) supBtn.onclick = function () {
+        var S = null;
+        try { S = (typeof window !== 'undefined' && window.__sup) || null; } catch (e) {}
+        try {
+            if (S && typeof S.isOpen === 'function') {
+                if (S.isOpen()) S.close();
+                else S.open();
+                return;
+            }
+        } catch (e) {}
+        toggleClass('mob-sup');
+        try {
+            if (typeof window !== 'undefined' && window.__supOpen && typeof window.__supOpen === 'function') window.__supOpen();
+        } catch (e) {}
+    };
 }
 
 /* S19 退役：编辑面板自带「‹ 完成编辑」顶栏（etDone），不再需要外挂关闭条。
@@ -533,7 +562,7 @@ function refreshMob() {
         if (b && b.classList) {
             b.classList.remove('mob-full'); b.classList.remove('mob-half'); b.classList.remove('mob-hidden');
             b.classList.remove('mob-elev'); b.classList.remove('mob-drag'); b.classList.remove('mob-peek');
-            b.classList.remove('mob-menu'); b.classList.remove('mob-layers');
+            b.classList.remove('mob-menu'); b.classList.remove('mob-layers'); b.classList.remove('mob-sup');
         }
         if (sheetPanel && sheetPanel.classList) {
             sheetPanel.classList.remove('collapsed');

@@ -14,13 +14,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
-    // xianlumap://route=<id> 直达线路
+    // xianlumap://route=<id> 直达线路；其余 query 参数原样透传（?enr=1/?sup=1 调试钩子）
     func application(_ app: UIApplication, open url: URL,
                      options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         guard url.scheme == "xianlumap" else { return false }
-        let route = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-            .queryItems?.first(where: { $0.name == "route" })?.value
-        root?.loadRoute(route)
+        let comp = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        let route = comp?.queryItems?.first(where: { $0.name == "route" })?.value
+        root?.loadRoute(route, extras: comp?.queryItems ?? [])
         return true
     }
 }

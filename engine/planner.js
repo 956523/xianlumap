@@ -283,6 +283,7 @@
     };
     var dimEvM = null, dimFuelM = null, planM = null, planLb = null;
     var dimLabelEv = null, dimLabelFuel = null;   // 站点近景文字层（体验修复 3）
+    var dimPillLb = null;   // S36 远景聚合药丸层（「⚡ N」「⛽ N」白底胶囊）
     var NEAR_LABEL_Z = 10;   // 站名文字从此 zoom 开始出现：与 S0 的 near 档（z≥9）协同，不另起一套
     var dimDataEv = [], dimDataFuel = [], planData = [];
 
@@ -325,6 +326,7 @@
         planLb = clearLayer(planLb);
         dimLabelEv = clearLayer(dimLabelEv);
         dimLabelFuel = clearLayer(dimLabelFuel);
+        dimPillLb = clearLayer(dimPillLb);
         if (!STATION_DATA) return;
         // 图层开关由 layerOn 状态决定（开关不再持有 marker 引用，见 route-engine 开关段）
         var onEv = (typeof layerOn === 'undefined') || layerOn.ev;
@@ -339,6 +341,43 @@
            拉近时点自动变密（近景要看到城区里的每个桩）。 */
         var z = getMapZoom();
         var tier = zoomTier(z);
+        /* S36 远景聚合：far 档（z<7，zoomTier far 口径）不画小圆点，改画计数药丸
+           「⚡ N」「⛽ N」（N = 当前走廊内全量站点数）；白底胶囊、纯展示不绑点击，
+           归属对应图层开关（ev/fuel 关 → 药丸不画）。mid/near 维持小圆点不动。 */
+        var farTier = tier.tier === 'far';
+
+        /* S36 屏四「我的指定」：designated ≥1 时地图只画指定站（规划与行中同一渲染链）——
+           dim 小圆点层收敛为不画其他站，planM 橙环钉改画指定站（ev/fuel 各用各的图标），
+           近景 dim label 同理；far 档药丸计数改为 designated 口径。
+           0 条 = 跟随行程，现状逻辑零变化。图层开关语义不变：该类关掉即使已指定也不画。 */
+        var supDes = null;
+        try {
+            if (typeof window !== 'undefined' && window.__sup &&
+                typeof window.__sup.list === 'function' && typeof window.__sup.count === 'function' &&
+                window.__sup.count() > 0) {
+                var _desList = window.__sup.list();
+                if (_desList && _desList.length) supDes = _desList;
+            }
+        } catch (e) {}
+        function resolveDes(c) {
+            var out = [];
+            if (!supDes) return out;
+            var off = 0;
+            try { off = (typeof curStart === 'function' && curStart().stationKm0) || 0; } catch (e) {}
+            supDes.forEach(function (d) {
+                if (!d || d.c !== c) return;
+                try {
+                    if (typeof STATION_DATA === 'undefined' || !STATION_DATA || !STATION_DATA[c] || !STATION_DATA[c][d.i]) return;
+                    var s = STATION_DATA[c][d.i];
+                    if (s.t !== d.t) return;   // 数据重建容错（与 __sup 加载校验同口径）
+                    out.push({ c: c, t: s.t, a: s.a, tel: s.tel, lat: s.lat, lng: s.lng,
+                        km: +(s.km - off).toFixed(1), d: s.d });
+                } catch (e) {}
+            });
+            return out.sort(function (a, b) { return a.km - b.km; });
+        }
+        var desEv = supDes ? resolveDes('ev') : [];
+        var desFuel = supDes ? resolveDes('fuel') : [];
 
         // 分级提示：加油站被自动隐藏时说明原因（否则用户以为图层开关坏了）
         var hintEl = document.getElementById('fuelTierHint');
@@ -348,16 +387,17 @@
 
         // 弱化层（非计划站点）。planKeys 传下去让"必充站"享受最高去重权重，
         // 否则远景下它可能被一个普通站挤出屏幕 —— 那是最不能丢的信息。
-        dimDataEv = onEv
-            ? activeStations('ev', z, planKeys).filter(function (s) { return !planKeys[s.t + '|' + s.km.toFixed(1)]; })
-            : [];
+        // S36 指定模式：小圆点层不画其他站（dimData 清空，指定站走 planM 橙环钉）。
+        dimDataEv = (supDes || !onEv)
+            ? []
+            : activeStations('ev', z, planKeys).filter(function (s) { return !planKeys[s.t + '|' + s.km.toFixed(1)]; });
         // 远景不显示加油站：全览时"哪里有加油站"信息量极低（高速几十公里一个），
         // 显出来只会跟充电站抢视觉权重，把"这段能不能充上电"这个核心信息淹掉。
-        dimDataFuel = (tier.fuel && onFuel)
-            ? activeStations('fuel', z, planKeys).filter(function (s) { return !planKeys[s.t + '|' + s.km.toFixed(1)]; })
-            : [];
+        dimDataFuel = (supDes || !(tier.fuel && onFuel))
+            ? []
+            : activeStations('fuel', z, planKeys).filter(function (s) { return !planKeys[s.t + '|' + s.km.toFixed(1)]; });
         dimEvM = createMarkerLayer({
-            map: onEv ? map : null,
+            map: (farTier || !onEv) ? null : map,
             styles: { d: ({ src: circleDim('#16a34a'), width: 24, height: 24, anchor: { x: 12, y: 12 } }) },
             geometries: dimDataEv.map(function (s, i) {
                 return { id: 'd' + i, styleId: 'd', position: LL(s.lat, s.lng) };
@@ -369,7 +409,7 @@
                 '<br>' + navLinkHTML(s.lat, s.lng, s.t) + stationSourceNote());
         });
         dimFuelM = createMarkerLayer({
-            map: (tier.fuel && onFuel) ? map : null,
+            map: (farTier || !(tier.fuel && onFuel)) ? null : map,
             styles: { d: ({ src: circleDim('#dc2626'), width: 24, height: 24, anchor: { x: 12, y: 12 } }) },
             geometries: dimDataFuel.map(function (s, i) {
                 return { id: 'd' + i, styleId: 'd', position: LL(s.lat, s.lng) };
@@ -381,8 +421,47 @@
                 '<br>' + navLinkHTML(s.lat, s.lng, s.t) + stationSourceNote());
         });
 
-        // 计划层（必充/必加站）
-        planData = plan.filter(function (p) { return p.st; });
+        /* S36 远景聚合药丸：far 档用 1-2 枚计数药丸替代满屏小圆点（位置取该类站点质心）。
+           指定模式下计数口径改为 designated（只画指定站），跟随行程用全量。 */
+        if (farTier) {
+            var pillGeos = [];
+            var farPillArr = function (mode, iconTxt, arr) {
+                if (!arr || !arr.length) return;
+                var la = 0, ln = 0;
+                arr.forEach(function (s) { la += s.lat; ln += s.lng; });
+                pillGeos.push({
+                    id: 'sp' + mode, styleId: mode, position: LL(la / arr.length, ln / arr.length),
+                    content: iconTxt + ' ' + arr.length
+                });
+            };
+            if (supDes) {
+                if (onEv) farPillArr('ev', '⚡', desEv);
+                if (onFuel) farPillArr('fuel', '⛽', desFuel);
+            } else {
+                if (onEv) farPillArr('ev', '⚡', (typeof stationsAll === 'function') ? stationsAll('ev') : []);
+                if (onFuel) farPillArr('fuel', '⛽', (typeof stationsAll === 'function') ? stationsAll('fuel') : []);
+            }
+            dimPillLb = createLabelLayer({
+                map: pillGeos.length ? map : null,
+                zIndex: 115,
+                styles: {
+                    ev: ({ color: '#0f766e', size: 12, bold: true, badge: true, badgeBorder: '#bfe3dd' }),
+                    fuel: ({ color: '#b45309', size: 12, bold: true, badge: true, badgeBorder: '#f0d9ac' })
+                },
+                geometries: pillGeos
+            });
+        }
+
+        // 计划层（必充/必加站）。S36 指定模式：改画「我的指定」站（ev/fuel 各用各的图标，
+        // 仍受 ev/fuel 图层开关约束——开关关掉即使已指定也不画该类）。
+        if (supDes) {
+            planData = [];
+            if (onEv) desEv.forEach(function (s) { planData.push({ st: s }); });
+            if (onFuel) desFuel.forEach(function (s) { planData.push({ st: s }); });
+            planData.sort(function (a, b) { return a.st.km - b.st.km; });
+        } else {
+            planData = plan.filter(function (p) { return p.st; });
+        }
         var isFuel = evState.mode === 'fuel';
         /* S17：手机全览（窄容器 + 远景 z<7，口径与景点胶囊一致）收起必充/必加标注——
            国家缩放级别只留极少量信息；近景或聚焦天（fly 后 z 必然 ≥7）自动恢复，
@@ -392,14 +471,25 @@
         try { window.__planFarHidden = hidePlanFar; } catch (e) {}   // S17 测试钩子：规划标注远景收起状态
         planM = createMarkerLayer({
             map: hidePlanFar ? null : map,
-            styles: { p: ({ src: IC_PLAN[isFuel ? 'fuel' : 'ev'], width: 38, height: 38, anchor: { x: 19, y: 19 } }) },
+            styles: {
+                p: ({ src: IC_PLAN[isFuel ? 'fuel' : 'ev'], width: 38, height: 38, anchor: { x: 19, y: 19 } }),
+                pev: ({ src: IC_PLAN.ev, width: 38, height: 38, anchor: { x: 19, y: 19 } }),
+                pfuel: ({ src: IC_PLAN.fuel, width: 38, height: 38, anchor: { x: 19, y: 19 } })
+            },
             geometries: planData.map(function (p, i) {
-                return { id: 'p' + i, styleId: 'p', position: LL(p.st.lat, p.st.lng) };
+                return { id: 'p' + i, styleId: supDes ? (p.st.c === 'fuel' ? 'pfuel' : 'pev') : 'p', position: LL(p.st.lat, p.st.lng) };
             })
         });
         planM.on('click', function (e) {
             var i = parseInt(e.geometry.id.slice(1), 10);
             var p = planData[i];
+            if (supDes) {
+                /* 指定模式：信息窗标注「指定补给」 */
+                openInfo(p.st.lat, p.st.lng, [[(p.st.c === 'fuel' ? '⛽' : '⚡') + ' 指定补给', p.st.c === 'fuel' ? 'f' : 'e']], p.st.t,
+                    (p.st.a || '') + (p.st.tel ? '<br>☎ ' + p.st.tel : '') +
+                    '<br>' + navLinkHTML(p.st.lat, p.st.lng, p.st.t) + stationSourceNote());
+                return;
+            }
             openInfo(p.st.lat, p.st.lng, [[isFuel ? '⛽ 必加站' : '⚡ 必充站', isFuel ? 'f' : 'e']], p.st.t,
                 p.st.a + (p.st.tel ? '<br>☎ ' + p.st.tel : '') +
                 '<br>' + navLinkHTML(p.st.lat, p.st.lng, p.st.t) + stationSourceNote() +
@@ -413,21 +503,24 @@
 
         /* 标签层级（体验修复 3）第三级：站点图标是主表达，站名文字只在近景出现。
            缩放变化会触发本函数重建（S0 的防抖重绘），不需要额外监听。
-           站名截断到 10 字 + 省略号，白字描边压底图，跟随各自图层开关。 */
+           站名截断到 10 字 + 省略号，白字描边压底图，跟随各自图层开关。
+           S36 指定模式：近景标签只给指定站。 */
         if (z >= NEAR_LABEL_Z) {
+            var labEv = supDes ? desEv : dimDataEv;
+            var labFuel = supDes ? desFuel : dimDataFuel;
             dimLabelEv = createLabelLayer({
-                map: onEv ? map : null,
+                map: (supDes ? (onEv && desEv.length > 0) : onEv) ? map : null,
                 zIndex: 110,
                 styles: { default: ({ color: '#15803d', size: 10, halo: true, offset: { x: 0, y: 13 } }) },
-                geometries: dimDataEv.map(function (s, i) {
+                geometries: labEv.map(function (s, i) {
                     return { id: 'el' + i, position: LL(s.lat, s.lng), content: s.t.length > 10 ? s.t.slice(0, 10) + '…' : s.t };
                 })
             });
             dimLabelFuel = createLabelLayer({
-                map: onFuel ? map : null,
+                map: (supDes ? (onFuel && desFuel.length > 0) : onFuel) ? map : null,
                 zIndex: 110,
                 styles: { default: ({ color: '#b91c1c', size: 10, halo: true, offset: { x: 0, y: 13 } }) },
-                geometries: dimDataFuel.map(function (s, i) {
+                geometries: labFuel.map(function (s, i) {
                     return { id: 'fl' + i, position: LL(s.lat, s.lng), content: s.t.length > 10 ? s.t.slice(0, 10) + '…' : s.t };
                 })
             });
@@ -459,6 +552,8 @@
             _zoomTimer = null;
             _lastZoomForStations = getMapZoom();
             renderStations();
+            // S36：休整层远景药丸（⛺ N ↔ 圆点）随档位切换（同一条防抖链，不另起监听）
+            if (typeof renderRestMarkers === 'function') renderRestMarkers();
             // 同一条防抖链顺带刷新景点胶囊分级（不另起监听，S0 复用）
             if (typeof renderSpotLabels === 'function') renderSpotLabels(_lastZoomForStations);
             if (typeof renderCityLabels === 'function') renderCityLabels(_lastZoomForStations);

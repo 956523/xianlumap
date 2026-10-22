@@ -1,5 +1,5 @@
 /* ============================================================================
- * engine/enroute.js — 行中模式（S30：轻量行中 + 离线可用）
+ * engine/enroute.js — 行中模式（S30：轻量行中 + 离线可用；S36 屏二重构）
  *
  * 定位（设计稿〇）：不是导航，是「行进中的进度伴侣」——我在哪一段链上、
  * 离今晚住哪还有多远、顺路有什么打卡点。不做路况/语音/重算。
@@ -7,8 +7,10 @@
  * 打卡进度存 Edit.overlay.progress（S32 草稿/保存/云同步体系）；三键上报（可用/
  * 需注意/不可用）仅落本机，云端服务立项后接。
  *
- * 四态：行进中 / 支线提醒 / 到达打卡（节点 500m 内弹「打卡 ✓」）/ 今日完成
- * （当日对账 + 明天预告 + 成绩分享图）。支线打卡点 200m 路过自动点亮。
+ * 卡面态（S36 屏二/演示稿 5-7 幕）：待出发（当前程无 startTs，巨号剩余 km +
+ * 「出发 · 开始第 N 程」大药钮）/ 进行中（计时从 legs.startTs 起算）/ 到达打卡
+ * （不改卡——弹浮动 #enrToast，单键「打卡 ✓」= 事实确认；支线打卡点三键流程不动）/
+ * 今日完成（对账 + 分享；打卡后卡自然推进下一程待出发）。支线打卡点 200m 路过自动点亮。
  * 复用：S33 链（currentDisp/origOf/镜像自动随行）、S29 归属表、S0 dayLines 三态描边。
  *
  * 加载：edit.js 之后（读 Edit overlay 草稿）；ui.js 之前无所谓（不参与首屏渲染）。
@@ -33,10 +35,29 @@
             ov.progress = ov.progress || {};
             ov.progress.checks = ov.progress.checks || {};
             ov.progress.daysDone = ov.progress.daysDone || {};
+            ov.progress.legs = ov.progress.legs || {};   // S36 屏二：每程出发时刻 {dayId:{startTs}}
             return ov.progress;
         },
         checked: function (key) { return !!this.progress().checks[key]; },
         dayDone: function (dayId) { return !!this.progress().daysDone[dayId]; },
+        legStarted: function (dayId) {
+            var leg = (this.progress().legs || {})[dayId];
+            return !!(leg && leg.startTs);
+        },
+        /* 出发：当前程写入 startTs（计时 + 到达提醒待命），卡切进行中态 */
+        legStart: function () {
+            var segIdx = this._segIdx();
+            var dd = this._disp()[segIdx];
+            if (!dd) return false;
+            var oday = origOf(dd);
+            var p = this.progress();
+            p.legs[oday.id] = { startTs: Date.now() };
+            this._segEnterAt = Date.now();
+            try { editSave(); } catch (e) {}
+            try { this._persistProgress(); } catch (e) {}
+            renderCard();
+            return true;
+        },
 
         /* ---------- 模式进出 ---------- */
         enter: function () {
@@ -52,11 +73,21 @@
         exit: function () {
             this.on = false;
             if (document.body && document.body.classList) document.body.classList.remove('enroute');
+            this._hideToast();
+            this._stopClock();
             if (this._watchId != null && typeof navigator !== 'undefined' && navigator.geolocation) {
                 try { navigator.geolocation.clearWatch(this._watchId); } catch (e) {}
             }
             this._watchId = null;
             this.anchorMode = false;
+            if (this._nativeGeo) {
+                try {
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.xlm) {
+                        window.webkit.messageHandlers.xlm.postMessage({ action: 'geo', on: false });
+                    }
+                } catch (e) {}
+                this._nativeGeo = false;
+            }
             var c = document.getElementById('enrCard');
             if (c && c.remove) c.remove();
             this._restoreSegStyles();
@@ -70,6 +101,22 @@
         /* ---------- 定位投影 ---------- */
         _bindGeo: function () {
             var self = this;
+            /* S36 iOS 壳定位桥：原生 CLLocationManager → window.__xlmGeo。
+               dev 站是 http://局域网IP（非安全上下文），navigator.geolocation 被 WKWebView
+               拒绝——这是行中定位不可用的根因；壳注入 window.__xlmNative 标记后走原生桥。 */
+            try {
+                if (typeof window !== 'undefined' && window.__xlmNative === true &&
+                    window.webkit && window.webkit.messageHandlers &&
+                    window.webkit.messageHandlers.xlm &&
+                    typeof window.webkit.messageHandlers.xlm.postMessage === 'function') {
+                    window.__xlmGeo = function (lat, lng) {
+                        try { self.setPosition(lat, lng); } catch (e) {}
+                    };
+                    window.webkit.messageHandlers.xlm.postMessage({ action: 'geo', on: true });
+                    this._nativeGeo = true;
+                    return;
+                }
+            } catch (e) {}
             if (typeof navigator === 'undefined' || !navigator.geolocation || !navigator.geolocation.watchPosition) return;
             try {
                 /* 省电口径（设计稿二）：显著位移才唤醒——大 maximumAge + 不追高精度 */
@@ -164,13 +211,16 @@
                 var d = distKm(p[0], p[1], self.rawPos ? self.rawPos.lat : null, self.rawPos ? self.rawPos.lng : null);
                 if (self.rawPos && d <= 0.2) self._doCheck(key, it, 1);
             });
-            /* 主任务：到段终点 500m 内 → 到达打卡态 */
+            /* 主任务：到段终点 500m 内 → 到达打卡（S36：卡不改态，弹浮动 toast） */
             var remain = a ? (a[1] - this.curKm) : 0;
             if (!this.dayDone(oday.id) && remain <= 0.5) {
+                if (this._state !== 'arrive') this._showArriveToast(dd, segIdx);
                 this._state = 'arrive';
             } else if (this.dayDone(oday.id)) {
+                if (this._state === 'arrive') this._hideToast();
                 this._state = 'done';
             } else {
+                if (this._state === 'arrive') this._hideToast();
                 this._state = 'move';
                 /* 支线提醒：前方 15km 内最近的未打卡点 */
                 this._nextSpot = null;
@@ -213,26 +263,65 @@
             this._renderMarks();
             renderCard();
         },
-        /* 到达打卡：确认后节点点亮 + 当天完成 */
+        /* 到达打卡：确认后节点点亮 + 当天完成（S36 toast 单键 = 事实确认 report=1；
+           支线打卡点的三键 _doCheck 流程不动） */
         checkIn: function (report) {
             var segIdx = this._segIdx();
             var dd = this._disp()[segIdx];
             if (!dd) return false;
             var oday = origOf(dd);
             var p = this.progress();
+            /* 用时：优先 legs.startTs（S36 出发计时），退回段进入时刻（旧数据兼容） */
+            var leg = (p.legs || {})[oday.id] || {};
+            var durMin = null;
+            if (leg.startTs) durMin = Math.max(1, Math.round((Date.now() - leg.startTs) / 60000));
+            else if (this._segEnterAt) durMin = Math.max(1, Math.round((Date.now() - this._segEnterAt) / 60000));
             p.daysDone[oday.id] = {
                 t: new Date().toISOString(),
-                durMin: this._segEnterAt ? Math.max(1, Math.round((Date.now() - this._segEnterAt) / 60000)) : null,
+                durMin: durMin,
                 report: report || null   // 三键上报：1 可用 / 0 需注意 / -1 不可用（云端服务后接）
             };
             try { editSave(); } catch (e) {}
             try { this._persistProgress(); } catch (e) {}   // 行中打卡即时落盘（旅程数据丢不起；其余编辑仍纯草稿）
             this._segEnterAt = null;
+            this._hideToast();
             this._state = 'done';
+            this._justChecked = true;   // S36：本次渲染推进下一程（一次性；回看已完成程仍出完成态对账）
             this._applySegStyles(segIdx);
             this._renderMarks(segIdx);
             renderCard();
             return true;
+        },
+        /* ---------- 到达打卡 toast（S36 屏二：浮动卡，不替进度卡；30s 未操作自动隐藏） ---------- */
+        _showArriveToast: function (dd, segIdx) {
+            var t = toastEl();
+            if (!t) return;
+            var oday = origOf(dd);
+            var nm = (oday.stay || (String(dd.title).split('→').pop() || '').trim() || ('第' + (segIdx + 1) + '程休整点'));
+            var leg = (this.progress().legs || {})[oday.id] || {};
+            var durTxt = '—';
+            if (leg.startTs) {
+                var min = Math.max(1, Math.round((Date.now() - leg.startTs) / 60000));
+                durTxt = Math.floor(min / 60) + 'h' + (min % 60) + 'm';
+            }
+            t.innerHTML = '<span class="tk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 10 18 19.5 7"/></svg></span>' +
+                '<div class="ttx"><div class="tt">到达『' + escapeHtml2e(nm) + '』休整点</div>' +
+                '<div class="tm">第' + (segIdx + 1) + '程完成 · ' + (dd.km || 0) + 'km · 用时 ' + durTxt + '</div></div>' +
+                '<span class="go" id="enrGo">打卡 ✓</span>';
+            var g = document.getElementById('enrGo');
+            if (g) g.onclick = function () { Enroute.checkIn(1); };
+            if (t.classList) t.classList.add('show');
+            var self = this;
+            if (this._toastTimer != null && typeof clearTimeout === 'function') { try { clearTimeout(this._toastTimer); } catch (e) {} }
+            /* 真机 30s 自动隐藏；vm/mock 的同步 setTimeout 会立即执行，仅影响 class，断言走内容 */
+            this._toastTimer = setTimeout(function () { self._hideToast(); }, 30000);
+        },
+        _hideToast: function () {
+            if (this._toastTimer != null && typeof clearTimeout === 'function') { try { clearTimeout(this._toastTimer); } catch (e) {} }
+            this._toastTimer = null;
+            var t = _toastEl;
+            if (!t && typeof document !== 'undefined') t = document.getElementById('enrToast');
+            if (t && t.classList) t.classList.remove('show');
         },
         /* 打卡即时持久化：progress 合并进已存储 overlay + saved 快照（云同步随即覆盖到）；
            不动 overlay 里其他草稿字段——「保存修改」的职责不越界。 */
@@ -376,7 +465,17 @@
         return 2 * R * Math.asin(Math.sqrt(s));
     }
 
-    /* ---------- 底部进度卡 + 四态渲染 ---------- */
+    /* ---------- 底部进度卡 + 卡面态渲染（S36 屏二：待出发/进行中/toast/完成） ---------- */
+    var _toastEl = null;
+    function toastEl() {
+        if (!_toastEl) {
+            _toastEl = document.createElement('div');
+            _toastEl.id = 'enrToast';
+            _toastEl.className = 'enr-toast';
+            if (document.body && document.body.appendChild) document.body.appendChild(_toastEl);
+        }
+        return _toastEl;
+    }
     function buildCard() {
         var old = document.getElementById('enrCard');
         if (old && old.remove) old.remove();
@@ -397,19 +496,104 @@
             } catch (e) {}
         }
     }
+    /* 计时 mm:ss（>99 分钟自然进位，如 127:30） */
+    function fmtClock(ms) {
+        var s = Math.max(0, Math.floor(ms / 1000));
+        var mm = Math.floor(s / 60), ss = s % 60;
+        return (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+    }
+    /* 预计到达：只有出发计时 + 已走出平均速度才给（无数据不编造） */
+    function etaTxt(elapsedMs, walked, remain) {
+        if (!elapsedMs || walked < 3) return '';
+        var h = elapsedMs / 3600000;
+        if (h < 0.05) return '';
+        var sp = walked / h;
+        if (sp < 5) return '';
+        var min = Math.max(1, Math.round(remain / sp * 60));
+        return '预计 ' + Math.floor(min / 60) + 'h' + (min % 60) + 'm';
+    }
+    function supCount() {
+        try {
+            if (typeof window !== 'undefined' && window.__sup && typeof window.__sup.count === 'function') {
+                return window.__sup.count();
+            }
+        } catch (e) {}
+        return 0;
+    }
+    /* erfoot：指定补给站（前方最近）优先于支线打卡提示，二者取前 */
+    function footLine(st) {
+        var des = null;
+        try {
+            if (typeof window !== 'undefined' && window.__sup &&
+                typeof window.__sup.list === 'function' && window.__sup.count() > 0 &&
+                typeof STATION_DATA !== 'undefined' && STATION_DATA && Enroute.curKm != null) {
+                var off = 0;
+                try { off = (typeof curStart === 'function' && curStart().stationKm0) || 0; } catch (e) {}
+                window.__sup.list().forEach(function (d) {
+                    if (!d || !STATION_DATA[d.c] || !STATION_DATA[d.c][d.i]) return;
+                    var s = STATION_DATA[d.c][d.i];
+                    if (s.t !== d.t) return;
+                    var ahead = (s.km - off) - Enroute.curKm;
+                    if (ahead > 0 && (!des || ahead < des.ahead)) des = { ahead: ahead, t: s.t };
+                });
+            }
+        } catch (e) {}
+        if (des && !(st === 'side' && Enroute._nextSpot && Enroute._nextSpot.ahead < des.ahead)) {
+            return '⛽ 前方 ' + Math.round(des.ahead) + 'km · ' + des.t + '（已指定）';
+        }
+        if (st === 'side' && Enroute._nextSpot) {
+            var it = Enroute._nextSpot.it;
+            return '⚑ 前方 ' + Math.round(Enroute._nextSpot.ahead) + 'km · ' + (it.s ? it.s.n : it.wp.n) + '（顺路打卡）';
+        }
+        return '';
+    }
+    /* 补给细行（S36 第 6 幕：辅助信息降级——细分隔线、无卡片） */
+    function supLineHtml() {
+        var n = supCount();
+        return '<div class="sup-line" id="enrSupLine">' + (n > 0
+            ? '⛽ 我的补给点 ' + n + ' 站　<span class="mgt">管理 ›</span>'
+            : '⛽ 未指定补给点 · 跟随行程中') + '</div>';
+    }
+    /* 工具行（S36 屏二 ctab2：图层 / 全览 / 补给 N / 退出行中——行中常驻入口） */
+    function toolsHtml() {
+        return '<div class="ctab2">' +
+            '<span id="enrLayers2">图层</span>' +
+            '<span id="enrFit">全览</span>' +
+            '<span id="enrSup">补给 ' + supCount() + '</span>' +
+            '<span id="enrExit">退出行中</span></div>';
+    }
+    function ghostRowHtml() {
+        return '<div class="enr-sub2">' +
+            '<button class="enr-mini ghost" id="enrAnchor">📍 锚点</button>' +
+            '<button class="enr-mini ghost" id="enrDev">' + (Enroute._devOff ? '偏离提醒·开' : '偏离提醒·关') + '</button></div>';
+    }
+    function playIcon() {
+        return (typeof BRAND !== 'undefined' && BRAND.play) ? BRAND.play : '▶';
+    }
     function renderCard() {
         var c = document.getElementById('enrCard');
         if (!c) return;
         var disp = Enroute._disp();
         var segIdx = Enroute._segIdx();
         var dd = disp[segIdx];
-        var st = Enroute._state || (Enroute.curKm == null ? 'move' : 'move');
+        var st = Enroute._state || 'move';
+        /* S36：打卡完成 → 卡自然推进下一程（_justChecked 一次性；回看已完成程仍出完成态） */
+        if (st === 'done' && dd) {
+            var nx = disp[segIdx + 1];
+            if (Enroute._justChecked && nx && !Enroute.dayDone(origOf(nx).id)) {
+                dd = nx;
+                segIdx += 1;
+                st = 'move';
+            }
+        }
+        Enroute._justChecked = false;
         var html = '';
+        var clockOn = false;
         if (Enroute.curKm == null) {
             html = '<div class="enr-t">⛺ 行中 · 未定位</div>' +
                 '<div class="enr-sub">开启定位自动投影到链；或 <button class="enr-mini" id="enrAnchor">📍 我现在在…</button>（点地图锚点）</div>';
         } else if (st === 'done' && dd) {
-            /* 今日完成：当日对账 + 明天预告 + 分享 */
+            /* 今日完成：当日对账 + 明天预告 + 分享（结构不动，S36 仅随卡重皮） */
             var od = origOf(dd);
             var pd = Enroute.progress().daysDone[od.id] || {};
             var dur = pd.durMin ? Math.floor(pd.durMin / 60) + 'h' + (pd.durMin % 60) + 'm' : '—';
@@ -424,58 +608,99 @@
                     return '<span class="enr-chk' + (Enroute.checked(key) ? ' on' : '') + '">' + (Enroute.checked(key) ? '✓ ' : '⚑ ') + escapeHtml2e(nm) + '</span>';
                 }).join('') + '</div>' +
                 (next ? '<div class="enr-sub">下一程 · ' + next.title + ' · ' + (next.km || 0) + 'km</div>' : '<div class="enr-sub">全程完成 🎉</div>') +
-                '<div class="enr-row"><button class="enr-mini" id="enrShare">分享今日成绩 ↗</button>' +
+                '<div class="enr-row"><button class="enr-mini ok" id="enrShare">分享今日成绩 ↗</button>' +
                 '<button class="enr-mini" id="enrSleep">晚安，下一程见</button></div>';
-        } else if (st === 'arrive' && dd) {
-            html = '<div class="enr-t">🎉 到达「' + escapeHtml2e(origOf(dd).stay || (dd.title.split('→').pop() || '').trim() || ('D' + (segIdx + 1))) + '」</div>' +
-                '<div class="enr-sub">本程任务完成——打卡后点亮节点：</div>' +
-                '<div class="enr-row">' +
-                '<button class="enr-mini ok" id="enrOk1">✓ 打卡（这站可用）</button>' +
-                '<button class="enr-mini" id="enrOk0">⚠ 需注意</button>' +
-                '<button class="enr-mini" id="enrOk_1">✕ 不可用</button></div>';
-        } else {
-            /* S35 深色任务卡：lab + 30px 大数字 + dst + 进度（车内强光可读） */
-            var remain = dd && dd.altKm ? Math.max(0, dd.altKm[1] - Enroute.curKm) : 0;
-            var nodeNm = dd ? (origOf(dd).stay || (dd.title.split('→').pop() || '').trim()) : '';
-            var walked = (dd && dd.altKm) ? Math.max(0, Enroute.curKm - dd.altKm[0]) : 0;
-            var segLen = (dd && dd.altKm) ? Math.max(1, dd.altKm[1] - dd.altKm[0]) : 1;
-            var doneN = disp.filter(function (d) { return Enroute.dayDone(origOf(d).id); }).length;
-            html = '<div class="enr-lab">距今晚休整点' + (nodeNm ? ' · ' + escapeHtml2e(nodeNm) : '') + '</div>' +
-                '<div class="enr-big">' + Math.round(remain) + '<small> km</small></div>' +
-                (dd ? '<div class="enr-dst">第' + (segIdx + 1) + '程 ' + escapeHtml2e(dd.title) + ' · 已走 ' + Math.round(walked) + ' / ' + Math.round(segLen) + ' km</div>' : '') +
-                '<div class="enr-bar"><i style="width:' + Math.round((segIdx + walked / segLen) / Math.max(1, disp.length) * 100) + '%"></i></div>' +
-                '<div class="enr-tools">全程 ' + doneN + '/' + disp.length + ' 程' +
-                (st === 'side' && Enroute._nextSpot ? '' :
-                    ' <button class="enr-mini ghost" id="enrAnchor">📍 锚点</button>' +
-                    ' <button class="enr-mini ghost" id="enrDev">' + (Enroute._devOff ? '偏离提醒·开' : '偏离提醒·关') + '</button>' +
-                    ' <button class="enr-mini ghost" id="enrLayers">图层</button>') + '</div>';
-            if (st === 'side' && Enroute._nextSpot) {
-                var it = Enroute._nextSpot.it;
-                html += '<div class="enr-side">⚑ 支线 · 前方 ' + Math.round(Enroute._nextSpot.ahead) + ' km 有打卡点：' +
-                    escapeHtml2e(it.s ? it.s.n : it.wp.n) + '（顺路停靠，200m 内自动点亮）</div>';
+        } else if (dd) {
+            /* S36 屏二：待出发 / 进行中（到达打卡不再改卡——toast 浮在卡上） */
+            var oday = origOf(dd);
+            var a = dd.altKm;
+            var remain = a ? Math.max(0, a[1] - Enroute.curKm) : 0;
+            var nodeNm = oday.stay || (String(dd.title).split('→').pop() || '').trim();
+            var walked = a ? Math.max(0, Enroute.curKm - a[0]) : 0;
+            var segLen = a ? Math.max(1, a[1] - a[0]) : 1;
+            var started = Enroute.legStarted(oday.id);
+            var legRec = (Enroute.progress().legs || {})[oday.id] || {};
+            var foot = footLine(st);
+            if (!started) {
+                /* 待出发：巨号剩余 + 出发大药钮（进度条 3% 占位，演示稿口径） */
+                html = '<div class="enr-lab">距下一休整点' + (nodeNm ? ' · ' + escapeHtml2e(nodeNm) : '') + '</div>' +
+                    '<div class="enr-big">' + Math.round(remain) + '<small> km</small></div>' +
+                    '<div class="enr-dst">第' + (segIdx + 1) + '程 ' + escapeHtml2e(dd.title) + ' · 待出发</div>' +
+                    '<div class="enr-bar"><i style="width:3%"></i></div>' +
+                    (foot ? '<div class="erfoot"><span>' + escapeHtml2e(foot) + '</span></div>' : '') +
+                    supLineHtml() +
+                    '<button class="ctab" id="enrGoBtn">' + playIcon() + '出发 · 开始第' + (segIdx + 1) + '程</button>' +
+                    toolsHtml() + ghostRowHtml();
+            } else {
+                var barW = Math.round((segIdx + walked / segLen) / Math.max(1, disp.length) * 100);
+                var clock = legRec.startTs
+                    ? ' · 计时 <span id="enrClock">' + fmtClock(Date.now() - legRec.startTs) + '</span>'
+                    : '';   /* 无 startTs 的旧数据：直接显示已走，不编造计时 */
+                var eta = legRec.startTs ? etaTxt(Date.now() - legRec.startTs, walked, remain) : '';
+                html = '<div class="enr-lab">第' + (segIdx + 1) + '程进行中 · ' + escapeHtml2e(dd.title) + '</div>' +
+                    '<div class="enr-big">' + Math.round(remain) + '<small> km</small></div>' +
+                    '<div class="enr-dst">距' + escapeHtml2e(nodeNm) + ' · 已走 ' + Math.round(walked) + ' / ' + Math.round(segLen) + ' km' + clock + '</div>' +
+                    '<div class="enr-bar"><i style="width:' + barW + '%"></i></div>' +
+                    ((foot || eta) ? '<div class="erfoot"><span>' + escapeHtml2e(foot) + '</span>' + (eta ? '<span>' + eta + '</span>' : '') + '</div>' : '') +
+                    supLineHtml() +
+                    '<button class="ctab share" id="enrShare2">分享今日成绩</button>' +
+                    toolsHtml() + ghostRowHtml();
+                clockOn = !!legRec.startTs;
             }
         }
         c.innerHTML = html;
+        /* 计时器：仅进行中且有 startTs 时走秒（mock 无 setInterval，守卫跳过） */
+        if (clockOn) Enroute._startClock();
+        else Enroute._stopClock();
         /* 接线 */
         var b;
+        b = document.getElementById('enrGoBtn');
+        if (b) b.onclick = function () { Enroute.legStart(); };
         b = document.getElementById('enrAnchor');
         if (b) b.onclick = function () { Enroute.anchorFromMap(); };
         b = document.getElementById('enrDev');
         if (b) b.onclick = function () { Enroute.toggleDev(); };
-        [1, 0, -1].forEach(function (rv) {
-            b = document.getElementById('enrOk' + (rv === -1 ? '_1' : rv));
-            if (b) b.onclick = function () {
-                Enroute.checkIn(rv);
-                try { etToast('已打卡' + (rv === 1 ? '（这站可用）' : rv === 0 ? '（需注意）' : '（不可用）')); } catch (e) {}
-            };
-        });
-        b = document.getElementById('enrLayers');
+        b = document.getElementById('enrLayers2');
         if (b) b.onclick = function () { try { document.body.classList.toggle('mob-layers'); } catch (e) {} };
+        b = document.getElementById('enrFit');
+        if (b) b.onclick = function () { try { if (typeof goFit === 'function') goFit(); } catch (e) {} };
+        b = document.getElementById('enrSup');
+        if (b) b.onclick = function () { try { if (window.__sup && window.__sup.open) window.__sup.open(); } catch (e) {} };
+        b = document.getElementById('enrSupLine');
+        if (b) b.onclick = function () { try { if (window.__sup && window.__sup.open) window.__sup.open(); } catch (e) {} };
+        b = document.getElementById('enrExit');
+        if (b) b.onclick = function () { Enroute.exit(); };
         b = document.getElementById('enrSleep');
         if (b) b.onclick = function () { Enroute.exit(); };
         b = document.getElementById('enrShare');
         if (b) b.onclick = shareTodayPng;
+        b = document.getElementById('enrShare2');
+        if (b) b.onclick = shareTodayPng;
     }
+    /* 计时走秒：只刷 #enrClock 文本，不动卡 */
+    Enroute._startClock = function () {
+        this._stopClock();
+        if (typeof setInterval !== 'function') return;
+        var self = this;
+        try {
+            this._clockTimer = setInterval(function () {
+                var el = document.getElementById('enrClock');
+                if (!el) { self._stopClock(); return; }
+                var segIdx = self._segIdx();
+                var dd = self._disp()[segIdx];
+                if (!dd) { self._stopClock(); return; }
+                var leg = (self.progress().legs || {})[origOf(dd).id] || {};
+                if (!leg.startTs) { self._stopClock(); return; }
+                el.textContent = fmtClock(Date.now() - leg.startTs);
+            }, 1000);
+        } catch (e) {}
+    };
+    Enroute._stopClock = function () {
+        if (this._clockTimer != null && typeof clearInterval === 'function') {
+            try { clearInterval(this._clockTimer); } catch (e) {}
+        }
+        this._clockTimer = null;
+    };
     function escapeHtml2e(t) {
         return String(t == null ? '' : t).replace(/[&<>"]/g, function (c2) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c2]; });
     }
@@ -559,6 +784,20 @@
         var h1 = document.querySelector ? document.querySelector('#panel h1') : null;
         if (h1 && h1.appendChild) h1.appendChild(mkBtn());
     })();
+
+    /* 调试钩子（截图/联调，与 mobile.js ?mobsheet= 同族）：
+       ?enr=1 启动即入行中（验证 iOS 壳原生定位桥）；&enrkm=400 同时打手动锚点 */
+    try {
+        if (typeof location !== 'undefined' && location.search && /[?&]enr=1/.test(location.search)) {
+            var enrKmM = location.search.match(/[?&]enrkm=([\d.]+)/);
+            setTimeout(function () {
+                try {
+                    Enroute.enter();
+                    if (enrKmM) Enroute.setAnchorKm(+enrKmM[1]);
+                } catch (e) {}
+            }, 600);
+        }
+    } catch (e) {}
 
     try { window.Enroute = Enroute; } catch (e) {}
 })();
