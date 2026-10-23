@@ -51,6 +51,9 @@
     function isOpen() { return elevEl.classList.contains('open'); }
 
     function openDrawer(h) {
+        /* S36 真机指令：海拔剖面移动端彻底退役（手机端易误触）——窄屏一律拒绝展开，
+           桌面端保持现状。CSS 侧媒体块同步 display:none，双保险。 */
+        if (typeof window !== 'undefined' && window.innerWidth <= 768) return;
         setDrawerH(h || drawerH);
         elevEl.classList.remove('folded');
         elevEl.classList.add('open');

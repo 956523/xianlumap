@@ -1419,7 +1419,7 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
     var s34d = bootRoute('chuanxi');
     var deskLi = created.filter(function (el) { return el.id === 'dyn:li'; });
     var deskD1 = deskLi.length && deskLi[0].innerHTML || '';
-    ok('打卡代表点筛选：窄屏第 5 个起收 .pt-m.extra + 「等N处 ▾」收尾',
+    ok('打卡代表点：窄屏全量 DOM（强信号优先，.pt-m.extra 标记 5 个起）+「等N处 ▾」收尾（S36 起横滑看全部，不再截断）',
         mobD1.indexOf('pt-m extra') >= 0 && /等\d+处 ▾/.test(mobD1), '');
     ok('桌面零变化：桌面 D1 打卡行无 extra/无截断帽（▾/data-cap 仅窄屏）',
         deskD1.indexOf('pt-m extra') < 0 && deskD1.indexOf('data-cap') < 0 && deskD1.indexOf('▾') < 0, '');
@@ -1607,8 +1607,8 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
         /getElementById\('btnShare'\)[\s\S]{0,80}\.click\(\)/.test(mobSrc) &&
         /searchParams\.delete\('route'\)/.test(mobSrc), '');
     // c) 屏三：pt-m 单击 → openPtMenu；节点菜单含「更换地点」（relocateNode 替换名+节点 km）
-    ok('屏三增减交互：打卡 chip 单击出点菜单（openPtMenu）；节点菜单「更换地点」项在位',
-        /pt-m extra'\) \{\s*e\.stopPropagation\(\);\s*openPtMenu\(e\.clientX/.test(editSrcE) &&
+    ok('屏三增减交互：打卡 chip 单击出点菜单（openPtMenu，touch 坐标兜底）；节点菜单「更换地点」项在位',
+        /pt-m extra'\) \{\s*e\.stopPropagation\(\);[\s\S]{0,200}openPtMenu\(pt0\.clientX/.test(editSrcE) &&
         /data-a="reloc"/.test(editSrcE) &&
         /function relocateNode\(dayId, lat, lng, name\)/.test(editSrcE) &&
         /relocateNode\(rid, alat, alng, nm\)/.test(editSrcE), '');
@@ -1657,6 +1657,51 @@ console.log('\n【10】云同步（S15：私有 Gist 备份/恢复）');
                 delete lsStore['xianlumap.overlay.chuanxi'];
                 return ok2;
             } catch (e) { return 'THROW ' + e.message; }
+        })(), '');
+    /* ---------- S36 F 段：程轨滚位 / 剖面退役 / touch 菜单 / 城镇钉减重 ---------- */
+    console.log('\n【34】S36：程轨滚位 + 剖面退役 + touch 菜单 + 城镇钉减重');
+    var reSrcF = fs.readFileSync(path.join(ROOT, 'engine', 'route-engine.js'), 'utf8');
+    var profSrcF = fs.readFileSync(path.join(ROOT, 'engine', 'profile.js'), 'utf8');
+    var cssF = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/) || ['', ''])[1];
+    // a) 程轨药丸点击：focusDay 先 → full 留住 → scrollIntoView 滚到目标程卡（data-day 定位）
+    ok('程轨药丸点击：focusDay 后 setSheet(full) 留住 + scrollIntoView({block:center}) 滚到目标卡',
+        /if \(idx >= 0\) focusDay\(idx\);[\s\S]{0,700}setSheet\('full'\);[\s\S]{0,600}scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/.test(reSrcF) &&
+        /li\.setAttribute\('data-day', d\.id\)/.test(reSrcF), '');
+    // b) 移动端海拔剖面彻底退役：CSS display:none + focusDay 宽屏门 + openDrawer 窄屏早退
+    ok('移动端 #elev 彻底退役：媒体块 display:none + focusDay 宽屏门 + openDrawer 窄屏早退',
+        /#elev \{ display: none; \}/.test(cssF) &&
+        /window\.innerWidth > 768[\s\S]{0,120}openDrawer\(300\)/.test(reSrcF) &&
+        /window\.innerWidth <= 768\) return;/.test(profSrcF), '');
+    // c) chips 横滑 + 菜单 closer 守卫（touch 抬起合成 click 不闪关）
+    ok('打卡 chips 横滑（.day-pts/.et-chips overflow-x 隐藏滚动条）+ 菜单 closer 450ms 守卫（真机 touch 修复）',
+        /\.day-pts, \.day-list \.et-chips \{ display: flex; overflow-x: auto;[\s\S]{0,180}scrollbar-width: none/.test(cssF) &&
+        /Date\.now\(\) - openedAt < 450/.test(editSrcE), '');
+    // d) full 态隐藏右悬浮钮（不压卡片）+ 控制行激活态安静 chips
+    ok('full 态 #mobBtns 隐藏（不压抽屉卡片）+ 控制行白底深字安静 chips',
+        /body\.mob-full #mobBtns \{ display: none; \}/.test(cssF) &&
+        /#mobCtl \.seg button\.on \{ background: #fff; color: var\(--ink\)/.test(cssF), '');
+    // e) 城镇钉远档减重：z<8 不画大图钉（城镇名 label 保留），z≥8 恢复（offset -7 = citySmall）
+    ok('城镇钉远档减重：z=7 无城镇钉几何且城镇名仍在；z=8.5 恢复',
+        (function () {
+            function cityPins(since) {
+                var n = 0;
+                calls.markers.slice(since).forEach(function (m) {
+                    var o = m.opts || m;
+                    if (o.offset && o.offset.x === -7) n++;
+                });
+                return n;
+            }
+            MOCK_ZOOM = 7.0;
+            var mk0 = calls.markers.length;
+            var bf = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+            var pinsFar = cityPins(mk0);
+            var namesFar = bf.sandbox.window.__cityFarN > 0;
+            MOCK_ZOOM = 8.5;
+            var mk1 = calls.markers.length;
+            var bn = bootRoute('qinghai-gansu', { innerWidth: 390, innerHeight: 844 });
+            var pinsNear = cityPins(mk1);
+            MOCK_ZOOM = 7.3;
+            return !bf.err && !bn.err && pinsFar === 0 && namesFar && pinsNear > 0;
         })(), '');
     /* ---------- S35：无「天」UI 锁 ---------- */
     console.log('\n【30】S35：「程」改名零残留锁');

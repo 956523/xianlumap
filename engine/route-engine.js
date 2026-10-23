@@ -149,6 +149,8 @@
         if (!cityMarkerOn || typeof CITIES === 'undefined' || !CITIES) return;
         var z = (zoom == null) ? 7.3 : zoom;
         try { if (typeof map.getZoom === 'function') z = map.getZoom(); } catch (e) {}
+        /* S36 减重：远档（z<8）只留城镇名 label，大图钉近景才画（stations/warnings 同款 zoom 门） */
+        if (z < 8) return;
         var mapW = 0;
         try { var me3 = document.getElementById('map'); mapW = (me3 && me3.clientWidth) || 0; } catch (e) {}
         var picked = CITIES;
@@ -798,11 +800,21 @@
                 }
                 var pi = t.getAttribute('data-pday');
                 if (pi == null) return;
-                try { if (typeof setSheet === 'function') setSheet('full'); } catch (er) {}
                 var idx = -1;
                 var target = origOf(disp[+pi]);
                 DAYS.forEach(function (x, j) { if (x.id === target.id) idx = j; });
-                if (idx >= 0) focusDay(idx);
+                if (idx >= 0) focusDay(idx);   // 地图聚焦 + 高亮（focusDay 窄屏尾巴会回 peek，下面再拉回 full）
+                /* S36 真机修复：程轨药丸点击 → full 态留住 + 链式列表滚到目标程卡（带过渡）；
+                   移动端海拔剖面已退役（focusDay 内不再 openDrawer） */
+                try { if (typeof setSheet === 'function') setSheet('full'); } catch (er) {}
+                try {
+                    setTimeout(function () {
+                        var act = document.querySelector ? document.querySelector('#dayList li[data-day="' + target.id + '"]') : null;
+                        if (act && typeof act.scrollIntoView === 'function') {
+                            act.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                        }
+                    }, 320);   // 等抽屉 transform 过渡到位再滚
+                } catch (er) {}
             });
         }
     }
@@ -872,6 +884,7 @@
             var d = origOf(dd);   // 编辑/归属一律落原对象；显示用 dd（镜像时 altKm/path 已换）
             var li = document.createElement('li');
             li.className = 'ch-item';
+            try { li.setAttribute('data-day', d.id); } catch (e) {}   // S36：程轨点击 scrollIntoView 的目标定位
             var rest = !dd.altKm || (dd.altKm[1] - dd.altKm[0]) < 1;   // 切空/无区间 = 休整占位
             if (rest) li.classList.add('rest');
             var doneDay = dayDoneP(d.id);
@@ -1146,9 +1159,12 @@
         // 动画时长由地图全局动画设置接管
         map.setZoomAndCenter(zoom, [center[1], center[0]]);
         document.getElementById('curEnergy').innerHTML = '<b>第' + d.id + '程 ' + d.title + '（' + (d.km || 0) + 'km）：</b>' + d.energy;
-        // 点了某天却看不到剖面是反直觉的 → 抽屉收起时自动展开
-        if (!isOpen()) openDrawer(300);
-        else drawProfile();
+        /* 点了某天却看不到剖面是反直觉的 → 抽屉收起时自动展开。
+           S36 真机指令：海拔剖面移动端（≤768px）彻底退役——窄屏不 openDrawer 也不重绘剖面。 */
+        if (window.innerWidth > 768) {
+            if (!isOpen()) openDrawer(300);
+            else drawProfile();
+        }
         // 窄屏：行程单是底部抽屉，点日卡后回 peek（露概要），别把抽屉整栏藏掉
         if (window.innerWidth <= 768 && typeof setSheet === 'function') setSheet('peek');
         else if (window.innerWidth <= 768) setPanelOpenLater(false);

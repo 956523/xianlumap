@@ -577,9 +577,8 @@
         /* S34 抽屉头部控制行 → S36 轻量控制行（full 态唯一控制行：出发地/顺逆已平移至此） */
         #mobCtl { display: flex; gap: 6px; align-items: center; padding: 2px 0 10px; border-bottom: none; margin: 2px 0 4px; overflow-x: auto; }
         #mobCtl .seg button { font-size: 11px; padding: 3px 9px; }
-        /* S34 打卡行筛选：窄屏截断第 5 个起（.pt-m.extra），点「等N处 ▾」行展开（li.pts-open） */
-        .day-pts .pt-m.extra { display: none; }
-        li.pts-open .day-pts .pt-m.extra { display: inline; }
+        /* S36 真机修复：打卡行横滑看全部——DOM 全量（强信号优先序），第 5 个起不再截断，
+           收进可滑动行（overflow-x 见下方 .day-pts 规则）；「等N处 ▾」保留为展开提示位。 */
         .pt-cap { cursor: pointer; padding: 2px 0; }   /* 展开后再点一次 = 收起（classList.toggle） */
         /* S20 Bug1①：full 态面板严格从标题条（48px+safe-area）下沿起算——表头不再被标题条压住截断 */
         body.mob-hidden #panel { transform: translateY(100%); }
@@ -596,6 +595,8 @@
         #elev.open { transform: translateY(calc(-1 * var(--sheet-visible, 0px))); }
         body.mob-elev { --sheet-visible: 0px; }                 /* 剖面成为主表：落回贴底 */
         body.mob-full #elev { visibility: hidden; }              /* 全展看行程单时，不被剖面把手压住 */
+        /* S36 真机指令：海拔剖面移动端彻底退役（focusDay 不再 openDrawer + 这里 display 双保险；桌面不动） */
+        #elev { display: none; }
         /* 手柄（mobile.js 注入 #sheetGrip）：手指友好的拖拽区 */
         .sheet-grip { display: flex; align-items: center; justify-content: center; height: 28px; margin: 0 -14px; cursor: grab; touch-action: none; }
         .sheet-grip::before { content: ''; width: 44px; height: 5px; border-radius: 3px; background: #cbd5e1; }
@@ -689,6 +690,16 @@
         body.mob-sup #mobSup { background: var(--green); color: #fff; }
         /* S36 屏二：行中沉浸式大卡贴底——浮动钮组上移到胶囊下沿（补给钮行中常驻入口） */
         body.enroute #mobBtns { bottom: auto; top: calc(66px + env(safe-area-inset-top)); }
+        /* S36 真机修复：full 态右悬浮钮会压抽屉卡片（150km 被挡）→ full 态隐藏；peek/hidden 态保持显示 */
+        body.mob-full #mobBtns { display: none; }
+        /* S36 轻量控制行：安静 chips（去旧 segment 括号线框感，seg2 同族：灰轨 + 白底激活块） */
+        #mobCtl .seg { background: rgba(10,15,26,.06); }
+        #mobCtl .seg button { font-size: 11px; padding: 4px 11px; border: none; background: none; color: var(--sub); border-radius: 9px; }
+        #mobCtl .seg button.on { background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,.10); }
+        /* S36 真机修复：打卡 chips 横向滑动看全部（隐藏滚动条 + 惯性；+添加 保持在流内可滑到） */
+        .day-pts, .day-list .et-chips { display: flex; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .day-pts::-webkit-scrollbar, .day-list .et-chips::-webkit-scrollbar { display: none; }
+        .day-pts .pt-m, .day-list .et-chips .et-chip { flex: none; }
         /* ============ S36 屏四：沿线补给抽屉（跟随行程 / 我的指定） ============
            body.mob-sup 驱动；遮罩 + 半屏毛玻璃抽屉；z 全走 --z-* 变量。
            与 mobLayers/mobMenu 同族：✕ / 点遮罩 / 点抓手关闭。 */

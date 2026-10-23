@@ -1004,9 +1004,16 @@
                     }
                 });
             });
+            /* S36 真机修复：touch 抬起会合成 click 冒泡到 document——打开手势的尾事件不得关菜单
+               （真机「点删不了」的根因：菜单弹出瞬间被这条 closer 闪关），450ms 内忽略。 */
+            var openedAt = Date.now();
             setTimeout(function () {
                 try {
-                    document.addEventListener('click', function h() { closePtMenu(); document.removeEventListener('click', h); });
+                    document.addEventListener('click', function h(ev) {
+                        if (ev && ev.target && ev.target.closest && ev.target.closest('#ptMenu')) return;   // 菜单内点击
+                        if (Date.now() - openedAt < 450) return;   // 打开手势的尾事件（touch 合成 click）
+                        closePtMenu(); document.removeEventListener('click', h);
+                    });
                 } catch (e) {}
             }, 10);
         }
@@ -1218,8 +1225,16 @@
                     }
                 });
             });
+            /* S36 真机修复：同 openPtMenu——touch 抬起合成 click 不得闪关节点菜单 */
+            var openedAt = Date.now();
             setTimeout(function () {
-                try { document.addEventListener('click', function h() { closeChainDlg(); document.removeEventListener('click', h); }); } catch (e) {}
+                try {
+                    document.addEventListener('click', function h(ev) {
+                        if (ev && ev.target && ev.target.closest && ev.target.closest('#nodeMenu')) return;
+                        if (Date.now() - openedAt < 450) return;
+                        closeChainDlg(); document.removeEventListener('click', h);
+                    });
+                } catch (e) {}
             }, 10);
         }
         /* 「10 天」chip 弹层：输入目标天数 → 均分预览 → 应用 */
@@ -1294,10 +1309,12 @@
                     e.stopPropagation();
                     if (li.classList) li.classList.toggle('pts-open');
                 }
-                /* S36 屏三：单点 chip = 弹出点成员菜单（飞到/改名/改类型/删除；此前单击只飞、菜单仅长按/右键） */
+                /* S36 屏三：单点 chip = 弹出点成员菜单（飞到/改名/改类型/删除；此前单击只飞、菜单仅长按/右键）。
+                   坐标兜底：touch 序列取 changedTouches（真机 TouchEvent 无 clientX 时菜单不跑偏）。 */
                 else if (t.className === 'pt-m' || t.className === 'pt-m extra') {
                     e.stopPropagation();
-                    openPtMenu(e.clientX || 200, e.clientY || 320, t);
+                    var pt0 = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : e;
+                    openPtMenu(pt0.clientX || 200, pt0.clientY || 320, t);
                 }
                 else if (t.className === 'et-chip add' || (t.className.indexOf('et-chip') === 0 && t.getAttribute && t.getAttribute('data-add'))) {
                     /* S33「＋添加」= 打开添加对话框（搜索/选类型） */

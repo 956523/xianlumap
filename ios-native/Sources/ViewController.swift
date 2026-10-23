@@ -42,7 +42,8 @@ class ViewController: UIViewController, WKNavigationDelegate, CLLocationManagerD
 
     func loadRoute(_ routeId: String?, extras: [URLQueryItem] = []) {
         var comp = URLComponents(string: ViewController.baseURL)!
-        comp.queryItems = extras.filter { $0.name != "route" }
+        let extraItems = extras.filter { $0.name != "route" }
+        if !extraItems.isEmpty { comp.queryItems = extraItems }   // 默认保留 baseURL 自带 query（scheme 唤起时透传覆盖）
         if let r = routeId, !r.isEmpty {
             comp.queryItems = (comp.queryItems ?? []) + [URLQueryItem(name: "route", value: r)]
         }
